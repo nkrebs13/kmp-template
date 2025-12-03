@@ -1,9 +1,9 @@
 plugins {
     alias(libs.plugins.androidApplication)
-    alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
-    alias(libs.plugins.androidx.baselineprofile)
+    // Temporarily disabled - baseline profile plugin may not be fully compatible with AGP 9.0-beta03
+    // alias(libs.plugins.androidx.baselineprofile)
 }
 
 android {
@@ -34,7 +34,7 @@ android {
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
             signingConfig = signingConfigs.getByName("debug")
         }
@@ -56,7 +56,6 @@ android {
         buildConfig = true
     }
 
-
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -74,10 +73,10 @@ dependencies {
     implementation(compose.components.uiToolingPreview)
     debugImplementation(compose.uiTooling)
 
-    // Baseline Profiles
-    "baselineProfile"(project(":baselineprofile"))
+    // Baseline Profiles - temporarily disabled until plugin is compatible with AGP 9.0
+    // "baselineProfile"(project(":baselineprofile"))
 }
 
-baselineProfile {
-    dexLayoutOptimization = true
-}
+// baselineProfile {
+//     dexLayoutOptimization = true
+// }

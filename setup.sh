@@ -110,6 +110,10 @@ echo "• Updating app names..."
 if [ -f "androidApp/src/main/res/values/strings.xml" ]; then
     replace_in_file ">Template<" ">$PROJECT_NAME<" "androidApp/src/main/res/values/strings.xml"
 fi
+# Update theme name
+if [ -f "androidApp/src/main/res/values/themes.xml" ]; then
+    replace_in_file "Theme.Template" "Theme.${PROJECT_NAME}" "androidApp/src/main/res/values/themes.xml"
+fi
 # Update Swift app name
 if [ -f "iosApp/iosApp/TemplateApp.swift" ]; then
     replace_in_file "TemplateApp" "${PROJECT_NAME}App" "iosApp/iosApp/TemplateApp.swift"
@@ -168,6 +172,7 @@ fi
 echo "• Cleaning up template files..."
 rm -f README_TEMPLATE.md 2>/dev/null || true
 rm -f local.properties.template 2>/dev/null || true
+rm -f CLAUDE.md 2>/dev/null || true
 rm -rf docs 2>/dev/null || true
 rm -rf scripts 2>/dev/null || true
 rm -f setup.sh 2>/dev/null || true

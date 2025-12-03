@@ -30,4 +30,5 @@ dependencyResolutionManagement {
 
 include(":androidApp")
 include(":shared")
-include(":baselineprofile")
+// Temporarily disabled - baseline profile plugin not compatible with AGP 9.0-beta03
+// include(":baselineprofile")

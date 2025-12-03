@@ -2,13 +2,12 @@ import com.android.build.api.dsl.ManagedVirtualDevice
 
 plugins {
     alias(libs.plugins.androidLibrary)
-    alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.androidx.baselineprofile)
 }
 
 android {
     namespace = "com.template.baselineprofile"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 28

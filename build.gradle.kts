@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.androidApplication) apply false
     alias(libs.plugins.androidLibrary) apply false
-    alias(libs.plugins.kotlinAndroid) apply false
+    alias(libs.plugins.androidKotlinMultiplatformLibrary) apply false
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.kotlinSerialization) apply false
     alias(libs.plugins.compose.compiler) apply false
@@ -43,7 +43,9 @@ subprojects {
                         "ij_kotlin_space_before_extend_colon" to "true",
                         "ij_kotlin_space_after_extend_colon" to "true",
                         
-                        // Disable rules that conflict with Android/Google style
+                        // Disable rules that conflict with Android/Google style or common patterns
+                        "ktlint_standard_no-wildcard-imports" to "disabled",
+                        "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
                         "disabled_rules" to "package-name,filename,import-ordering"
                     )
                 )
