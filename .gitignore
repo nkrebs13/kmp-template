@@ -1,0 +1,424 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# Android Studio
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+proguard/
+*.log
+
+# iOS
+*.mode1v3
+*.mode2v3
+*.moved-aside
+*.pbxuser
+*.perspectivev3
+**/*sync/
+.sconsign.dblite
+.tags*
+**/.vagrant/
+**/DerivedData/
+Icon?
+**/Pods/
+**/.symlinks/
+profile
+xcuserdata
+**/.generated/
+Flutter/App.framework
+Flutter/Flutter.framework
+Flutter/Flutter.podspec
+Flutter/Generated.xcconfig
+Flutter/ephemeral/
+Flutter/app.flx
+Flutter/app.zip
+Flutter/flutter_assets/
+Flutter/flutter_export_environment.sh
+ServiceDefinitions.json
+Runner/GeneratedPluginRegistrant.*
+*.xcworkspace/
+*.xcuserstate
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# VS Code
+.vscode/
+*.code-workspace
+.history/
+*.vsix
+
+# JetBrains IDEs
+.idea/
+cmake-build-*/
+*.iws
+out/
+.idea_modules/
+atlassian-ide-plugin.xml
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+
+# Kotlin
+.kotlin/
+
+# Compiled class file
+*.class
+
+# Log files
+*.log
+*.log.*
+
+# Package Files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Virtual machine crash logs
+hs_err_pid*
+replay_pid*
+
+# Signing files
+*.jks
+*.keystore
+
+# Google Services
+google-services.json
+GoogleService-Info.plist
+
+# Baseline Profiles
+baselineprofile/generated/
+baselineprofile/build/
+
+# Detekt
+detekt-report.html
+detekt-report.xml
+
+# Spotless
+.spotless/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~.nib
+
+# Node (if using any web components)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Firebase
+.firebase/
+firebase-debug.log
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+fastlane/readme.md
+
+# Version control
+*.orig
+
+# Crashlytics
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+
+# Backup files
+*.bak
+*.backup
+
+# Cache files
+.cache/
+*.cache
+
+# Build outputs
+output/
+outputs/
+
+# Test coverage
+*.exec
+*.ec
+coverage/
+*.lcov
+.nyc_output/
+
+# KSP (Kotlin Symbol Processing)
+build/generated/ksp/
+.ksp/
+
+# Room Database
+*.db-shm
+*.db-wal
+schemas/
+
+# SQLDelight
+*.sq
+sqldelight/
+
+# Realm Database
+*.realm
+*.realm.lock
+*.realm.note
+*.realm.management/
+
+# Ktor
+ktor-client-*.log
+ktor-server-*.log
+
+# Compose Compiler
+**/compose_compiler_config.json
+
+# Kotlin Native
+*.kexe
+*.klib
+konan/
+.konan/
+
+# Multiplatform Mobile
+.kotlin-multiplatform-mobile/
+iosApp/Configuration/
+iosApp/*.xcconfig
+
+# CocoaPods (iOS dependencies)
+iosApp/Podfile.lock
+iosApp/Pods/
+iosApp/*.xcworkspace/
+
+# Xcode User Settings
+iosApp/*.xcodeproj/project.xcworkspace/xcuserdata/
+iosApp/*.xcodeproj/xcuserdata/
+iosApp/*.xcworkspace/xcuserdata/
+
+# SwiftUI Preview
+iosApp/**/Preview\ Content/
+
+# Android Signing
+app/release/
+*.apk.idsig
+*.jks
+keystore.properties
+key.properties
+
+# NDK
+obj/
+*.so
+*.a
+
+# CMake
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# Proguard
+proguard-rules.pro.dump
+mapping.txt
+seeds.txt
+usage.txt
+
+# Lint
+lint-report.html
+lint-results.xml
+lint-results-*.xml
+
+# Test Results
+test-results/
+androidTest-results/
+TEST-*.xml
+
+# Performance
+*.trace
+*.cpuprofile
+
+# Memory Analysis
+*.hprof
+*.heap
+
+# CI/CD
+.github/secrets/
+bitrise.yml
+.circleci/config_backup.yml
+.travis.yml.bak
+
+# Docker (if using containerization)
+.dockerignore
+docker-compose.override.yml
+
+# Terraform (if using infrastructure as code)
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+
+# K8s (if deploying to Kubernetes)
+*.kubeconfig
+
+# IDE Plugins
+.vscode/settings.json.bak
+.idea/dictionaries/
+.idea/shelf/
+.idea/workspace.xml.bak
+
+# Documentation
+docs/_build/
+site/
+
+# Analytics & Monitoring
+amplitude.properties
+mixpanel.properties
+analytics.properties
+
+# Push Notifications
+fcm-*-info.plist
+apns-*.p8
+
+# Social Media SDK
+facebook.properties
+twitter.properties
+
+# Payment SDKs
+stripe.properties
+paypal.properties
+
+# Maps & Location
+maps-api-key.properties
+google-maps-*.json
+
+# ML/AI Models
+*.tflite
+*.onnx
+*.mlmodel
+*.coreml
+
+# Large Media Files (should use Git LFS instead)
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.flv
+*.wav
+*.mp3
+*.aac
+*.ogg
+*.flac
+*.psd
+*.sketch
+*.fig
+*.xd
+
+# Temporary IDE files
+*~
+.#*
+.*.swp
+.*.swo
+
+# macOS Spotlight
+.metadata_never_index
+
+# Backup files from editors
+*.bak
+*~.nib
+*.swp
+*.swo
+
+# JetBrains Fleet
+.fleet/
+
+# Cursor IDE
+.cursor/
+
+# Claude Code
+.claude/
+
+# Xcode Cloud
+iosApp/ci_scripts/
+
+# Swift Package Manager
+iosApp/.build/
+iosApp/Package.resolved
+
+# Misc
+*.hprof
+dump.rdb
