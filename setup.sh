@@ -124,10 +124,27 @@ if [ -f "baselineprofile/src/androidTest/java/com/template/baselineprofile/Basel
     replace_in_file "packageName = \"com.template.android\"" "packageName = \"$PACKAGE_NAME\"" "baselineprofile/src/androidTest/java/com/template/baselineprofile/BaselineProfileGenerator.kt"
 fi
 
-# 4. Update iOS bundle identifier
+# 4. Update iOS bundle identifier and project references
 echo "• Updating iOS configuration..."
 if [ -f "iosApp/iosApp.xcodeproj/project.pbxproj" ]; then
-    replace_in_file "PRODUCT_BUNDLE_IDENTIFIER = com.template.ios" "PRODUCT_BUNDLE_IDENTIFIER = $IOS_BUNDLE_ID" "iosApp/iosApp.xcodeproj/project.pbxproj"
+    # Update bundle identifier (all occurrences)
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s/com\.template\.ios/$IOS_BUNDLE_ID/g" "iosApp/iosApp.xcodeproj/project.pbxproj"
+    else
+        sed -i "s/com\.template\.ios/$IOS_BUNDLE_ID/g" "iosApp/iosApp.xcodeproj/project.pbxproj"
+    fi
+    # Update Swift file references in Xcode project
+    replace_in_file "TemplateApp.swift" "${PROJECT_NAME}App.swift" "iosApp/iosApp.xcodeproj/project.pbxproj"
+fi
+
+# 4b. Update ProGuard rules with new package name
+echo "• Updating ProGuard configuration..."
+if [ -f "androidApp/proguard-rules.pro" ]; then
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s/com\.template/$PACKAGE_NAME/g" "androidApp/proguard-rules.pro"
+    else
+        sed -i "s/com\.template/$PACKAGE_NAME/g" "androidApp/proguard-rules.pro"
+    fi
 fi
 
 # 5. Update app names
@@ -201,6 +218,12 @@ rm -f CLAUDE.md 2>/dev/null || true
 rm -rf docs 2>/dev/null || true
 rm -rf scripts 2>/dev/null || true
 rm -f setup.sh 2>/dev/null || true
+# Remove template-specific community files
+rm -f CONTRIBUTING.md 2>/dev/null || true
+rm -f SECURITY.md 2>/dev/null || true
+rm -f CODE_OF_CONDUCT.md 2>/dev/null || true
+rm -f CHANGELOG.md 2>/dev/null || true
+rm -rf .github 2>/dev/null || true
 
 # 10. Clean up development-specific directories and files
 echo "• Cleaning up development artifacts..."
@@ -215,11 +238,18 @@ rm -rf .cursor 2>/dev/null || true
 
 # 11. Verify template replacement
 echo "• Verifying template replacement..."
-REMAINING=$(grep -r "com\.template" . --include="*.kt" --include="*.kts" --include="*.xml" --exclude-dir=.git 2>/dev/null | wc -l | tr -d ' ')
+# Comprehensive check for template references across all relevant file types
+REMAINING=$(grep -ri "com\.template\|TemplateApp" . \
+    --include="*.kt" --include="*.kts" --include="*.xml" --include="*.swift" \
+    --include="*.plist" --include="*.pro" --include="*.pbxproj" \
+    --exclude-dir=.git --exclude-dir=build 2>/dev/null | wc -l | tr -d ' ')
 if [ "$REMAINING" -gt 0 ]; then
     echo ""
     echo "WARNING: Found $REMAINING occurrences of template references that may need manual review:"
-    grep -r "com\.template" . --include="*.kt" --include="*.kts" --include="*.xml" --exclude-dir=.git -l 2>/dev/null
+    grep -ri "com\.template\|TemplateApp" . \
+        --include="*.kt" --include="*.kts" --include="*.xml" --include="*.swift" \
+        --include="*.plist" --include="*.pro" --include="*.pbxproj" \
+        --exclude-dir=.git --exclude-dir=build -l 2>/dev/null
     echo ""
 else
     echo "  All template references successfully replaced"
