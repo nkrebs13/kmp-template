@@ -7,15 +7,9 @@ This file provides a complete overview of all documentation for this Kotlin Mult
 ### For Template Maintainers
 - **[TEMPLATE_DEVELOPMENT.md](./TEMPLATE_DEVELOPMENT.md)** - Comprehensive maintenance guide
   - Template structure and critical components
-  - Update workflows and maintenance checklists  
+  - Update workflows and maintenance checklists
   - Testing strategies and troubleshooting
   - Related documentation cross-references
-
-- **[CLAUDE_CODE_GUIDE.md](./CLAUDE_CODE_GUIDE.md)** - Claude Code specific guidance
-  - Quick start instructions for Claude Code
-  - Common task patterns and workflows
-  - Code patterns and best practices
-  - Troubleshooting workflows and testing strategies
 
 ### For Template Users
 - **[README_TEMPLATE.md](./README_TEMPLATE.md)** - Complete user guide (becomes README.md)
@@ -29,13 +23,11 @@ This file provides a complete overview of all documentation for this Kotlin Mult
   - Available features and dependencies
   - Customization options and build configuration
 
-### Template Testing System
-Use the **template-verifier agent** in Claude Code for comprehensive template testing:
-- Automated template generation with various configurations
+### CI/CD Testing
+The GitHub Actions workflow provides comprehensive template testing:
+- Automated template generation with various package name patterns
 - Android and iOS build verification
 - Package name validation and structure checking
-- Edge case testing and automatic issue fixing
-- Performance and compatibility testing
 
 ## 🔄 Documentation Cross-References
 
@@ -43,16 +35,13 @@ Use the **template-verifier agent** in Claude Code for comprehensive template te
 All documentation files reference each other to ensure continuity:
 
 ```
-TEMPLATE_DEVELOPMENT.md ←→ CLAUDE_CODE_GUIDE.md
-        ↓                           ↓
-CONFIGURATION.md        ←→   README_TEMPLATE.md
-        ↓                           ↓  
-Template Testing System ←→   User Documentation
+TEMPLATE_DEVELOPMENT.md ←→ CONFIGURATION.md
+        ↓                        ↓
+README_TEMPLATE.md      ←→   CI/CD Testing
 ```
 
 ### File Relationships
 - **TEMPLATE_DEVELOPMENT.md** references all other files for context
-- **CLAUDE_CODE_GUIDE.md** provides tool-specific workflows for all documentation
 - **README_TEMPLATE.md** links to CONFIGURATION.md for detailed setup
 - **CONFIGURATION.md** cross-references TEMPLATE_DEVELOPMENT.md for maintenance
 
@@ -60,9 +49,9 @@ Template Testing System ←→   User Documentation
 
 ### When to Update
 - **After dependency updates**: Update README_TEMPLATE.md and CONFIGURATION.md
-- **After structural changes**: Update TEMPLATE_DEVELOPMENT.md and CLAUDE_CODE_GUIDE.md  
+- **After structural changes**: Update TEMPLATE_DEVELOPMENT.md
 - **After adding features**: Update all user-facing documentation
-- **After testing system changes**: Update template testing documentation
+- **After CI changes**: Update workflow documentation
 
 ### Update Checklist
 - [ ] Update version numbers across all files
@@ -75,12 +64,8 @@ Template Testing System ←→   User Documentation
 
 ### Template-Only Files (Excluded from Generated Projects)
 These files are automatically removed by `setup.sh`:
-- `TEMPLATE_DEVELOPMENT.md`
-- `CLAUDE_CODE_GUIDE.md`
-- `CONFIGURATION.md`
-- `README_TEMPLATE.md`
-- `DOCUMENTATION_INDEX.md`
-- All testing system files
+- `docs/` directory (TEMPLATE_DEVELOPMENT.md, CONFIGURATION.md, etc.)
+- Template-specific scripts and configuration
 
 ### Generated Project Files
 These files are included in generated projects:
@@ -107,13 +92,12 @@ cd test-project
 
 ### Success Metrics
 - ✅ New maintainers can understand and update template
-- ✅ Claude Code can effectively work with template
 - ✅ Users can successfully generate and build projects
 - ✅ Generated projects contain no template-specific documentation
+- ✅ CI tests pass for all package name variations
 - ✅ Documentation stays current with template evolution
 
 ---
 
-**Last Updated**: 2025-09-02
-**Template Version**: 2.1.0+ (Kotlin 2.1.0 | Compose 1.8.0 | AGP 8.12.1 | Gradle 9.0)
-**Documentation Version**: 1.1.0
+**Last Updated**: 2026-01-17
+**Template Version**: 2.3.0 (Kotlin 2.3.0 | Compose 1.10.0 | AGP 9.0.0 | Gradle 9.3.0)

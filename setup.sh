@@ -20,9 +20,25 @@ if [ -z "$PROJECT_NAME" ]; then
     exit 1
 fi
 
+# Validate project name: alphanumeric, starts with letter
+if ! [[ "$PROJECT_NAME" =~ ^[A-Za-z][A-Za-z0-9]*$ ]]; then
+    echo "Error: Project name must start with a letter and contain only alphanumeric characters"
+    exit 1
+fi
+
 read -p "Enter your package name (e.g., com.company.app): " PACKAGE_NAME
 if [ -z "$PACKAGE_NAME" ]; then
     echo "Error: Package name cannot be empty"
+    exit 1
+fi
+
+# Validate package name: lowercase, 2+ parts, Java conventions
+if ! [[ "$PACKAGE_NAME" =~ ^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$ ]]; then
+    echo "Error: Invalid package name format"
+    echo "  - Must be lowercase"
+    echo "  - Must have at least 2 parts separated by dots"
+    echo "  - Each part must start with a letter"
+    echo "  - Example: com.company.app"
     exit 1
 fi
 
@@ -50,14 +66,23 @@ fi
 echo ""
 echo "Starting project setup..."
 
-# Function to replace text in files
+# Function to replace text in files with proper escaping
 replace_in_file() {
+    local search="$1"
+    local replace="$2"
+    local file="$3"
+
+    # Escape special sed characters in search pattern
+    local escaped_search=$(printf '%s\n' "$search" | sed 's/[[\.*^$()+?{|]/\\&/g')
+    # Escape special sed characters in replacement (& and \ and /)
+    local escaped_replace=$(printf '%s\n' "$replace" | sed 's/[&/\]/\\&/g')
+
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
-        sed -i '' "s/$1/$2/g" "$3"
+        sed -i '' "s/$escaped_search/$escaped_replace/g" "$file"
     else
         # Linux
-        sed -i "s/$1/$2/g" "$3"
+        sed -i "s/$escaped_search/$escaped_replace/g" "$file"
     fi
 }
 
@@ -188,7 +213,19 @@ rm -rf .vscode 2>/dev/null || true
 rm -rf .fleet 2>/dev/null || true
 rm -rf .cursor 2>/dev/null || true
 
-# 11. Initialize git repository
+# 11. Verify template replacement
+echo "• Verifying template replacement..."
+REMAINING=$(grep -r "com\.template" . --include="*.kt" --include="*.kts" --include="*.xml" --exclude-dir=.git 2>/dev/null | wc -l | tr -d ' ')
+if [ "$REMAINING" -gt 0 ]; then
+    echo ""
+    echo "WARNING: Found $REMAINING occurrences of template references that may need manual review:"
+    grep -r "com\.template" . --include="*.kt" --include="*.kts" --include="*.xml" --exclude-dir=.git -l 2>/dev/null
+    echo ""
+else
+    echo "  All template references successfully replaced"
+fi
+
+# 12. Initialize git repository
 echo "• Initializing Git repository..."
 if [ ! -d ".git" ]; then
     git init
@@ -201,7 +238,7 @@ fi
 
 echo ""
 echo "================================================"
-echo "    Setup Complete! 🎉"
+echo "    Setup Complete!"
 echo "================================================"
 echo ""
 echo "Your project '$PROJECT_NAME' is ready!"

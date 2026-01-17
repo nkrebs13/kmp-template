@@ -69,7 +69,7 @@ template/
 - Verify file cleanup removes template-specific files
 - Test directory restructuring with new source sets
 
-**Testing**: Use the Template Testing subagent for comprehensive validation
+**Testing**: See Testing Strategy section below for comprehensive validation
 
 ### 3. Build Configuration
 **Files**: `build.gradle.kts`, `androidApp/build.gradle.kts`, `shared/build.gradle.kts`
@@ -115,8 +115,7 @@ template/
 # 3. Test template generation
 ./setup.sh  # Test with sample project
 
-# 4. Run comprehensive tests using template-verifier agent
-# Use Claude Code's template-verifier agent for automated testing
+# 4. Run comprehensive testing (see Testing Strategy section)
 ```
 
 ### 2. Adding New Dependencies
@@ -135,11 +134,11 @@ template/
 
 ## 🧪 Testing Strategy
 
-### Automated Testing (Recommended)
-Use the template-verifier agent in Claude Code for comprehensive automated testing:
-- Template generation with various configurations
+### CI/CD Testing
+The GitHub Actions workflow automatically tests:
+- Template generation with various package name patterns
 - Build verification for Android and iOS
-- Package name validation and edge case testing
+- Package name validation
 
 ### Manual Testing Process
 1. **Template Generation**:
@@ -175,7 +174,6 @@ Use the template-verifier agent in Claude Code for comprehensive automated testi
 
 ## 📚 Related Documentation
 
-- **[CLAUDE_CODE_GUIDE.md](./CLAUDE_CODE_GUIDE.md)**: Claude Code specific guidance
 - **[CONFIGURATION.md](./CONFIGURATION.md)**: Detailed configuration reference
 - **[README_TEMPLATE.md](./README_TEMPLATE.md)**: Template overview and features
 - **setup.sh**: Contains inline documentation for template generation process
@@ -195,7 +193,7 @@ Use the template-verifier agent in Claude Code for comprehensive automated testi
 - **Compilation errors**: May need to update import statements for API changes
 
 ### Solutions
-1. Use template-verifier agent for automated diagnosis
+1. Check CI workflow results for automated diagnosis
 2. Check recent commit history for breaking changes
 3. Test with clean template generation
 4. Compare with known-working version
@@ -219,6 +217,5 @@ This template aims to provide:
 
 ---
 
-**Last Updated**: 2025-12-03
-**Template Version**: 2.2.0 (Kotlin 2.2.21 | Compose 1.9.3 | AGP 9.0.0-beta03 | Gradle 9.2.1)
-**Maintainer**: Template Development Team
+**Last Updated**: 2026-01-17
+**Template Version**: 2.3.0 (Kotlin 2.3.0 | Compose 1.10.0 | AGP 9.0.0 | Gradle 9.3.0)
