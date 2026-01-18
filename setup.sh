@@ -11,6 +11,28 @@ if [ -z "$BASH_VERSION" ]; then
     exit 1
 fi
 
+# Parse command line arguments
+WITH_MCP=false
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --with-mcp) WITH_MCP=true ;;
+        --help|-h)
+            echo "Usage: ./setup.sh [OPTIONS]"
+            echo ""
+            echo "Options:"
+            echo "  --with-mcp    Keep the MCP server directory for AI-assisted project management"
+            echo "  --help, -h    Show this help message"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+    shift
+done
+
 # Verify we're in the correct directory (should have settings.gradle.kts)
 if [ ! -f "settings.gradle.kts" ]; then
     echo "Error: setup.sh must be run from the template project root directory"
@@ -316,6 +338,13 @@ rm -rf .claude 2>/dev/null || true
 rm -rf .vscode 2>/dev/null || true
 rm -rf .fleet 2>/dev/null || true
 rm -rf .cursor 2>/dev/null || true
+
+# Remove MCP server unless --with-mcp was specified
+if [ "$WITH_MCP" = false ]; then
+    rm -rf mcp 2>/dev/null || true
+else
+    echo "  Keeping MCP server directory (--with-mcp specified)"
+fi
 
 # 11. Verify template replacement
 echo "• Verifying template replacement..."
