@@ -5,6 +5,19 @@
 
 set -e
 
+# Ensure we're running in bash (not sh)
+if [ -z "$BASH_VERSION" ]; then
+    echo "Error: This script requires bash. Please run with: bash setup.sh"
+    exit 1
+fi
+
+# Verify we're in the correct directory (should have settings.gradle.kts)
+if [ ! -f "settings.gradle.kts" ]; then
+    echo "Error: setup.sh must be run from the template project root directory"
+    echo "       (the directory containing settings.gradle.kts)"
+    exit 1
+fi
+
 echo "================================================"
 echo "    Kotlin Multiplatform Template Setup"
 echo "================================================"
@@ -44,11 +57,21 @@ fi
 
 read -p "Enter iOS bundle identifier (default: $PACKAGE_NAME): " IOS_BUNDLE_ID
 if [ -z "$IOS_BUNDLE_ID" ]; then
-    IOS_BUNDLE_ID=$PACKAGE_NAME
+    IOS_BUNDLE_ID="$PACKAGE_NAME"
+fi
+
+# Validate iOS bundle identifier (similar rules to package name but allows hyphens)
+if ! [[ "$IOS_BUNDLE_ID" =~ ^[a-zA-Z][a-zA-Z0-9-]*(\.[a-zA-Z][a-zA-Z0-9-]*)+$ ]]; then
+    echo "Error: Invalid iOS bundle identifier format"
+    echo "  - Must have at least 2 parts separated by dots"
+    echo "  - Each part must start with a letter"
+    echo "  - Can contain letters, numbers, and hyphens"
+    echo "  - Example: com.company.my-app"
+    exit 1
 fi
 
 # Convert package name to directory structure
-PACKAGE_PATH=$(echo $PACKAGE_NAME | tr '.' '/')
+PACKAGE_PATH=$(echo "$PACKAGE_NAME" | tr '.' '/')
 
 # Confirmation
 echo ""
@@ -72,29 +95,56 @@ replace_in_file() {
     local replace="$2"
     local file="$3"
 
+    # Check file exists
+    if [ ! -f "$file" ]; then
+        echo "  Warning: File not found: $file"
+        return 1
+    fi
+
     # Escape special sed characters in search pattern
-    local escaped_search=$(printf '%s\n' "$search" | sed 's/[[\.*^$()+?{|]/\\&/g')
+    # Order matters: escape backslash first, then other special chars
+    local escaped_search=$(printf '%s\n' "$search" | sed -e 's/[]\/$*.^[]/\\&/g')
     # Escape special sed characters in replacement (& and \ and /)
-    local escaped_replace=$(printf '%s\n' "$replace" | sed 's/[&/\]/\\&/g')
+    local escaped_replace=$(printf '%s\n' "$replace" | sed -e 's/[\/&]/\\&/g')
 
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
-        sed -i '' "s/$escaped_search/$escaped_replace/g" "$file"
+        sed -i '' "s/${escaped_search}/${escaped_replace}/g" "$file"
     else
         # Linux
-        sed -i "s/$escaped_search/$escaped_replace/g" "$file"
+        sed -i "s/${escaped_search}/${escaped_replace}/g" "$file"
     fi
 }
 
 # Function to replace text in all files in directory
+# Arguments: search_pattern replacement_text directory
 replace_in_directory() {
-    find "$3" -type f \( -name "*.kt" -o -name "*.kts" -o -name "*.xml" -o -name "*.gradle" -o -name "*.properties" -o -name "*.swift" -o -name "*.plist" -o -name "*.yml" -o -name "*.yaml" -o -name "*.json" -o -name "*.md" \) -exec sh -c '
-        if [[ "$OSTYPE" == "darwin"* ]]; then
-            sed -i "" "s/'"$1"'/'"$2"'/g" "$0"
-        else
-            sed -i "s/'"$1"'/'"$2"'/g" "$0"
-        fi
-    ' {} \;
+    local search="$1"
+    local replace="$2"
+    local dir="$3"
+
+    # Escape special sed characters in search pattern
+    local escaped_search=$(printf '%s\n' "$search" | sed -e 's/[]\/$*.^[]/\\&/g')
+    # Escape special sed characters in replacement
+    local escaped_replace=$(printf '%s\n' "$replace" | sed -e 's/[\/&]/\\&/g')
+
+    # Detect OS once and store sed command variant
+    local sed_inplace
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed_inplace=(-i '')
+    else
+        sed_inplace=(-i)
+    fi
+
+    # Find and process files
+    while IFS= read -r -d '' file; do
+        sed "${sed_inplace[@]}" "s/${escaped_search}/${escaped_replace}/g" "$file"
+    done < <(find "$dir" -type f \( \
+        -name "*.kt" -o -name "*.kts" -o -name "*.xml" -o -name "*.gradle" \
+        -o -name "*.properties" -o -name "*.swift" -o -name "*.plist" \
+        -o -name "*.yml" -o -name "*.yaml" -o -name "*.json" -o -name "*.md" \
+        -o -name "*.pbxproj" -o -name "*.pro" \
+    \) -print0 2>/dev/null)
 }
 
 # 1. Update settings.gradle.kts
@@ -104,12 +154,13 @@ replace_in_file "rootProject.name = \"Template\"" "rootProject.name = \"$PROJECT
 # 2. Update package names in all Kotlin files
 echo "• Updating package names..."
 # Replace the full package paths to avoid partial matches
+# Note: replace_in_directory handles escaping internally, use literal strings
 replace_in_directory "com.template.shared" "${PACKAGE_NAME}.shared" "."
-replace_in_directory "com\/template\/shared" "$(echo $PACKAGE_NAME | sed 's/\./\\\//g')\/shared" "."
+replace_in_directory "com/template/shared" "${PACKAGE_PATH}/shared" "."
 replace_in_directory "com.template.android" "$PACKAGE_NAME" "."
-replace_in_directory "com\/template\/android" "$(echo $PACKAGE_NAME | sed 's/\./\\\//g')" "."
+replace_in_directory "com/template/android" "$PACKAGE_PATH" "."
 replace_in_directory "com.template.baselineprofile" "${PACKAGE_NAME}.baselineprofile" "."
-replace_in_directory "com\/template\/baselineprofile" "$(echo $PACKAGE_NAME | sed 's/\./\\\//g')\/baselineprofile" "."
+replace_in_directory "com/template/baselineprofile" "${PACKAGE_PATH}/baselineprofile" "."
 if [ -f "androidApp/src/main/kotlin/MainActivity.kt" ]; then
     replace_in_file "package com.template.android" "package $PACKAGE_NAME" "androidApp/src/main/kotlin/MainActivity.kt"
 fi
@@ -127,12 +178,8 @@ fi
 # 4. Update iOS bundle identifier and project references
 echo "• Updating iOS configuration..."
 if [ -f "iosApp/iosApp.xcodeproj/project.pbxproj" ]; then
-    # Update bundle identifier (all occurrences)
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' "s/com\.template\.ios/$IOS_BUNDLE_ID/g" "iosApp/iosApp.xcodeproj/project.pbxproj"
-    else
-        sed -i "s/com\.template\.ios/$IOS_BUNDLE_ID/g" "iosApp/iosApp.xcodeproj/project.pbxproj"
-    fi
+    # Update bundle identifier (all occurrences) - use replace_in_file for proper escaping
+    replace_in_file "com.template.ios" "$IOS_BUNDLE_ID" "iosApp/iosApp.xcodeproj/project.pbxproj"
     # Update Swift file references in Xcode project
     replace_in_file "TemplateApp.swift" "${PROJECT_NAME}App.swift" "iosApp/iosApp.xcodeproj/project.pbxproj"
 fi
@@ -140,11 +187,7 @@ fi
 # 4b. Update ProGuard rules with new package name
 echo "• Updating ProGuard configuration..."
 if [ -f "androidApp/proguard-rules.pro" ]; then
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' "s/com\.template/$PACKAGE_NAME/g" "androidApp/proguard-rules.pro"
-    else
-        sed -i "s/com\.template/$PACKAGE_NAME/g" "androidApp/proguard-rules.pro"
-    fi
+    replace_in_file "com.template" "$PACKAGE_NAME" "androidApp/proguard-rules.pro"
 fi
 
 # 5. Update app names
@@ -206,8 +249,10 @@ fi
 echo "• Setting up documentation..."
 if [ -f "docs/README_TEMPLATE.md" ]; then
     cp docs/README_TEMPLATE.md README.md
-    replace_in_file "Template" "$PROJECT_NAME" "README.md"
-    replace_in_file "com.template" "$PACKAGE_NAME" "README.md"
+    replace_in_file "Template" "$PROJECT_NAME" "README.md" || true
+    replace_in_file "com.template" "$PACKAGE_NAME" "README.md" || true
+else
+    echo "  Note: docs/README_TEMPLATE.md not found, keeping existing README.md"
 fi
 
 # 9. Remove template-specific files and directories
@@ -260,8 +305,16 @@ echo "• Initializing Git repository..."
 if [ ! -d ".git" ]; then
     git init
     git add .
-    git commit -m "Initial commit: $PROJECT_NAME"
-    echo "  Git repository initialized with initial commit"
+    # Check if git user is configured
+    if git config user.name >/dev/null 2>&1 && git config user.email >/dev/null 2>&1; then
+        git commit -m "Initial commit: $PROJECT_NAME"
+        echo "  Git repository initialized with initial commit"
+    else
+        echo "  Git repository initialized (commit skipped - please configure git user.name and user.email)"
+        echo "  Run: git config user.name \"Your Name\""
+        echo "       git config user.email \"your@email.com\""
+        echo "  Then: git commit -m \"Initial commit: $PROJECT_NAME\""
+    fi
 else
     echo "  Git repository already exists, skipping initialization"
 fi
@@ -281,4 +334,4 @@ echo "  4. For iOS development, open iosApp/iosApp.xcodeproj in Xcode"
 echo "  5. Run './gradlew spotlessApply' to format your code"
 echo "  6. Run './gradlew detekt' to check code quality"
 echo ""
-echo "Happy coding! 🚀"
+echo "Happy coding!"

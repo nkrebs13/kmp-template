@@ -422,3 +422,27 @@ iosApp/Package.resolved
 # Misc
 *.hprof
 dump.rdb
+
+# Additional Security - API Keys and Secrets
+*.p12
+*.p8
+*.pem
+*.cer
+*.der
+secrets.json
+secrets.yml
+secrets.yaml
+*-secrets.*
+*.secret
+api-key.txt
+apikey.txt
+auth.json
+credentials.json
+service-account*.json
+
+# Private keys
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+*.ppk

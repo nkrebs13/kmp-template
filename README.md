@@ -1,6 +1,5 @@
 # Kotlin Multiplatform Template
 
-[![CI](https://github.com/nkrebs13/kmp-template/actions/workflows/ci.yml/badge.svg)](https://github.com/nkrebs13/kmp-template/actions/workflows/ci.yml)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.3.0-7F52FF.svg?logo=kotlin)](https://kotlinlang.org)
 [![Compose Multiplatform](https://img.shields.io/badge/Compose_Multiplatform-1.10.0-4285F4.svg)](https://www.jetbrains.com/lp/compose-multiplatform/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -9,6 +8,8 @@ A production-ready Kotlin Multiplatform template for iOS and Android apps with C
 
 ## Quick Start
 
+### Option 1: Manual Setup
+
 ```bash
 git clone https://github.com/nkrebs13/kmp-template.git my-app
 cd my-app
@@ -16,6 +17,29 @@ cd my-app
 ```
 
 Follow the prompts to customize your project name and package.
+
+### Option 2: MCP Tool (AI-Assisted)
+
+If you're using Claude Code, you can generate projects using the MCP tool:
+
+1. Add the server to your Claude Code MCP configuration:
+   ```json
+   {
+     "mcpServers": {
+       "kmp-template": {
+         "command": "node",
+         "args": ["/path/to/template/mcp/index.js"]
+       }
+     }
+   }
+   ```
+
+2. Ask Claude to generate a project:
+   ```
+   Generate a new KMP project called "WeatherApp" with package "com.example.weather" in ~/Projects/WeatherApp
+   ```
+
+See [`mcp/README.md`](mcp/README.md) for detailed MCP tool documentation.
 
 ## Requirements
 
@@ -57,6 +81,9 @@ template/
 │   └── iosMain/         # iOS-specific implementations
 ├── baselineprofile/     # Android performance optimization
 ├── gradle/              # Build configuration & version catalog
+├── mcp/                 # MCP server for AI-assisted generation
+├── scripts/             # Utility scripts
+│   └── validate.sh      # Template reference validation
 ├── docs/                # Documentation
 └── setup.sh             # Template generation script
 ```
@@ -69,14 +96,11 @@ template/
 | **UI** | Compose Multiplatform | 1.10.0 |
 | **Build** | Android Gradle Plugin | 9.0.0 |
 | **Build** | Gradle | 9.3.0 |
-| **Networking** | Ktor | 3.3.0 |
-| **DI** | Koin | 4.1.1 |
+| **Async** | Kotlinx Coroutines | 1.10.2 |
 | **Serialization** | Kotlinx Serialization | 1.9.0 |
-| **Images** | Coil | 3.3.0 |
-| **Storage** | Room | 2.7.2 |
-| **Logging** | Kermit | 2.0.7 |
+| **Code Quality** | Detekt + Spotless | Latest |
 
-See [`gradle/libs.versions.toml`](gradle/libs.versions.toml) for the complete list of 100+ dependencies.
+This template includes only essential dependencies to keep your project lean. Add additional libraries as needed from [libs.versions.toml](gradle/libs.versions.toml).
 
 ## Build Commands
 
@@ -95,15 +119,58 @@ See [`gradle/libs.versions.toml`](gradle/libs.versions.toml) for the complete li
 # Code Quality
 ./gradlew spotlessApply    # Format code
 ./gradlew detekt           # Static analysis
+
+# Validation (for template development)
+./scripts/validate.sh      # Check for template references
 ```
 
-## Documentation
+## MCP Tool
 
-- **[Getting Started](docs/README_TEMPLATE.md)** - Guide for generated projects
-- **[Configuration](docs/CONFIGURATION.md)** - Customization options
-- **[Template Development](docs/TEMPLATE_DEVELOPMENT.md)** - Maintainer guide
-- **[Contributing](CONTRIBUTING.md)** - How to contribute
-- **[Changelog](CHANGELOG.md)** - Version history
+The template includes an MCP (Model Context Protocol) server that enables AI assistants like Claude Code to generate and validate projects programmatically.
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `generate` | Create a new KMP project from the template |
+| `validate` | Check a project for remaining template references |
+| `list_dependencies` | List all template dependencies with versions |
+
+### Setup
+
+```bash
+cd mcp
+npm install
+```
+
+See [`mcp/README.md`](mcp/README.md) for complete documentation.
+
+## Troubleshooting
+
+### Android Build Fails
+
+1. **Missing SDK**: Create `local.properties` with `sdk.dir=/path/to/android/sdk`
+2. **JDK Version**: Ensure JDK 17+ is installed and `JAVA_HOME` is set
+3. **Gradle Issues**: Try `./gradlew clean` then rebuild
+
+### iOS Build Fails
+
+1. **Xcode Not Found**: Install Xcode from the App Store
+2. **Framework Missing**: Run `./gradlew :shared:linkDebugFrameworkIosSimulatorArm64`
+3. **Signing Issues**: Open in Xcode and configure your development team
+
+### Template References Found
+
+If validation shows remaining template references:
+1. Run `./scripts/validate.sh` to see specific locations
+2. Manually replace any remaining `com.template` or `TemplateApp` references
+3. Re-run validation to confirm
+
+### MCP Tool Issues
+
+1. **Node Version**: Requires Node.js 18+
+2. **Dependencies**: Run `npm install` in the `mcp/` directory
+3. **Permissions**: Ensure `mcp/index.js` is executable
 
 ## Contributing
 

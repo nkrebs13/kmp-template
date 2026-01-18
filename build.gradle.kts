@@ -17,7 +17,7 @@ subprojects {
         kotlin {
             target("**/*.kt")
             targetExclude("**/build/**/*.kt", "**/.*")
-            ktlint("1.7.0")
+            ktlint("1.8.0")
                 .editorConfigOverride(
                     mapOf(
                         // Google & Kotlin style guide settings
@@ -54,7 +54,7 @@ subprojects {
         kotlinGradle {
             target("**/*.gradle.kts")
             targetExclude("**/build/**/*.gradle.kts", "**/.*")
-            ktlint("1.7.0")
+            ktlint("1.8.0")
         }
         
         format("xml") {

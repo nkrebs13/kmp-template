@@ -1,0 +1,27 @@
+{
+  "name": "@kmp-template/mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for KMP template generation and validation",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "kmp-template-mcp": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "mcp",
+    "kotlin",
+    "multiplatform",
+    "template",
+    "kmp"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.2"
+  }
+}

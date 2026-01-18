@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
-    // Temporarily disabled - baseline profile plugin may not be fully compatible with AGP 9.0-beta03
+    // Baseline profile plugin - uncomment when needed for performance optimization
     // alias(libs.plugins.androidx.baselineprofile)
 }
 
@@ -36,6 +36,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            // TODO: Configure your own signing config for production releases
+            // See: https://developer.android.com/studio/publish/app-signing
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -70,10 +72,11 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.appcompat)
 
+    // UI Tooling for Compose previews - using version from shared module's Compose plugin
     implementation(compose.components.uiToolingPreview)
     debugImplementation(compose.uiTooling)
 
-    // Baseline Profiles - temporarily disabled until plugin is compatible with AGP 9.0
+    // Baseline Profiles - uncomment along with the plugin above when needed
     // "baselineProfile"(project(":baselineprofile"))
 }
 
