@@ -10,10 +10,15 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Explicitly declare minimal permissions for security
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build & Lint
     runs-on: macos-14
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,6 +31,9 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation-action@v4
 
       - name: Check formatting
         run: ./gradlew spotlessCheck
@@ -45,6 +53,7 @@ jobs:
   template-test:
     name: Template Generation - ${{ matrix.name }}
     runs-on: macos-14
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -56,8 +65,8 @@ jobs:
             package: io.company.product.mobile.app
             project: DeepApp
           - name: minimal
-            package: app.short
-            project: ShortApp
+            package: app.mini
+            project: MiniApp
     env:
       # Use env vars for matrix values to avoid injection risks
       TEST_PROJECT: ${{ matrix.project }}

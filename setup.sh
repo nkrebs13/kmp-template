@@ -55,6 +55,42 @@ if ! [[ "$PACKAGE_NAME" =~ ^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$ ]]; then
     exit 1
 fi
 
+# Check for Java keywords and reserved words in package name parts
+# This list includes:
+# - All Java keywords (JLS 3.9)
+# - Reserved keywords (const, goto)
+# - Literals that cannot be identifiers (true, false, null)
+# - Underscore (reserved since Java 9)
+# - Contextual keywords that should be avoided (var, yield, record, sealed, permits)
+JAVA_KEYWORDS=(
+    # Keywords
+    "abstract" "assert" "boolean" "break" "byte" "case" "catch" "char" "class"
+    "const" "continue" "default" "do" "double" "else" "enum" "extends" "final"
+    "finally" "float" "for" "goto" "if" "implements" "import" "instanceof" "int"
+    "interface" "long" "native" "new" "package" "private" "protected" "public"
+    "return" "short" "static" "strictfp" "super" "switch" "synchronized" "this"
+    "throw" "throws" "transient" "try" "void" "volatile" "while"
+    # Literals (not technically keywords but cannot be used as identifiers)
+    "true" "false" "null"
+    # Reserved identifier (Java 9+)
+    "_"
+    # Contextual keywords (Java 10+) - technically allowed in some contexts but problematic
+    "var" "yield" "record" "sealed" "permits"
+)
+
+# Build regex pattern from array
+JAVA_KEYWORDS_PATTERN=$(IFS='|'; echo "${JAVA_KEYWORDS[*]}")
+
+IFS='.' read -ra PARTS <<< "$PACKAGE_NAME"
+for part in "${PARTS[@]}"; do
+    if [[ "$part" =~ ^($JAVA_KEYWORDS_PATTERN)$ ]]; then
+        echo "Error: Package name contains Java keyword or reserved word: '$part'"
+        echo "  - Java keywords and reserved words cannot be used as package name components"
+        echo "  - Consider adding a prefix or suffix, e.g., '${part}s' or 'my${part}'"
+        exit 1
+    fi
+done
+
 read -p "Enter iOS bundle identifier (default: $PACKAGE_NAME): " IOS_BUNDLE_ID
 if [ -z "$IOS_BUNDLE_ID" ]; then
     IOS_BUNDLE_ID="$PACKAGE_NAME"

@@ -206,6 +206,38 @@ async function handleGenerate(args) {
     );
   }
 
+  // Check for Java keywords and reserved words in package name parts
+  // This list includes:
+  // - All Java keywords (JLS 3.9)
+  // - Reserved keywords (const, goto)
+  // - Literals that cannot be identifiers (true, false, null)
+  // - Underscore (reserved since Java 9)
+  // - Contextual keywords that should be avoided (var, yield, record, sealed, permits)
+  const javaKeywords = new Set([
+    // Keywords
+    "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char",
+    "class", "const", "continue", "default", "do", "double", "else", "enum",
+    "extends", "final", "finally", "float", "for", "goto", "if", "implements",
+    "import", "instanceof", "int", "interface", "long", "native", "new",
+    "package", "private", "protected", "public", "return", "short", "static",
+    "strictfp", "super", "switch", "synchronized", "this", "throw", "throws",
+    "transient", "try", "void", "volatile", "while",
+    // Literals (not technically keywords but cannot be used as identifiers)
+    "true", "false", "null",
+    // Reserved identifier (Java 9+)
+    "_",
+    // Contextual keywords (Java 10+) - technically allowed in some contexts but problematic
+    "var", "yield", "record", "sealed", "permits"
+  ]);
+  const packageParts = packageName.split(".");
+  for (const part of packageParts) {
+    if (javaKeywords.has(part)) {
+      return errorResponse(
+        `Error: Package name contains Java keyword or reserved word '${part}'. Java keywords and reserved words cannot be used as package name components. Consider adding a prefix or suffix, e.g., '${part}s' or 'my${part}'.`
+      );
+    }
+  }
+
   // Validate and normalize outputDir path
   const pathValidation = validatePath(outputDir);
   if (!pathValidation.isValid) {
