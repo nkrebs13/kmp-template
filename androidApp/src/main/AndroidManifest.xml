@@ -19,11 +19,9 @@
 			</intent-filter>
 		</activity>
 
-		<!-- Profileable allows CPU/memory profiling from shell.
-		     Remove or set android:enabled="false" for production builds with strict security requirements. -->
-		<profileable
-			android:shell="true"
-			android:enabled="true"
+		<!-- Profileable allows CPU/memory profiling from shell. Remove or set 
+			android:enabled="false" for production builds with strict security requirements. -->
+		<profileable android:shell="true" android:enabled="true"
 			tools:targetApi="29" />
 
 	</application>
