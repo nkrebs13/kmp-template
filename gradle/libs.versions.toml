@@ -31,7 +31,7 @@ androidx-test-core = "1.7.0"
 
 # Kotlinx
 kotlinx-coroutines = "1.10.2"
-kotlinx-serialization = "1.9.0"
+kotlinx-serialization = "1.10.0"
 
 # Code Quality
 detekt = "1.23.8"
