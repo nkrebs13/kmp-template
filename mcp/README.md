@@ -81,9 +81,24 @@ Generate a new KMP project called "WeatherApp" with package "com.example.weather
 ```
 
 **Validation Rules:**
-- `projectName`: Must match `/^[A-Za-z][A-Za-z0-9]*$/`
-- `packageName`: Must match `/^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$/`
-- `outputDir`: Must not already exist or must be empty
+
+| Parameter | Rule | Example |
+|-----------|------|---------|
+| `projectName` | Start with letter, alphanumeric only | `MyApp`, `WeatherApp2` |
+| `packageName` | Lowercase, 2+ dot-separated parts | `com.example.app` |
+| `iosBundleId` | Letters/numbers/hyphens, 2+ parts | `com.example.my-app` |
+| `outputDir` | Must not exist or be empty | `~/Projects/MyApp` |
+
+**Package Name Restrictions:**
+- Cannot start with reserved prefixes: `java.`, `javax.`, `android.`, `kotlin.`, `kotlinx.`
+- Cannot contain Java keywords: `class`, `interface`, `enum`, `void`, etc.
+- Each segment must start with a lowercase letter
+
+**iOS Bundle ID Alignment:**
+Both MCP and setup.sh now use identical validation:
+- Pattern: `/^[a-zA-Z][a-zA-Z0-9-]*(\.[a-zA-Z][a-zA-Z0-9-]*)+$/`
+- Allows mixed case, numbers, and hyphens
+- Each segment must start with a letter
 
 ### validate
 
@@ -131,11 +146,24 @@ The server returns structured error responses:
 }
 ```
 
-Common errors:
-- Invalid project name format
-- Invalid package name format
-- Target directory already exists and is not empty
-- Missing setup.sh script
+### Error Reference
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| Invalid project name | Name contains special characters or starts with number | Use alphanumeric characters, start with letter |
+| Invalid package name | Wrong format or reserved prefix | Use `com.company.app` format, avoid `java.`, `kotlin.`, etc. |
+| Package contains Java keyword | Segment is a reserved word | Rename segment (e.g., `class` → `classes`) |
+| Invalid iOS bundle ID | Wrong format | Use `com.company.app` format, hyphens allowed |
+| Target directory not empty | Files exist in output location | Choose empty directory or clean existing |
+| Missing setup.sh | Template corrupted | Re-clone the template repository |
+| Path escapes directory | Path traversal attempt | Use absolute paths without `..` |
+
+### Warnings (Non-blocking)
+
+| Warning | Cause | Action |
+|---------|-------|--------|
+| Git uncommitted changes | Target directory has pending changes | Commit changes before generation |
+| Template references found | Post-generation validation failed | Review and fix listed files |
 
 ## Security
 

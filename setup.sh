@@ -13,14 +13,17 @@ fi
 
 # Parse command line arguments
 WITH_MCP=false
+DRY_RUN=false
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --with-mcp) WITH_MCP=true ;;
+        --dry-run) DRY_RUN=true ;;
         --help|-h)
             echo "Usage: ./setup.sh [OPTIONS]"
             echo ""
             echo "Options:"
             echo "  --with-mcp    Keep the MCP server directory for AI-assisted project management"
+            echo "  --dry-run     Preview changes without modifying any files"
             echo "  --help, -h    Show this help message"
             exit 0
             ;;
@@ -33,6 +36,18 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+# Dry-run helper function
+dry_run_wrap() {
+    local operation="$1"
+    shift
+    if [ "$DRY_RUN" = true ]; then
+        echo "[DRY-RUN] Would: $operation"
+        return 0
+    else
+        "$@"
+    fi
+}
+
 # Verify we're in the correct directory (should have settings.gradle.kts)
 if [ ! -f "settings.gradle.kts" ]; then
     echo "Error: setup.sh must be run from the template project root directory"
@@ -42,6 +57,9 @@ fi
 
 echo "================================================"
 echo "    Kotlin Multiplatform Template Setup"
+if [ "$DRY_RUN" = true ]; then
+    echo "              [DRY-RUN MODE]"
+fi
 echo "================================================"
 echo ""
 
@@ -52,12 +70,22 @@ CURRENT_DIR=$(basename "$PWD")
 read -p "Enter your new project name (e.g., MyAwesomeApp): " PROJECT_NAME
 if [ -z "$PROJECT_NAME" ]; then
     echo "Error: Project name cannot be empty"
+    echo "  - Provide a name like 'MyAwesomeApp' or 'WeatherApp'"
     exit 1
 fi
 
 # Validate project name: alphanumeric, starts with letter
+if ! [[ "$PROJECT_NAME" =~ ^[A-Za-z] ]]; then
+    echo "Error: Project name must start with a letter"
+    echo "  - Got: '$PROJECT_NAME'"
+    echo "  - First character '${PROJECT_NAME:0:1}' is not a letter"
+    exit 1
+fi
 if ! [[ "$PROJECT_NAME" =~ ^[A-Za-z][A-Za-z0-9]*$ ]]; then
-    echo "Error: Project name must start with a letter and contain only alphanumeric characters"
+    echo "Error: Project name contains invalid characters"
+    echo "  - Got: '$PROJECT_NAME'"
+    echo "  - Only letters (A-Z, a-z) and numbers (0-9) are allowed"
+    echo "  - No spaces, hyphens, underscores, or special characters"
     exit 1
 fi
 
@@ -76,6 +104,29 @@ if ! [[ "$PACKAGE_NAME" =~ ^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$ ]]; then
     echo "  - Example: com.company.app"
     exit 1
 fi
+
+# Warn about very long package names (can cause path issues)
+PACKAGE_LENGTH=${#PACKAGE_NAME}
+if [ "$PACKAGE_LENGTH" -gt 100 ]; then
+    echo "WARNING: Package name is very long ($PACKAGE_LENGTH characters)"
+    echo "  Long package names can cause build issues with file path limits"
+    echo "  Consider using a shorter package name"
+    read -p "Continue anyway? (y/n): " LENGTH_CONFIRM
+    if [ "$LENGTH_CONFIRM" != "y" ]; then
+        echo "Setup cancelled"
+        exit 0
+    fi
+fi
+
+# Check for reserved package prefixes (platform/language namespaces)
+case "$PACKAGE_NAME" in
+    java.*|javax.*|android.*|kotlin.*|kotlinx.*)
+        echo "Error: Package name cannot start with reserved prefix"
+        echo "  - 'java.', 'javax.', 'android.', 'kotlin.', 'kotlinx.' are reserved"
+        echo "  - These namespaces are reserved for platform/language libraries"
+        exit 1
+        ;;
+esac
 
 # Check for Java keywords and reserved words in package name parts
 # This list includes:
@@ -131,12 +182,23 @@ fi
 # Convert package name to directory structure
 PACKAGE_PATH=$(echo "$PACKAGE_NAME" | tr '.' '/')
 
-# Confirmation
+# Confirmation with deletion warnings
 echo ""
 echo "Configuration:"
 echo "  Project Name: $PROJECT_NAME"
 echo "  Package Name: $PACKAGE_NAME"
 echo "  iOS Bundle ID: $IOS_BUNDLE_ID"
+echo ""
+echo "The following will be removed during setup:"
+echo "  - CHANGELOG.md, CONTRIBUTING.md, SECURITY.md, CODE_OF_CONDUCT.md"
+echo "  - .github/ directory (workflows, issue templates)"
+echo "  - docs/ directory (template documentation)"
+echo "  - scripts/ directory (template utilities)"
+echo "  - setup.sh (this script)"
+echo "  - CLAUDE.md (AI assistant instructions)"
+if [ "$WITH_MCP" = false ]; then
+    echo "  - mcp/ directory (use --with-mcp to keep)"
+fi
 echo ""
 read -p "Continue with these settings? (y/n): " CONFIRM
 if [ "$CONFIRM" != "y" ]; then
@@ -145,6 +207,23 @@ if [ "$CONFIRM" != "y" ]; then
 fi
 
 echo ""
+
+# Check for uncommitted git changes (warning only, not blocking)
+if [ -d ".git" ]; then
+    if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
+        echo ""
+        echo "WARNING: You have uncommitted changes in this directory."
+        echo "  The setup process will modify files extensively."
+        echo "  Consider committing or stashing your changes first."
+        echo ""
+        read -p "Continue anyway? (y/n): " GIT_CONFIRM
+        if [ "$GIT_CONFIRM" != "y" ]; then
+            echo "Setup cancelled. Commit your changes and try again."
+            exit 0
+        fi
+    fi
+fi
+
 echo "Starting project setup..."
 
 # Function to replace text in files with proper escaping
@@ -157,6 +236,11 @@ replace_in_file() {
     if [ ! -f "$file" ]; then
         echo "  Warning: File not found: $file"
         return 1
+    fi
+
+    # Dry-run mode: just report what would happen
+    if [ "$DRY_RUN" = true ]; then
+        return 0
     fi
 
     # Escape special sed characters in search pattern
@@ -180,6 +264,11 @@ replace_in_directory() {
     local search="$1"
     local replace="$2"
     local dir="$3"
+
+    # Dry-run mode: just return
+    if [ "$DRY_RUN" = true ]; then
+        return 0
+    fi
 
     # Escape special sed characters in search pattern
     local escaped_search=$(printf '%s\n' "$search" | sed -e 's/[]\/$*.^[]/\\&/g')
@@ -265,138 +354,189 @@ fi
 # 6. Rename directories to match new package structure
 echo "• Restructuring directories..."
 
-# Create new package directories
-mkdir -p "shared/src/commonMain/kotlin/$PACKAGE_PATH/shared"
-mkdir -p "shared/src/commonTest/kotlin/$PACKAGE_PATH/shared"
-mkdir -p "shared/src/androidMain/kotlin/$PACKAGE_PATH/shared"
-mkdir -p "shared/src/androidUnitTest/kotlin/$PACKAGE_PATH/shared"
-mkdir -p "shared/src/iosMain/kotlin/$PACKAGE_PATH/shared"
-mkdir -p "shared/src/iosTest/kotlin/$PACKAGE_PATH/shared"
-mkdir -p "androidApp/src/main/kotlin/$PACKAGE_PATH"
-mkdir -p "androidApp/src/androidTest/kotlin/$PACKAGE_PATH"
-mkdir -p "baselineprofile/src/androidTest/java/$PACKAGE_PATH/baselineprofile"
+if [ "$DRY_RUN" = true ]; then
+    echo "[DRY-RUN] Would: Create package directories for $PACKAGE_PATH"
+    echo "[DRY-RUN] Would: Move source files to new package structure"
+    echo "[DRY-RUN] Would: Remove old com/template directories"
+else
+    # Create new package directories
+    mkdir -p "shared/src/commonMain/kotlin/$PACKAGE_PATH/shared"
+    mkdir -p "shared/src/commonTest/kotlin/$PACKAGE_PATH/shared"
+    mkdir -p "shared/src/androidMain/kotlin/$PACKAGE_PATH/shared"
+    mkdir -p "shared/src/androidUnitTest/kotlin/$PACKAGE_PATH/shared"
+    mkdir -p "shared/src/iosMain/kotlin/$PACKAGE_PATH/shared"
+    mkdir -p "shared/src/iosTest/kotlin/$PACKAGE_PATH/shared"
+    mkdir -p "androidApp/src/main/kotlin/$PACKAGE_PATH"
+    mkdir -p "androidApp/src/androidTest/kotlin/$PACKAGE_PATH"
+    mkdir -p "baselineprofile/src/androidTest/java/$PACKAGE_PATH/baselineprofile"
 
-# Move files to new package structure
-if [ -d "shared/src/commonMain/kotlin/com/template/shared" ]; then
-    mv shared/src/commonMain/kotlin/com/template/shared/* "shared/src/commonMain/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
-fi
-if [ -d "shared/src/androidMain/kotlin/com/template/shared" ]; then
-    mv shared/src/androidMain/kotlin/com/template/shared/* "shared/src/androidMain/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
-fi
-if [ -d "shared/src/iosMain/kotlin/com/template/shared" ]; then
-    mv shared/src/iosMain/kotlin/com/template/shared/* "shared/src/iosMain/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
-fi
-if [ -d "androidApp/src/main/kotlin/com/template/android" ]; then
-    mv androidApp/src/main/kotlin/com/template/android/* "androidApp/src/main/kotlin/$PACKAGE_PATH/" 2>/dev/null || true
-fi
-if [ -d "baselineprofile/src/androidTest/java/com/template/baselineprofile" ]; then
-    mv baselineprofile/src/androidTest/java/com/template/baselineprofile/* "baselineprofile/src/androidTest/java/$PACKAGE_PATH/baselineprofile/" 2>/dev/null || true
-fi
+    # Move files to new package structure
+    if [ -d "shared/src/commonMain/kotlin/com/template/shared" ]; then
+        mv shared/src/commonMain/kotlin/com/template/shared/* "shared/src/commonMain/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
+    fi
+    if [ -d "shared/src/androidMain/kotlin/com/template/shared" ]; then
+        mv shared/src/androidMain/kotlin/com/template/shared/* "shared/src/androidMain/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
+    fi
+    if [ -d "shared/src/iosMain/kotlin/com/template/shared" ]; then
+        mv shared/src/iosMain/kotlin/com/template/shared/* "shared/src/iosMain/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
+    fi
+    if [ -d "androidApp/src/main/kotlin/com/template/android" ]; then
+        mv androidApp/src/main/kotlin/com/template/android/* "androidApp/src/main/kotlin/$PACKAGE_PATH/" 2>/dev/null || true
+    fi
+    if [ -d "baselineprofile/src/androidTest/java/com/template/baselineprofile" ]; then
+        mv baselineprofile/src/androidTest/java/com/template/baselineprofile/* "baselineprofile/src/androidTest/java/$PACKAGE_PATH/baselineprofile/" 2>/dev/null || true
+    fi
 
-# Clean up old directories
-rm -rf shared/src/*/kotlin/com/template 2>/dev/null || true
-rm -rf androidApp/src/*/kotlin/com/template 2>/dev/null || true
-rm -rf baselineprofile/src/*/java/com/template 2>/dev/null || true
+    # Clean up old directories
+    rm -rf shared/src/*/kotlin/com/template 2>/dev/null || true
+    rm -rf androidApp/src/*/kotlin/com/template 2>/dev/null || true
+    rm -rf baselineprofile/src/*/java/com/template 2>/dev/null || true
+fi
 
 # 7. Rename Swift files if needed
 if [ -f "iosApp/iosApp/TemplateApp.swift" ]; then
-    mv "iosApp/iosApp/TemplateApp.swift" "iosApp/iosApp/${PROJECT_NAME}App.swift" 2>/dev/null || true
+    if [ "$DRY_RUN" = true ]; then
+        echo "[DRY-RUN] Would: Rename TemplateApp.swift to ${PROJECT_NAME}App.swift"
+    else
+        mv "iosApp/iosApp/TemplateApp.swift" "iosApp/iosApp/${PROJECT_NAME}App.swift"
+        # Verify the rename succeeded
+        if [ ! -f "iosApp/iosApp/${PROJECT_NAME}App.swift" ]; then
+            echo "ERROR: Swift file rename failed"
+            echo "  Expected: iosApp/iosApp/${PROJECT_NAME}App.swift"
+            echo "  Please manually rename iosApp/iosApp/TemplateApp.swift"
+            exit 1
+        fi
+    fi
 fi
 
 # 8. Process README files
 echo "• Setting up documentation..."
 if [ -f "docs/README_TEMPLATE.md" ]; then
-    cp docs/README_TEMPLATE.md README.md
-    replace_in_file "Template" "$PROJECT_NAME" "README.md" || true
-    replace_in_file "com.template" "$PACKAGE_NAME" "README.md" || true
+    if [ "$DRY_RUN" = true ]; then
+        echo "[DRY-RUN] Would: Copy docs/README_TEMPLATE.md to README.md"
+    else
+        cp docs/README_TEMPLATE.md README.md
+        replace_in_file "Template" "$PROJECT_NAME" "README.md" || true
+        replace_in_file "com.template" "$PACKAGE_NAME" "README.md" || true
+    fi
 else
     echo "  Note: docs/README_TEMPLATE.md not found, keeping existing README.md"
 fi
 
 # 9. Remove template-specific files and directories
 echo "• Cleaning up template files..."
-rm -f README_TEMPLATE.md 2>/dev/null || true
-rm -f local.properties.template 2>/dev/null || true
-rm -f CLAUDE.md 2>/dev/null || true
-rm -rf docs 2>/dev/null || true
-rm -rf scripts 2>/dev/null || true
-rm -f setup.sh 2>/dev/null || true
-# Remove template-specific community files
-rm -f CONTRIBUTING.md 2>/dev/null || true
-rm -f SECURITY.md 2>/dev/null || true
-rm -f CODE_OF_CONDUCT.md 2>/dev/null || true
-rm -f CHANGELOG.md 2>/dev/null || true
-rm -rf .github 2>/dev/null || true
+if [ "$DRY_RUN" = true ]; then
+    echo "[DRY-RUN] Would: Remove template files (README_TEMPLATE.md, CLAUDE.md, docs/, scripts/, setup.sh)"
+    echo "[DRY-RUN] Would: Remove community files (CONTRIBUTING.md, SECURITY.md, CODE_OF_CONDUCT.md, CHANGELOG.md, .github/)"
+else
+    rm -f README_TEMPLATE.md 2>/dev/null || true
+    rm -f local.properties.template 2>/dev/null || true
+    rm -f CLAUDE.md 2>/dev/null || true
+    rm -rf docs 2>/dev/null || true
+    rm -rf scripts 2>/dev/null || true
+    rm -f setup.sh 2>/dev/null || true
+    # Remove template-specific community files
+    rm -f CONTRIBUTING.md 2>/dev/null || true
+    rm -f SECURITY.md 2>/dev/null || true
+    rm -f CODE_OF_CONDUCT.md 2>/dev/null || true
+    rm -f CHANGELOG.md 2>/dev/null || true
+    rm -rf .github 2>/dev/null || true
+fi
 
 # 10. Clean up development-specific directories and files
 echo "• Cleaning up development artifacts..."
-rm -rf .gradle 2>/dev/null || true
-rm -rf .idea 2>/dev/null || true
-rm -rf .kotlin 2>/dev/null || true
-rm -rf build 2>/dev/null || true
-rm -rf .claude 2>/dev/null || true
-rm -rf .vscode 2>/dev/null || true
-rm -rf .fleet 2>/dev/null || true
-rm -rf .cursor 2>/dev/null || true
+if [ "$DRY_RUN" = true ]; then
+    echo "[DRY-RUN] Would: Remove development directories (.gradle, .idea, .kotlin, build, .claude, .vscode, .fleet, .cursor)"
+else
+    rm -rf .gradle 2>/dev/null || true
+    rm -rf .idea 2>/dev/null || true
+    rm -rf .kotlin 2>/dev/null || true
+    rm -rf build 2>/dev/null || true
+    rm -rf .claude 2>/dev/null || true
+    rm -rf .vscode 2>/dev/null || true
+    rm -rf .fleet 2>/dev/null || true
+    rm -rf .cursor 2>/dev/null || true
+fi
 
 # Remove MCP server unless --with-mcp was specified
 if [ "$WITH_MCP" = false ]; then
-    rm -rf mcp 2>/dev/null || true
+    if [ "$DRY_RUN" = true ]; then
+        echo "[DRY-RUN] Would: Remove mcp/ directory"
+    else
+        rm -rf mcp 2>/dev/null || true
+    fi
 else
     echo "  Keeping MCP server directory (--with-mcp specified)"
 fi
 
 # 11. Verify template replacement
-echo "• Verifying template replacement..."
-# Comprehensive check for template references across all relevant file types
-REMAINING=$(grep -ri "com\.template\|TemplateApp" . \
-    --include="*.kt" --include="*.kts" --include="*.xml" --include="*.swift" \
-    --include="*.plist" --include="*.pro" --include="*.pbxproj" \
-    --exclude-dir=.git --exclude-dir=build 2>/dev/null | wc -l | tr -d ' ')
-if [ "$REMAINING" -gt 0 ]; then
-    echo ""
-    echo "WARNING: Found $REMAINING occurrences of template references that may need manual review:"
-    grep -ri "com\.template\|TemplateApp" . \
+if [ "$DRY_RUN" = true ]; then
+    echo "• Skipping verification in dry-run mode"
+else
+    echo "• Verifying template replacement..."
+    # Comprehensive check for template references across all relevant file types
+    # Use com\.template\. (with trailing dot) to avoid matching packages like "com.mytemplate.app"
+    # Also match com\.template[^a-z] to catch com.template at end of line or before non-letter
+    REMAINING=$(grep -ri -E "com\.template\.|com\.template[^a-z0-9]|com\.template$|TemplateApp" . \
         --include="*.kt" --include="*.kts" --include="*.xml" --include="*.swift" \
         --include="*.plist" --include="*.pro" --include="*.pbxproj" \
-        --exclude-dir=.git --exclude-dir=build -l 2>/dev/null
-    echo ""
-else
-    echo "  All template references successfully replaced"
+        --exclude-dir=.git --exclude-dir=build 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$REMAINING" -gt 0 ]; then
+        echo ""
+        echo "WARNING: Found $REMAINING occurrences of template references that may need manual review:"
+        grep -ri -E "com\.template\.|com\.template[^a-z0-9]|com\.template$|TemplateApp" . \
+            --include="*.kt" --include="*.kts" --include="*.xml" --include="*.swift" \
+            --include="*.plist" --include="*.pro" --include="*.pbxproj" \
+            --exclude-dir=.git --exclude-dir=build -l 2>/dev/null
+        echo ""
+    else
+        echo "  All template references successfully replaced"
+    fi
 fi
 
 # 12. Initialize git repository
 echo "• Initializing Git repository..."
-if [ ! -d ".git" ]; then
-    git init
-    git add .
-    # Check if git user is configured
-    if git config user.name >/dev/null 2>&1 && git config user.email >/dev/null 2>&1; then
-        git commit -m "Initial commit: $PROJECT_NAME"
-        echo "  Git repository initialized with initial commit"
-    else
-        echo "  Git repository initialized (commit skipped - please configure git user.name and user.email)"
-        echo "  Run: git config user.name \"Your Name\""
-        echo "       git config user.email \"your@email.com\""
-        echo "  Then: git commit -m \"Initial commit: $PROJECT_NAME\""
-    fi
+if [ "$DRY_RUN" = true ]; then
+    echo "[DRY-RUN] Would: Initialize git repository and create initial commit"
 else
-    echo "  Git repository already exists, skipping initialization"
+    if [ ! -d ".git" ]; then
+        git init
+        git add .
+        # Check if git user is configured
+        if git config user.name >/dev/null 2>&1 && git config user.email >/dev/null 2>&1; then
+            git commit -m "Initial commit: $PROJECT_NAME"
+            echo "  Git repository initialized with initial commit"
+        else
+            echo "  Git repository initialized (commit skipped - please configure git user.name and user.email)"
+            echo "  Run: git config user.name \"Your Name\""
+            echo "       git config user.email \"your@email.com\""
+            echo "  Then: git commit -m \"Initial commit: $PROJECT_NAME\""
+        fi
+    else
+        echo "  Git repository already exists, skipping initialization"
+    fi
 fi
 
 echo ""
 echo "================================================"
-echo "    Setup Complete!"
-echo "================================================"
-echo ""
-echo "Your project '$PROJECT_NAME' is ready!"
-echo ""
-echo "Next steps:"
-echo "  1. Create local.properties file with: sdk.dir=/path/to/android/sdk"
-echo "  2. Open the project in Android Studio or your preferred IDE"
-echo "  3. Sync Gradle to download dependencies"
-echo "  4. For iOS development, open iosApp/iosApp.xcodeproj in Xcode"
-echo "  5. Run './gradlew spotlessApply' to format your code"
-echo "  6. Run './gradlew detekt' to check code quality"
-echo ""
-echo "Happy coding!"
+if [ "$DRY_RUN" = true ]; then
+    echo "    Dry-Run Complete!"
+    echo "================================================"
+    echo ""
+    echo "No files were modified. Run without --dry-run to apply changes."
+else
+    echo "    Setup Complete!"
+    echo "================================================"
+    echo ""
+    echo "Your project '$PROJECT_NAME' is ready!"
+    echo ""
+    echo "Next steps:"
+    echo "  1. Create local.properties file with: sdk.dir=/path/to/android/sdk"
+    echo "  2. Open the project in Android Studio or your preferred IDE"
+    echo "  3. Sync Gradle to download dependencies"
+    echo "  4. For iOS development, open iosApp/iosApp.xcodeproj in Xcode"
+    echo "  5. Run './gradlew spotlessApply' to format your code"
+    echo "  6. Run './gradlew detekt' to check code quality"
+    echo ""
+    echo "Happy coding!"
+fi

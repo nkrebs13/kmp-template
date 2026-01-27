@@ -2,238 +2,190 @@
 
 This document provides detailed configuration information for the Kotlin Multiplatform template, including dependency management, build system configuration, and customization options.
 
-## 🎯 Template Overview
+## Template Stack
 
-This is a modern, production-ready template featuring:
-- **Kotlin 2.1.0+** with latest stable compiler
-- **Compose Multiplatform 1.8.0** for shared UI with **Production-Ready iOS Support**
-- **100+ Dependencies** managed via version catalog with latest stable versions
-- **Stable KMP Libraries** - Room 2.7.2, SQLite 2.5.2 now stable with full KMP support
-- **Modern Build System** - AGP 8.12.1, Gradle 9.0 (requires Java 17+)
-- **Comprehensive Tooling** for development and CI/CD
+| Component | Version |
+|-----------|---------|
+| Kotlin | 2.3.0 |
+| Compose Multiplatform | 1.10.0 |
+| Android Gradle Plugin | 9.0.0 |
+| Gradle | 9.3.0 |
+| JDK Requirement | 17+ |
 
-## 📋 Version Catalog System
+## Version Catalog System
 
 All dependencies are managed through `gradle/libs.versions.toml` for centralized version management.
 
-## Available Features
+### Core Versions
 
-### Core Features
-- `COROUTINES` - Kotlinx Coroutines
-- `SERIALIZATION` - Kotlinx Serialization JSON
-- `DATETIME` - Kotlinx DateTime
-- `IMMUTABLE_COLLECTIONS` - Kotlinx Immutable Collections
+| Dependency | Version | Purpose |
+|------------|---------|---------|
+| kotlin | 2.3.0 | Kotlin compiler and stdlib |
+| compose | 1.10.0 | Compose Multiplatform UI framework |
+| agp | 9.0.0 | Android Gradle Plugin |
+| kotlinx-coroutines | 1.10.2 | Async/concurrency |
+| kotlinx-serialization | 1.9.0 | JSON serialization |
 
-### UI Features
-- `COMPOSE_MULTIPLATFORM` - Compose Multiplatform UI framework
-- `ANDROID_LIFECYCLE` - Android Lifecycle components for Compose
-- `ANDROID_SPLASH_SCREEN` - Android splash screen support
+### AndroidX Versions
 
-### Navigation Features (choose one)
-- `VOYAGER_NAVIGATION` - Voyager navigation library
-- `DECOMPOSE_NAVIGATION` - Decompose navigation library
-- `PRECOMPOSE_NAVIGATION` - PreCompose navigation library
+| Dependency | Version | Purpose |
+|------------|---------|---------|
+| androidx-core | 1.17.0 | Android core KTX |
+| androidx-appcompat | 1.7.1 | AppCompat library |
+| androidx-activity | 1.12.2 | Activity APIs |
+| androidx-lifecycle | 2.10.0 | Lifecycle components |
+| androidx-splashscreen | 1.2.0 | Splash screen API |
+| androidx-compose-bom | 2026.01.00 | Compose BOM |
+| androidx-compose-material3 | 1.4.0 | Material 3 components |
 
-### Dependency Injection
-- `KOIN` - Koin dependency injection
+### Code Quality Tools
 
-### Networking
-- `KTOR_CLIENT` - Ktor HTTP client
-- `KTOR_WEBSOCKETS` - Ktor WebSocket support
-
-### Storage & Settings
-- `DATASTORE` - AndroidX DataStore for preferences
-- `MULTIPLATFORM_SETTINGS` - Multiplatform settings library
-- `UUID` - UUID generation
-
-### Image Loading
-- `COIL` - Coil image loading library
-
-### Logging
-- `KERMIT` - Kermit logging library
-
-### Testing
-- `TESTING` - Testing libraries (MockK, Turbine, etc.)
-
-## Feature Sets
-
-Predefined combinations of features for common use cases:
-
-### CORE
-Basic Kotlin multiplatform functionality:
-- Coroutines
-- Serialization
-
-### UI
-Essential UI development:
-- CORE features
-- Compose Multiplatform
-- Android Lifecycle
-
-### NETWORKING
-Network-enabled applications:
-- UI features
-- Ktor Client
-- Koin (for DI)
-
-### FULL_STACK
-Complete feature set for full applications:
-- All UI and Networking features
-- DataStore, Settings, Logging
-- Image loading, UUID generation
-
-### MINIMAL
-Absolute minimum for basic apps:
-- Coroutines only
-
-### TESTING
-Testing-focused configuration:
-- CORE features
-- Testing libraries
+| Tool | Version | Purpose |
+|------|---------|---------|
+| detekt | 1.23.8 | Static analysis |
+| spotless | 8.1.0 | Code formatting |
+| ktlint | 1.8.0 | Kotlin linter |
+| ksp | 2.3.3 | Kotlin Symbol Processing |
 
 ## Configuration Files
 
-### Project-Wide Defaults (`project.properties`)
-
-Set default configuration for all modules:
+### Project-Wide Settings (`gradle.properties`)
 
 ```properties
-# Default feature set for new modules
-default.features.set=CORE
-
-# Global Android settings
-android.compileSdk=34
-android.targetSdk=34
+# Android SDK versions
+android.compileSdk=35
+android.targetSdk=35
 android.minSdk=24
 
-# Project metadata
-project.name=MyApp
-project.group=com.example
-project.version=1.0.0
+# Kotlin settings
+kotlin.code.style=official
+
+# Gradle performance
+org.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8
+org.gradle.parallel=true
+org.gradle.caching=true
 ```
 
-### Module-Specific Configuration (`module.properties`)
+### Module Configuration
 
-Each module can have its own `module.properties` file to override defaults:
-
-```properties
-# Use a predefined feature set
-features.set=FULL_STACK
-
-# Or enable individual features
-feature.koin=true
-feature.voyager.navigation=true
-feature.android.lifecycle=true
-
-# Module-specific Android settings
-android.applicationId=com.example.myapp
-android.versionCode=1
-android.versionName=1.0.0
-android.minSdk=24
-```
-
-## Examples
-
-### Shared Library Module
-For a shared module with comprehensive functionality:
-
-```properties
-# shared/module.properties
-features.set=FULL_STACK
-feature.voyager.navigation=true
-feature.android.lifecycle=true
-android.minSdk=24
-```
-
-### Android App Module
-For an Android app with minimal dependencies:
-
-```properties
-# androidApp/module.properties
-features.set=MINIMAL
-feature.koin=true
-feature.compose.multiplatform=true
-feature.android.splash.screen=true
-feature.android.lifecycle=true
-
-android.applicationId=com.example.myapp
-android.versionCode=1
-android.versionName=1.0.0
-android.minSdk=24
-```
-
-### Feature-Specific Module
-For a module focused on networking:
-
-```properties
-# networkModule/module.properties
-features.set=NETWORKING
-feature.kermit=true
-```
-
-### Testing Module
-For a module dedicated to testing:
-
-```properties
-# testUtils/module.properties
-features.set=TESTING
-```
-
-## Adding New Modules
-
-1. Create your module directory structure
-2. Add a `module.properties` file with desired configuration
-3. Create `build.gradle.kts` that applies the appropriate convention plugin:
+Each module's `build.gradle.kts` can configure:
 
 ```kotlin
-// For KMP modules
-plugins {
-    id("kmp-module")
-}
+android {
+    namespace = "com.example.myapp"
+    compileSdk = libs.versions.android.compileSdk.get().toInt()
 
-// For Android app modules
-plugins {
-    id("android-app")
+    defaultConfig {
+        applicationId = "com.example.myapp"
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        targetSdk = libs.versions.android.targetSdk.get().toInt()
+        versionCode = 1
+        versionName = "1.0.0"
+    }
 }
 ```
 
-4. Add the module to `settings.gradle.kts`
+## Adding Dependencies
 
-## Best Practices
+### From Version Catalog
 
-### Feature Selection
-- Start with **CORE** or **UI** for basic functionality
-- Use **FULL_STACK** for main application modules
-- Use **MINIMAL** for utility modules that don't need many dependencies
-- Enable individual features as needed rather than using large feature sets
+```kotlin
+dependencies {
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.serialization.json)
+}
+```
 
-### Multi-Module Projects
-- Keep shared modules focused with **UI** or **NETWORKING** feature sets
-- Use **MINIMAL** for pure utility modules
-- Enable platform-specific features only where needed
-- Consider creating domain-specific modules with targeted feature sets
+### Adding New Entries
 
-### Performance Considerations
-- Only enable features you actually use to keep build times fast
-- Testing features should only be enabled in test modules
-- Image loading and networking features add significant dependencies
+1. Add version to `[versions]` section:
+   ```toml
+   ktor = "3.2.0"
+   ```
+
+2. Add library to `[libraries]` section:
+   ```toml
+   ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+   ```
+
+3. Use in build files:
+   ```kotlin
+   implementation(libs.ktor.client.core)
+   ```
+
+## Build Configuration
+
+### Debug Builds
+
+```bash
+# Android
+./gradlew :androidApp:assembleDebug
+
+# iOS Simulator (Apple Silicon)
+./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
+
+# iOS Simulator (Intel)
+./gradlew :shared:linkDebugFrameworkIosX64
+```
+
+### Release Builds
+
+```bash
+# Android
+./gradlew :androidApp:assembleRelease
+
+# iOS Device
+./gradlew :shared:linkReleaseFrameworkIosArm64
+```
+
+### Code Quality
+
+```bash
+# Format code
+./gradlew spotlessApply
+
+# Static analysis
+./gradlew detekt
+
+# All checks
+./gradlew check
+```
+
+## Platform-Specific Configuration
+
+### Android
+
+The Android app module (`androidApp/`) uses:
+- Material 3 theming
+- Splash screen API
+- Compose Activity
+- ProGuard rules for release
+
+### iOS
+
+The iOS project (`iosApp/`) uses:
+- SwiftUI App lifecycle
+- Kotlin framework embedding
+- Xcode project configuration
 
 ## Troubleshooting
 
+### Gradle Sync Fails
+
+1. Verify JDK 17+ is installed
+2. Check `JAVA_HOME` environment variable
+3. Run `./gradlew --stop` to stop daemon
+4. Invalidate caches and restart IDE
+
 ### Missing Dependencies
-If you get compilation errors about missing classes:
-1. Check that the required feature is enabled in your `module.properties`
-2. Verify the feature is spelled correctly
-3. Make sure you've synced the project after configuration changes
 
-### Unexpected Dependencies
-If you see dependencies you don't expect:
-1. Check which feature set you're using - feature sets include multiple features
-2. Review your `module.properties` for any accidentally enabled individual features
-3. Consider using individual features instead of feature sets for more control
+1. Sync project with Gradle files
+2. Check version catalog for typos
+3. Verify internet connectivity for dependency download
 
-### Build Errors
-If you encounter build errors after configuration changes:
-1. Clean and rebuild the project
-2. Invalidate caches and restart your IDE
-3. Check that your Gradle wrapper is up to date
+### iOS Build Errors
+
+1. Ensure Xcode 15.0+ is installed
+2. Run `./gradlew :shared:linkDebugFrameworkIosSimulatorArm64`
+3. Clean Xcode derived data
+4. Check framework search paths in Xcode

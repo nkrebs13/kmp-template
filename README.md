@@ -18,6 +18,11 @@ cd my-app
 
 Follow the prompts to customize your project name and package.
 
+**Available flags:**
+- `--with-mcp` - Keep the MCP server directory for AI-assisted project management
+- `--dry-run` - Preview changes without modifying files
+- `--help` - Show help message
+
 ### Option 2: MCP Tool (AI-Assisted)
 
 If you're using Claude Code, you can generate projects using the MCP tool:
@@ -48,7 +53,28 @@ See [`mcp/README.md`](mcp/README.md) for detailed MCP tool documentation.
 | JDK | 17+ | Required for Gradle 9.x |
 | Android Studio | Latest | With KMP plugin |
 | Xcode | 15.0+ | macOS only, for iOS builds |
-| macOS | Required | iOS development requires macOS |
+| macOS | 14.0+ (Sonoma) | Required for iOS development |
+| Node.js | 18.0+ | Only if using MCP server |
+
+### iOS Development Requirements
+
+iOS builds require macOS with Xcode. The template targets:
+- iOS 15.0+ deployment target
+- Xcode 15.0+ (required for Swift 5.9+)
+- Apple Silicon (arm64) or Intel (x64) simulators
+
+## Generation Methods Comparison
+
+| Feature | setup.sh | MCP Tool |
+|---------|----------|----------|
+| Interactive prompts | Yes | No (parameters) |
+| Dry-run preview | Yes | No |
+| Keep MCP directory | `--with-mcp` flag | Always removed |
+| Post-generation validation | Automatic | Automatic |
+| Git initialization | Automatic | Automatic |
+| IDE integration | N/A | Claude Code |
+| Reserved prefix validation | Yes | Yes |
+| iOS bundle ID customization | Yes | Yes |
 
 ## Architecture
 

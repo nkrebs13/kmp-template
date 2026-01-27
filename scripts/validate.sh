@@ -56,9 +56,12 @@ if [ ! -f "$PROJECT_DIR/build.gradle.kts" ] && [ ! -f "$PROJECT_DIR/settings.gra
 fi
 
 # Define patterns to search for
-# - com.template or com/template (package name in code and directory paths)
+# - com.template. (with trailing dot to avoid matching com.mytemplate)
+# - com/template/ (directory paths with trailing slash)
+# - com.template followed by non-alphanumeric (end of package reference)
 # - TemplateApp (class/app name)
-PATTERNS='com[./]template|TemplateApp'
+# This avoids false positives for packages like "com.mytemplate.app"
+PATTERNS='com[./]template[./]|com[./]template[^a-z0-9]|com[./]template$|TemplateApp'
 
 # Define file types to check
 FILE_TYPES=(

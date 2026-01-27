@@ -193,17 +193,39 @@ async function handleGenerate(args) {
   }
 
   // Validate inputs strictly
+  if (!/^[A-Za-z]/.test(projectName)) {
+    return errorResponse(
+      `Error: Project name must start with a letter.\n  Got: "${projectName}"\n  Suggestion: Start with a capital letter like "MyApp" or "WeatherApp"`
+    );
+  }
   if (!/^[A-Za-z][A-Za-z0-9]*$/.test(projectName)) {
     return errorResponse(
-      `Error: Project name must start with a letter and contain only alphanumeric characters. Got: ${projectName}`
+      `Error: Project name contains invalid characters.\n  Got: "${projectName}"\n  Only letters and numbers allowed (no spaces, hyphens, or special characters)`
     );
   }
 
   // Package name validation - allows standard Java package conventions
   if (!/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/.test(packageName)) {
     return errorResponse(
-      `Error: Package name must be lowercase with at least 2 parts separated by dots. Got: ${packageName}`
+      `Error: Invalid package name format.\n  Got: "${packageName}"\n  Requirements:\n  - Must be lowercase\n  - Must have at least 2 parts separated by dots\n  - Each part must start with a letter\n  Suggestion: Use format like "com.company.appname"`
     );
+  }
+
+  // Warn about very long package names
+  if (packageName.length > 100) {
+    return errorResponse(
+      `Error: Package name is very long (${packageName.length} characters).\n  Long package names can cause build issues with file path limits.\n  Suggestion: Use a shorter package name (under 100 characters)`
+    );
+  }
+
+  // Check for reserved package prefixes (platform/language namespaces)
+  const RESERVED_PREFIXES = ['java.', 'javax.', 'android.', 'kotlin.', 'kotlinx.'];
+  for (const prefix of RESERVED_PREFIXES) {
+    if (packageName.startsWith(prefix)) {
+      return errorResponse(
+        `Error: Package name cannot start with reserved prefix '${prefix.slice(0, -1)}'. These namespaces are reserved for platform/language libraries.`
+      );
+    }
   }
 
   // Check for Java keywords and reserved words in package name parts
@@ -260,16 +282,29 @@ async function handleGenerate(args) {
   const bundleId = iosBundleId || packageName;
 
   // Validate bundleId if provided
+  // Apple allows: letters (mixed case), numbers, hyphens; each segment starts with a letter
   if (
     iosBundleId &&
-    !/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/.test(iosBundleId)
+    !/^[a-zA-Z][a-zA-Z0-9-]*(\.[a-zA-Z][a-zA-Z0-9-]*)+$/.test(iosBundleId)
   ) {
     return errorResponse(
-      `Error: iOS bundle ID must be lowercase with at least 2 parts separated by dots. Got: ${iosBundleId}`
+      `Error: iOS bundle ID must have at least 2 parts separated by dots, each starting with a letter. Can contain letters, numbers, and hyphens. Got: ${iosBundleId}`
     );
   }
 
   try {
+    // Check for uncommitted git changes in output directory (warning in response)
+    let gitWarning = "";
+    if (existsSync(join(normalizedOutputDir, ".git"))) {
+      const gitStatus = spawnSync("git", ["status", "--porcelain"], {
+        cwd: normalizedOutputDir,
+        encoding: "utf-8",
+      });
+      if (gitStatus.stdout && gitStatus.stdout.trim()) {
+        gitWarning = "\nWARNING: Target directory has uncommitted git changes. Generation will modify files extensively.\n";
+      }
+    }
+
     // Check if target directory already exists and has content
     // Using Node.js APIs instead of spawning ls for cross-platform compatibility
     if (existsSync(normalizedOutputDir)) {
@@ -330,7 +365,11 @@ async function handleGenerate(args) {
     // Validate the generated project
     const validationResult = validateProject(normalizedOutputDir);
 
-    let responseText = `Successfully generated project "${projectName}" at ${normalizedOutputDir}\n\n`;
+    let responseText = `Successfully generated project "${projectName}" at ${normalizedOutputDir}\n`;
+    if (gitWarning) {
+      responseText += gitWarning;
+    }
+    responseText += `\n`;
     responseText += `Configuration:\n`;
     responseText += `  - Project Name: ${projectName}\n`;
     responseText += `  - Package Name: ${packageName}\n`;
@@ -374,12 +413,13 @@ function validateProject(projectDir) {
   const references = [];
 
   // Search for template references using grep with explicit args (no shell)
+  // Use com\.template\. (with trailing dot) to avoid matching packages like "com.mytemplate.app"
   const result = spawnSync(
     "grep",
     [
       "-ri",
       "-E",
-      "com\\.template|TemplateApp",
+      "com\\.template\\.|com\\.template[^a-z0-9]|com\\.template$|TemplateApp",
       projectDir,
       "--include=*.kt",
       "--include=*.kts",
