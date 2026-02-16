@@ -69,7 +69,7 @@ These files are automatically removed by `setup.sh`:
 
 ### Generated Project Files
 These files are included in generated projects:
-- `README.md` (generated from README.md.template)
+- `README.md` (generated from docs/README_TEMPLATE.md)
 - Standard project documentation (build configs, etc.)
 
 ### Verification
