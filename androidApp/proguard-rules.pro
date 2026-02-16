@@ -30,7 +30,8 @@
     public <methods>;
 }
 
-# Kotlinx Serialization
+# Kotlinx Serialization (kept for template users who add serialization from the
+# version catalog — ProGuard silently ignores rules for absent classes)
 -keepattributes *Annotation*, InnerClasses
 -dontnote kotlinx.serialization.AnnotationsKt
 -keepclassmembers class kotlinx.serialization.json.** {
