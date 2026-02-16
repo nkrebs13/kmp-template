@@ -32,11 +32,23 @@ This MCP server provides three tools for working with the KMP template:
    chmod +x index.js
    ```
 
-### Claude Code Configuration
+### Configuration
 
-Add the server to your Claude Code MCP configuration:
+Add the server to your AI assistant's MCP configuration:
 
-**Claude Code** (add to `.mcp.json` in your project or `~/.claude.json` globally):
+**Claude Code** (`.mcp.json` in your project or `~/.claude.json` globally):
+```json
+{
+  "mcpServers": {
+    "kmp-template": {
+      "command": "node",
+      "args": ["/path/to/template/mcp/index.js"]
+    }
+  }
+}
+```
+
+**Cursor** (`.cursor/mcp.json`):
 ```json
 {
   "mcpServers": {
@@ -188,7 +200,7 @@ The server communicates via stdio using the MCP protocol. For testing:
 
 1. Generate a test project:
    ```bash
-   # Use Claude Code with the MCP server configured
+   # Use an MCP-compatible AI assistant with the server configured
    # Or use the MCP CLI tools
    ```
 

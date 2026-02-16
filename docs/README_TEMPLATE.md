@@ -26,16 +26,16 @@ A Kotlin Multiplatform application for iOS and Android.
 ## 📱 Features
 
 - Cross-platform shared business logic
-- Native UI for each platform
-- Modern architecture with clean separation of concerns
-- Comprehensive testing setup
+- Shared UI with Compose Multiplatform
+- Platform detection via expect/actual pattern
+- Unit testing with kotlin.test
 
 ## 🏗️ Architecture
 
-This app follows Clean Architecture principles with:
-- **Presentation Layer**: Platform-specific UI
-- **Domain Layer**: Business logic and use cases
-- **Data Layer**: Repository pattern with remote and local data sources
+This app uses Kotlin Multiplatform with Compose Multiplatform for shared UI:
+- **Shared Module**: Cross-platform UI and business logic
+- **Android App**: Native Android entry point using shared Compose UI
+- **iOS App**: Native SwiftUI shell hosting shared Compose UI via ComposeUIViewController
 
 ## 🧪 Testing
 
@@ -47,12 +47,10 @@ Run all tests:
 ## 📦 Tech Stack
 
 - **Kotlin Multiplatform**: Code sharing between platforms
-- **Compose UI**: Android UI framework
-- **SwiftUI**: iOS UI framework
-- **Ktor**: Networking
-- **SQLDelight**: Local database
-- **Koin**: Dependency injection
+- **Compose Multiplatform**: Shared UI framework
+- **SwiftUI**: iOS app shell with Compose integration
 - **Kotlinx Coroutines**: Asynchronous programming
+- **Material 3**: Design system
 
 ## 🔧 Development
 
@@ -67,4 +65,4 @@ Run all tests:
 
 ## 📄 License
 
-Copyright © 2024 Template. All rights reserved.
+Copyright © 2026 Template. All rights reserved.

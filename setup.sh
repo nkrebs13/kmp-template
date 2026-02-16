@@ -96,12 +96,12 @@ if [ -z "$PACKAGE_NAME" ]; then
 fi
 
 # Validate package name: lowercase, 2+ parts, Java conventions
-if ! [[ "$PACKAGE_NAME" =~ ^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$ ]]; then
+if ! [[ "$PACKAGE_NAME" =~ ^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$ ]]; then
     echo "Error: Invalid package name format"
     echo "  - Must be lowercase"
     echo "  - Must have at least 2 parts separated by dots"
-    echo "  - Each part must start with a letter"
-    echo "  - Example: com.company.app"
+    echo "  - Each part must start with a letter followed by lowercase letters, numbers, or underscores"
+    echo "  - Example: com.company.app or com.my_company.app"
     exit 1
 fi
 
@@ -195,7 +195,6 @@ echo "  - .github/ directory (workflows, issue templates)"
 echo "  - docs/ directory (template documentation)"
 echo "  - scripts/ directory (template utilities)"
 echo "  - setup.sh (this script)"
-echo "  - CLAUDE.md (AI assistant instructions)"
 if [ "$WITH_MCP" = false ]; then
     echo "  - mcp/ directory (use --with-mcp to keep)"
 fi
@@ -308,9 +307,6 @@ replace_in_directory "com.template.android" "$PACKAGE_NAME" "."
 replace_in_directory "com/template/android" "$PACKAGE_PATH" "."
 replace_in_directory "com.template.baselineprofile" "${PACKAGE_NAME}.baselineprofile" "."
 replace_in_directory "com/template/baselineprofile" "${PACKAGE_PATH}/baselineprofile" "."
-if [ -f "androidApp/src/main/kotlin/MainActivity.kt" ]; then
-    replace_in_file "package com.template.android" "package $PACKAGE_NAME" "androidApp/src/main/kotlin/MainActivity.kt"
-fi
 
 # 3. Update Android application ID
 echo "• Updating Android configuration..."
@@ -426,12 +422,11 @@ fi
 # 9. Remove template-specific files and directories
 echo "• Cleaning up template files..."
 if [ "$DRY_RUN" = true ]; then
-    echo "[DRY-RUN] Would: Remove template files (README_TEMPLATE.md, CLAUDE.md, docs/, scripts/, setup.sh)"
+    echo "[DRY-RUN] Would: Remove template files (README_TEMPLATE.md, docs/, scripts/, setup.sh)"
     echo "[DRY-RUN] Would: Remove community files (CONTRIBUTING.md, SECURITY.md, CODE_OF_CONDUCT.md, CHANGELOG.md, .github/)"
 else
     rm -f README_TEMPLATE.md 2>/dev/null || true
     rm -f local.properties.template 2>/dev/null || true
-    rm -f CLAUDE.md 2>/dev/null || true
     rm -rf docs 2>/dev/null || true
     rm -rf scripts 2>/dev/null || true
     rm -f setup.sh 2>/dev/null || true
