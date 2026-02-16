@@ -1,3 +1,5 @@
+package com.template.shared
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,7 +29,7 @@ fun App() {
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = "Hello, Kotlin Multiplatform!",
+                    text = "Hello, ${getPlatformName()}!",
                     style = MaterialTheme.typography.headlineMedium,
                 )
             }
