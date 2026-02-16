@@ -25,9 +25,11 @@ Follow the prompts to customize your project name and package.
 
 ### Option 2: MCP Tool (AI-Assisted)
 
-If you're using Claude Code, you can generate projects using the MCP tool:
+If you're using an MCP-compatible AI coding assistant, you can generate projects using the MCP tool:
 
-1. Add the server to your Claude Code MCP configuration:
+1. Add the server to your AI assistant's MCP configuration:
+
+   **Claude Code** (`.mcp.json`):
    ```json
    {
      "mcpServers": {
@@ -39,7 +41,19 @@ If you're using Claude Code, you can generate projects using the MCP tool:
    }
    ```
 
-2. Ask Claude to generate a project:
+   **Cursor** (`.cursor/mcp.json`):
+   ```json
+   {
+     "mcpServers": {
+       "kmp-template": {
+         "command": "node",
+         "args": ["/path/to/template/mcp/index.js"]
+       }
+     }
+   }
+   ```
+
+2. Ask your AI assistant to generate a project:
    ```
    Generate a new KMP project called "WeatherApp" with package "com.example.weather" in ~/Projects/WeatherApp
    ```
@@ -72,7 +86,7 @@ iOS builds require macOS with Xcode. The template targets:
 | Keep MCP directory | `--with-mcp` flag | Always removed |
 | Post-generation validation | Automatic | Automatic |
 | Git initialization | Automatic | Automatic |
-| IDE integration | N/A | Claude Code |
+| IDE integration | N/A | AI assistant |
 | Reserved prefix validation | Yes | Yes |
 | iOS bundle ID customization | Yes | Yes |
 
@@ -152,7 +166,7 @@ This template includes only essential dependencies to keep your project lean. Ad
 
 ## MCP Tool
 
-The template includes an MCP (Model Context Protocol) server that enables AI assistants like Claude Code to generate and validate projects programmatically.
+The template includes an MCP (Model Context Protocol) server that enables AI coding assistants to generate and validate projects programmatically.
 
 ### Available Tools
 
