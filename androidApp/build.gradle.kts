@@ -2,8 +2,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
-    // Baseline profile plugin - uncomment when needed for performance optimization
-    // alias(libs.plugins.androidx.baselineprofile)
+    alias(libs.plugins.androidx.baselineprofile)
 }
 
 android {
@@ -76,10 +75,10 @@ dependencies {
     implementation(compose.components.uiToolingPreview)
     debugImplementation(compose.uiTooling)
 
-    // Baseline Profiles - uncomment along with the plugin above when needed
-    // "baselineProfile"(project(":baselineprofile"))
+    "baselineProfile"(project(":baselineprofile"))
+    implementation(libs.androidx.profileinstaller)
 }
 
-// baselineProfile {
-//     dexLayoutOptimization = true
-// }
+baselineProfile {
+    dexLayoutOptimization = true
+}
