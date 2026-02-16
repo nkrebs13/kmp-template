@@ -89,13 +89,44 @@ jobs:
 
       - name: Verify no template references
         run: |
-          FOUND=$(grep -r "com\.template" . --include="*.kt" --include="*.kts" --include="*.xml" --exclude-dir=.git 2>/dev/null | wc -l | tr -d ' ')
+          FOUND=$(grep -rI -E "com[./]template[./]|com[./]template[^a-z0-9]|TemplateApp" . \
+            --include="*.kt" --include="*.kts" --include="*.xml" \
+            --include="*.swift" --include="*.plist" --include="*.pro" \
+            --include="*.pbxproj" --include="*.xcscheme" \
+            --exclude-dir=.git --exclude-dir=build --exclude-dir=.gradle \
+            2>/dev/null | wc -l | tr -d ' ')
           if [ "$FOUND" -gt 0 ]; then
-            echo "ERROR: Found $FOUND files with template references:"
-            grep -r "com\.template" . --include="*.kt" --include="*.kts" --include="*.xml" --exclude-dir=.git -l
+            echo "ERROR: Found template references in generated project:"
+            grep -rI -E "com[./]template[./]|com[./]template[^a-z0-9]|TemplateApp" . \
+              --include="*.kt" --include="*.kts" --include="*.xml" \
+              --include="*.swift" --include="*.plist" --include="*.pro" \
+              --include="*.pbxproj" --include="*.xcscheme" \
+              --exclude-dir=.git --exclude-dir=build --exclude-dir=.gradle
             exit 1
           fi
           echo "No template references found"
+
+      - name: Verify template artifacts removed
+        run: |
+          ERRORS=0
+          for f in setup.sh CHANGELOG.md CONTRIBUTING.md SECURITY.md CODE_OF_CONDUCT.md docs/TEMPLATE_DEVELOPMENT.md docs/CONFIGURATION.md; do
+            if [ -f "$f" ]; then
+              echo "ERROR: Template file not removed: $f"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+          if [ -d ".github" ]; then
+            echo "ERROR: .github directory not removed"
+            ERRORS=$((ERRORS + 1))
+          fi
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "Found $ERRORS template artifacts that should have been removed"
+            exit 1
+          fi
+          echo "All template artifacts properly removed"
+
+      - name: Run tests on generated project
+        run: ./gradlew :shared:testDebugUnitTest
 
       - name: Build generated Android project
         run: ./gradlew :androidApp:assembleDebug
