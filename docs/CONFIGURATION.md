@@ -24,7 +24,7 @@ All dependencies are managed through `gradle/libs.versions.toml` for centralized
 | compose | 1.10.0 | Compose Multiplatform UI framework |
 | agp | 9.0.0 | Android Gradle Plugin |
 | kotlinx-coroutines | 1.10.2 | Async/concurrency |
-| kotlinx-serialization | 1.9.0 | JSON serialization |
+| kotlinx-serialization | 1.10.0 | JSON serialization |
 
 ### AndroidX Versions
 
@@ -53,8 +53,8 @@ All dependencies are managed through `gradle/libs.versions.toml` for centralized
 
 ```properties
 # Android SDK versions
-android.compileSdk=35
-android.targetSdk=35
+android.compileSdk=36
+android.targetSdk=36
 android.minSdk=24
 
 # Kotlin settings

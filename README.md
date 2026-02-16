@@ -137,7 +137,7 @@ template/
 | **Build** | Android Gradle Plugin | 9.0.0 |
 | **Build** | Gradle | 9.3.0 |
 | **Async** | Kotlinx Coroutines | 1.10.2 |
-| **Serialization** | Kotlinx Serialization | 1.9.0 |
+| **Serialization** | Kotlinx Serialization | 1.10.0 |
 | **Code Quality** | Detekt + Spotless | Latest |
 
 This template includes only essential dependencies to keep your project lean. Add additional libraries as needed from [libs.versions.toml](gradle/libs.versions.toml).
