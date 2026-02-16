@@ -47,7 +47,7 @@ jobs:
         run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
 
       - name: Run Tests
-        run: ./gradlew testDebugUnitTest
+        run: ./gradlew :shared:allTests
 
   template-test:
     name: Template Generation - ${{ matrix.name }}
@@ -126,7 +126,7 @@ jobs:
           echo "All template artifacts properly removed"
 
       - name: Run tests on generated project
-        run: ./gradlew :shared:testDebugUnitTest
+        run: ./gradlew :shared:allTests
 
       - name: Build generated Android project
         run: ./gradlew :androidApp:assembleDebug
