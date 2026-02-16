@@ -47,18 +47,6 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 
-# Ktor
--keep class io.ktor.** { *; }
+# Coroutines
 -keep class kotlinx.coroutines.** { *; }
 -dontwarn kotlinx.atomicfu.**
--dontwarn io.netty.**
--dontwarn com.typesafe.**
--dontwarn org.slf4j.**
-
-# SQLDelight
--keep class com.template.shared.database.** { *; }
-
-# Koin
--keep class org.koin.** { *; }
--keep class org.koin.core.** { *; }
--keep class org.koin.dsl.** { *; }

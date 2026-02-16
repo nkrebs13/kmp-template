@@ -36,7 +36,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            // TODO: Configure your own signing config for production releases
+            // Signing: configure your own signing config for production releases
             // See: https://developer.android.com/studio/publish/app-signing
             signingConfig = signingConfigs.getByName("debug")
         }
