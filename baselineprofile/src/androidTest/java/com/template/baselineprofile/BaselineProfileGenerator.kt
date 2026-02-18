@@ -10,18 +10,18 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class BaselineProfileGenerator {
-    
+
     @get:Rule
     val baselineProfileRule = BaselineProfileRule()
 
     @Test
     fun generateBaselineProfile() = baselineProfileRule.collect(
         packageName = "com.template.android",
-        includeInStartupProfile = true
+        includeInStartupProfile = true,
     ) {
         pressHome()
         startActivityAndWait()
-        
+
         // Add interactions to generate a profile
         device.waitForIdle()
     }

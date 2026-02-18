@@ -8,7 +8,8 @@
     "kmp-template-mcp": "./index.js"
   },
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "node --check index.js"
   },
   "keywords": [
     "mcp",

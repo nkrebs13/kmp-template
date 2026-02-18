@@ -25,9 +25,11 @@ Follow the prompts to customize your project name and package.
 
 ### Option 2: MCP Tool (AI-Assisted)
 
-If you're using Claude Code, you can generate projects using the MCP tool:
+If you're using an MCP-compatible AI coding assistant, you can generate projects using the MCP tool:
 
-1. Add the server to your Claude Code MCP configuration:
+1. Add the server to your AI assistant's MCP configuration:
+
+   **Claude Code** (`.mcp.json`):
    ```json
    {
      "mcpServers": {
@@ -39,7 +41,19 @@ If you're using Claude Code, you can generate projects using the MCP tool:
    }
    ```
 
-2. Ask Claude to generate a project:
+   **Cursor** (`.cursor/mcp.json`):
+   ```json
+   {
+     "mcpServers": {
+       "kmp-template": {
+         "command": "node",
+         "args": ["/path/to/template/mcp/index.js"]
+       }
+     }
+   }
+   ```
+
+2. Ask your AI assistant to generate a project:
    ```
    Generate a new KMP project called "WeatherApp" with package "com.example.weather" in ~/Projects/WeatherApp
    ```
@@ -72,7 +86,7 @@ iOS builds require macOS with Xcode. The template targets:
 | Keep MCP directory | `--with-mcp` flag | Always removed |
 | Post-generation validation | Automatic | Automatic |
 | Git initialization | Automatic | Automatic |
-| IDE integration | N/A | Claude Code |
+| IDE integration | N/A | AI assistant |
 | Reserved prefix validation | Yes | Yes |
 | iOS bundle ID customization | Yes | Yes |
 
@@ -124,11 +138,9 @@ template/
 | **Build** | Gradle | 9.3.0 |
 | **Async** | Kotlinx Coroutines | 1.10.2 |
 | **Serialization** | Kotlinx Serialization | 1.10.0 |
-| **Navigation** | Jetpack Compose Navigation | 2.9.0 |
-| **DateTime** | Kotlinx Datetime | 0.6.2 |
 | **Code Quality** | Detekt + Spotless | Latest |
 
-This template includes only essential dependencies to keep your project lean. The version catalog also includes commented-out entries for commonly-needed libraries (see the [Dogfooding Notes](#dogfooding-notes--production-patterns) section below). Uncomment what you need in [libs.versions.toml](gradle/libs.versions.toml).
+This template includes only essential dependencies to keep your project lean. The version catalog also includes entries for commonly-needed libraries that are not wired into module builds by default — add them to your module `dependencies {}` as needed. This includes Jetpack Compose Navigation (2.9.0), Kotlinx DateTime (0.6.2), and commented-out entries for Room, Ktor, Koin, and more (see the [Dogfooding Notes](#dogfooding-notes--production-patterns) section and [libs.versions.toml](gradle/libs.versions.toml)).
 
 ## Build Commands
 
@@ -154,7 +166,7 @@ This template includes only essential dependencies to keep your project lean. Th
 
 ## MCP Tool
 
-The template includes an MCP (Model Context Protocol) server that enables AI assistants like Claude Code to generate and validate projects programmatically.
+The template includes an MCP (Model Context Protocol) server that enables AI coding assistants to generate and validate projects programmatically.
 
 ### Available Tools
 
@@ -384,7 +396,7 @@ E-ink detection uses manufacturer/model matching:
 object EinkDetector {
     private val EINK_MANUFACTURERS = setOf("onyx", "boox", "boyue", "amazon", "kobo", "remarkable")
     fun isEinkDevice(): Boolean {
-        val manufacturer = Build.MANUFACTURER.lowercase()
+        val manufacturer = Build.MANUFACTURER.lowercase(java.util.Locale.ROOT)
         return EINK_MANUFACTURERS.any { manufacturer.contains(it) }
     }
 }
@@ -405,7 +417,7 @@ sealed class Screen(val route: String) {
 }
 ```
 
-The version catalog now includes `androidx-navigation-compose` as an active (non-commented) dependency since navigation is fundamental to any multi-screen app.
+The version catalog includes `androidx-navigation-compose` — add `libs.androidx.navigation.compose` to your module's `dependencies {}` block to use it.
 
 For type-safe navigation with Kotlin Serialization (Navigation 2.8+), define routes as `@Serializable` data objects/classes instead of string-based paths.
 
@@ -521,12 +533,14 @@ val dataModule = module {
 }
 ```
 
-### 10. Version Catalog — Commented Dependencies
+### 10. Version Catalog — Optional Dependencies
 
-The `libs.versions.toml` now includes commented-out entries for libraries you will likely need. Uncomment what applies to your project:
+The `libs.versions.toml` includes entries for libraries you will likely need. Some (Navigation, DateTime) are declared and ready to add to your module `dependencies {}`; others are commented out — uncomment what applies to your project:
 
 | Category | Libraries | When to use |
 |----------|-----------|-------------|
+| **Navigation** | Compose Navigation | Multi-screen apps with type-safe routes |
+| **DateTime** | Kotlinx DateTime | Cross-platform date/time handling |
 | **Storage** | Room, DataStore, SQLite | Local persistence, user preferences |
 | **Networking** | Ktor Client | API communication |
 | **DI** | Koin | Dependency injection (KMP-compatible) |

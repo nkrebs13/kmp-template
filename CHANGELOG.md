@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- expect/actual `Platform.kt` demonstrating KMP's core pattern (Android/iOS implementations)
+- `MainViewController.kt` for iOS Compose UI integration via ComposeUIViewController
+- Unit tests (`PlatformTest.kt`) verifying platform detection across targets
+- iOS Compose integration: ContentView.swift now renders shared Compose UI
+- Dependabot configuration for automated dependency updates (GitHub Actions, npm)
+- CI verification that template artifacts are properly removed after generation
+- CI test execution on generated projects
+- MCP npm test script for syntax validation
+- Multi-client MCP configuration examples (Claude Code, Cursor)
 - MIT License
 - Security policy (SECURITY.md)
 - Code of Conduct (CODE_OF_CONDUCT.md)
@@ -19,10 +28,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dogfooding notes section in README with production patterns from LinkLocker
 - Commented-out version catalog entries for commonly-needed libraries:
   Room, DataStore, WorkManager, Ktor Client, Koin, Coil, Timber, Tink
-- `androidx-navigation-compose` as an active dependency (2.9.0)
-- `kotlinx-datetime` as an active dependency (0.6.2)
+- `androidx-navigation-compose` version catalog entry (2.9.0)
+- `kotlinx-datetime` version catalog entry (0.6.2)
 
 ### Changed
+- Android `MainActivity` now calls shared `App()` instead of duplicating UI
+- Moved all source files into proper package directories (`com/template/shared/`, `com/template/android/`)
+- Added package declarations to all Kotlin source files
+- Baseline profiles fully enabled (previously commented out)
+- `setup.sh` package regex now allows underscores (aligned with MCP server)
+- `build-ios-framework.sh` uses dynamic SDK version detection instead of hardcoded versions
+- `build-ios-framework.sh` REPO_ROOT correctly resolves from scripts/ subdirectory
+- Repositioned MCP documentation as AI-harness agnostic (not Claude Code-specific)
+- CI template verification expanded to check .swift, .plist, .pro, .pbxproj files and TemplateApp pattern
+- ProGuard rules cleaned: removed phantom Ktor/SQLDelight/Koin rules, kept coroutines
+- Updated docs/CONFIGURATION.md: kotlinx-serialization 1.9.0 -> 1.10.0, SDK 35 -> 36
+- Updated docs/TEMPLATE_DEVELOPMENT.md: Kotlin version 2.1.0 -> 2.3.0, fixed file listings
+- Updated docs/README_TEMPLATE.md: removed false library claims, fixed architecture description
+- Updated README.md: kotlinx-serialization version 1.9.0 -> 1.10.0
 - Updated AGP from 9.0.0-beta03 to 9.0.0 (stable)
 - Updated Kotlin from 2.2.21 to 2.3.0
 - Updated Compose Multiplatform from 1.9.3 to 1.10.0
@@ -30,10 +53,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved README with badges and architecture diagram
 - Fixed sed escaping in setup.sh for special characters
 - Expanded version catalog with production-proven library entries (commented out by default)
-- Updated Included Dependencies table to reflect Navigation and DateTime additions
+- Updated dependencies documentation to reflect Navigation and DateTime version catalog entries
 
 ### Removed
+- Dead code: commented-out Preview in MainActivity.kt
+- Unused kotlinx-serialization plugin and dependency from shared/build.gradle.kts
+- Phantom ProGuard rules for Ktor, SQLDelight, Koin (libraries not in template)
+- Duplicate MyApp() composable from MainActivity.kt
+- References to nonexistent CLAUDE_CODE_GUIDE.md and README.md.template
+- CLAUDE.md references from setup.sh (file doesn't exist in repo)
 - Template-specific AI configuration files
+
+### Fixed
+- TODO comment in androidApp/build.gradle.kts that violated detekt ForbiddenComment rule
+- iOS app now actually uses shared KMP code (was purely static SwiftUI)
+- Android app now uses shared UI (was duplicating it)
+- .gitignore AI section uses neutral heading instead of tool-specific
 
 ## [2.2.0] - 2025-12-03
 

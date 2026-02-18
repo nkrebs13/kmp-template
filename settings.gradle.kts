@@ -30,5 +30,4 @@ dependencyResolutionManagement {
 
 include(":androidApp")
 include(":shared")
-// Baseline profile module - uncomment when needed for performance optimization
-// include(":baselineprofile")
+include(":baselineprofile")

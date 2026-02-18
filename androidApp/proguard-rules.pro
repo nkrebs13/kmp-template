@@ -30,7 +30,8 @@
     public <methods>;
 }
 
-# Kotlinx Serialization
+# Kotlinx Serialization (kept for template users who add serialization from the
+# version catalog — ProGuard silently ignores rules for absent classes)
 -keepattributes *Annotation*, InnerClasses
 -dontnote kotlinx.serialization.AnnotationsKt
 -keepclassmembers class kotlinx.serialization.json.** {
@@ -47,18 +48,6 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 
-# Ktor
--keep class io.ktor.** { *; }
+# Coroutines
 -keep class kotlinx.coroutines.** { *; }
 -dontwarn kotlinx.atomicfu.**
--dontwarn io.netty.**
--dontwarn com.typesafe.**
--dontwarn org.slf4j.**
-
-# SQLDelight
--keep class com.template.shared.database.** { *; }
-
-# Koin
--keep class org.koin.** { *; }
--keep class org.koin.core.** { *; }
--keep class org.koin.dsl.** { *; }

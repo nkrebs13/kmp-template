@@ -22,12 +22,10 @@ template/
 
 ### Documentation Files (Template Only)
 ```
-template/
+docs/
 ├── TEMPLATE_DEVELOPMENT.md     # This file - template maintenance
-├── CLAUDE_CODE_GUIDE.md        # Claude Code usage guide  
-├── CONFIGURATION.md            # Detailed configuration documentation
-├── README_TEMPLATE.md          # Template overview (becomes README.md)
-└── README.md.template          # User-facing README template
+├── CONFIGURATION.md            # Detailed configuration reference
+└── README_TEMPLATE.md          # User-facing README (replaces root README.md)
 ```
 
 ## 🔧 Critical Components
@@ -76,7 +74,7 @@ template/
 **Purpose**: Modern KMP build setup with latest best practices
 
 **Key Features**:
-- Kotlin 2.1.0+ with modern compiler options DSL
+- Kotlin 2.3.0 with modern compiler options DSL
 - Compose Multiplatform with stable component access
 - Version catalog references throughout
 - iOS framework configuration for Xcode integration

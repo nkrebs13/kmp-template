@@ -406,10 +406,8 @@ google-maps-*.json
 # JetBrains Fleet
 .fleet/
 
-# Cursor IDE
+# AI coding assistants
 .cursor/
-
-# Claude Code
 .claude/
 
 # Xcode Cloud
