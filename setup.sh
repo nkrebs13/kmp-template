@@ -359,7 +359,7 @@ else
     mkdir -p "shared/src/commonMain/kotlin/$PACKAGE_PATH/shared"
     mkdir -p "shared/src/commonTest/kotlin/$PACKAGE_PATH/shared"
     mkdir -p "shared/src/androidMain/kotlin/$PACKAGE_PATH/shared"
-    mkdir -p "shared/src/androidUnitTest/kotlin/$PACKAGE_PATH/shared"
+    mkdir -p "shared/src/androidHostTest/kotlin/$PACKAGE_PATH/shared"
     mkdir -p "shared/src/iosMain/kotlin/$PACKAGE_PATH/shared"
     mkdir -p "shared/src/iosTest/kotlin/$PACKAGE_PATH/shared"
     mkdir -p "androidApp/src/main/kotlin/$PACKAGE_PATH"
@@ -375,6 +375,15 @@ else
     fi
     if [ -d "shared/src/iosMain/kotlin/com/template/shared" ]; then
         mv shared/src/iosMain/kotlin/com/template/shared/* "shared/src/iosMain/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
+    fi
+    if [ -d "shared/src/commonTest/kotlin/com/template/shared" ]; then
+        mv shared/src/commonTest/kotlin/com/template/shared/* "shared/src/commonTest/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
+    fi
+    if [ -d "shared/src/iosTest/kotlin/com/template/shared" ]; then
+        mv shared/src/iosTest/kotlin/com/template/shared/* "shared/src/iosTest/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
+    fi
+    if [ -d "shared/src/androidHostTest/kotlin/com/template/shared" ]; then
+        mv shared/src/androidHostTest/kotlin/com/template/shared/* "shared/src/androidHostTest/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
     fi
     if [ -d "androidApp/src/main/kotlin/com/template/android" ]; then
         mv androidApp/src/main/kotlin/com/template/android/* "androidApp/src/main/kotlin/$PACKAGE_PATH/" 2>/dev/null || true
