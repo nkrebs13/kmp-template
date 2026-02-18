@@ -18,8 +18,8 @@ Brief description of the changes in this PR.
 - [ ] `./gradlew :androidApp:assembleDebug` builds successfully
 - [ ] `./gradlew :shared:linkDebugFrameworkIosSimulatorArm64` builds successfully
 - [ ] Tested `./setup.sh` with standard package name (e.g., `com.example.myapp`)
-- [ ] Tested `./setup.sh` with deep package name (e.g., `io.company.product.app`)
 - [ ] Verified no `com.template` references remain after setup
+- [ ] (Optional) For `setup.sh` changes: Tested with edge cases (e.g., `io.company.product.app`, `app.short`)
 
 ## Related Issues
 

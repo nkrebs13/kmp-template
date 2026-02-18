@@ -60,13 +60,11 @@ Before contributing, ensure you have:
 
 ### Testing Guidelines
 
-Before submitting a PR, test with multiple package name patterns:
+Before submitting a PR, test template generation with at least the standard package name pattern (`com.example.myapp`). CI automatically tests this configuration.
 
-| Pattern | Example | Tests |
-|---------|---------|-------|
-| Standard | `com.example.myapp` | Common case |
-| Deep | `io.company.product.mobile.app` | Long package paths |
-| Minimal | `app.short` | Edge case |
+For changes to `setup.sh` or package name handling, you may also want to manually test edge cases:
+- **Deep paths**: `io.company.product.mobile.app` (tests long package paths)
+- **Minimal paths**: `app.short` (tests short package names)
 
 ### Code Style
 
