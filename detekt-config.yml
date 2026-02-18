@@ -155,8 +155,6 @@ empty-blocks:
 
 exceptions:
   active: true
-  DeadCalm:
-    active: false
   ExceptionRaisedInUnexpectedLocation:
     active: true
   InstanceOfCheckForException:
@@ -234,6 +232,8 @@ naming:
     excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/iosTest/**']
     functionPattern: '[a-z][a-zA-Z0-9]*'
     excludeClassPattern: '$^'
+    ignoreAnnotated:
+      - 'Composable'
   FunctionParameterNaming:
     active: true
     parameterPattern: '[a-z][A-Za-z0-9]*'
@@ -401,12 +401,11 @@ style:
     active: false
   ForbiddenComment:
     active: true
-    values:
-      - 'FIXME:'
-      - 'STOPSHIP:'
-      - 'TODO:'
+    comments:
+      - value: 'FIXME:'
+      - value: 'STOPSHIP:'
+      - value: 'TODO:'
     allowedPatterns: ''
-    customMessage: ''
   ForbiddenImport:
     active: false
   ForbiddenMethodCall:

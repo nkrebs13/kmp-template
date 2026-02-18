@@ -77,5 +77,9 @@ detekt {
     config.setFrom("$projectDir/detekt-config.yml")
     parallel = true
     autoCorrect = true
+    source.setFrom(
+        "androidApp/src",
+        "shared/src",
+    )
 }
 
