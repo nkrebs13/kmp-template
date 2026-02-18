@@ -19,8 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dogfooding notes section in README with production patterns from LinkLocker
 - Commented-out version catalog entries for commonly-needed libraries:
   Room, DataStore, WorkManager, Ktor Client, Koin, Coil, Timber, Tink
-- `androidx-navigation-compose` as an active dependency (2.9.0)
-- `kotlinx-datetime` as an active dependency (0.6.2)
+- `androidx-navigation-compose` version catalog entry (2.9.0)
+- `kotlinx-datetime` version catalog entry (0.6.2)
 
 ### Changed
 - Updated AGP from 9.0.0-beta03 to 9.0.0 (stable)
@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved README with badges and architecture diagram
 - Fixed sed escaping in setup.sh for special characters
 - Expanded version catalog with production-proven library entries (commented out by default)
-- Updated Included Dependencies table to reflect Navigation and DateTime additions
+- Updated dependencies documentation to reflect Navigation and DateTime version catalog entries
 
 ### Removed
 - Template-specific AI configuration files
