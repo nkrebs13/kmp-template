@@ -34,20 +34,11 @@ jobs:
         with:
           validate-wrappers: true
 
-      - name: Check formatting
-        run: ./gradlew spotlessCheck
+      - name: Check formatting & static analysis
+        run: ./gradlew spotlessCheck detekt
 
-      - name: Run Detekt
-        run: ./gradlew detekt
-
-      - name: Build Android Debug
-        run: ./gradlew :androidApp:assembleDebug
-
-      - name: Build iOS Framework
-        run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
-
-      - name: Run Tests
-        run: ./gradlew :shared:allTests
+      - name: Build & Test
+        run: ./gradlew :androidApp:assembleDebug :shared:linkDebugFrameworkIosSimulatorArm64 :shared:allTests
 
   template-test:
     name: Template Generation
@@ -111,11 +102,5 @@ jobs:
           fi
           echo "All template artifacts properly removed"
 
-      - name: Run tests on generated project
-        run: ./gradlew :shared:allTests
-
-      - name: Build generated Android project
-        run: ./gradlew :androidApp:assembleDebug
-
-      - name: Build generated iOS framework
-        run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
+      - name: Build & test generated project
+        run: ./gradlew :shared:allTests :androidApp:assembleDebug :shared:linkDebugFrameworkIosSimulatorArm64
