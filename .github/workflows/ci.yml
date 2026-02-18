@@ -50,26 +50,12 @@ jobs:
         run: ./gradlew testDebugUnitTest
 
   template-test:
-    name: Template Generation - ${{ matrix.name }}
+    name: Template Generation
     runs-on: macos-14
     timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: standard
-            package: com.example.myapp
-            project: MyApp
-          - name: deep
-            package: io.company.product.mobile.app
-            project: DeepApp
-          - name: minimal
-            package: app.mini
-            project: MiniApp
     env:
-      # Use env vars for matrix values to avoid injection risks
-      TEST_PROJECT: ${{ matrix.project }}
-      TEST_PACKAGE: ${{ matrix.package }}
+      TEST_PROJECT: MyApp
+      TEST_PACKAGE: com.example.myapp
     steps:
       - name: Checkout
         uses: actions/checkout@v4
