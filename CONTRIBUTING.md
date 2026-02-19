@@ -18,8 +18,8 @@ Before contributing, ensure you have:
 1. **Fork the repository** on GitHub
 2. **Clone your fork**:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/template.git
-   cd template
+   git clone https://github.com/YOUR_USERNAME/kmp-template.git
+   cd kmp-template
    ```
 3. **Verify the build**:
    ```bash

@@ -52,18 +52,24 @@ All dependencies are managed through `gradle/libs.versions.toml` for centralized
 ### Project-Wide Settings (`gradle.properties`)
 
 ```properties
-# Android SDK versions
-android.compileSdk=36
-android.targetSdk=36
-android.minSdk=24
+# Gradle performance
+org.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8
+org.gradle.daemon=true
+org.gradle.parallel=true
+org.gradle.caching=true
+org.gradle.configuration-cache=true
+
+# Android settings
+android.useAndroidX=true
+android.nonTransitiveRClass=true
+android.nonFinalResIds=true
 
 # Kotlin settings
 kotlin.code.style=official
+kotlin.mpp.enableCInteropCommonization=true
 
-# Gradle performance
-org.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8
-org.gradle.parallel=true
-org.gradle.caching=true
+# Compose Multiplatform
+compose.multiplatform.stabilityConfigPath=compose-stability.conf
 ```
 
 ### Module Configuration
@@ -73,12 +79,12 @@ Each module's `build.gradle.kts` can configure:
 ```kotlin
 android {
     namespace = "com.example.myapp"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.myapp"
-        minSdk = libs.versions.android.minSdk.get().toInt()
-        targetSdk = libs.versions.android.targetSdk.get().toInt()
+        minSdk = 24
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
     }
@@ -100,7 +106,7 @@ dependencies {
 
 1. Add version to `[versions]` section:
    ```toml
-   ktor = "3.2.0"
+   ktor = "3.1.3"
    ```
 
 2. Add library to `[libraries]` section:
