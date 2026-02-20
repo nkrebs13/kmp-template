@@ -16,6 +16,8 @@ kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
         }
+
+        withHostTest {}
     }
 
     listOf(
@@ -38,6 +40,7 @@ kotlin {
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(libs.kotlinx.coroutines.core)
+            api(libs.kermit)
         }
 
         androidMain.dependencies {

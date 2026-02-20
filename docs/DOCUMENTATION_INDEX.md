@@ -22,12 +22,21 @@ This file provides a complete overview of all documentation for this Kotlin Mult
   - Version catalog system documentation
   - Available features and dependencies
   - Customization options and build configuration
+  - Architecture details: `expect`/`actual` pattern, iOS/Compose bridge, baseline profiles
+  - Compose stability configuration (`compose-stability.conf`)
+  - Scripts reference (`build-ios-framework.sh`)
+  - Code quality configuration (Detekt rules, Spotless formatting)
+
+### For Contributors
+- **[CONTRIBUTING.md](../CONTRIBUTING.md)** - Contribution guide
+  - Prerequisites, development workflow, testing guidelines
+  - Commit conventions and PR process
+  - CI pipeline details (Build & Lint, Template Generation jobs)
 
 ### CI/CD Testing
-The GitHub Actions workflow provides comprehensive template testing:
-- Automated template generation with various package name patterns
-- Android and iOS build verification
-- Package name validation and structure checking
+The GitHub Actions workflow (`.github/workflows/ci.yml`) provides:
+- **Build & Lint**: Formatting, static analysis, Android/iOS builds, shared tests
+- **Template Generation**: End-to-end validation of `setup.sh` output
 
 ## 🔄 Documentation Cross-References
 
@@ -99,5 +108,5 @@ cd test-project
 
 ---
 
-**Last Updated**: 2026-01-17
-**Template Version**: 2.3.0 (Kotlin 2.3.0 | Compose 1.10.0 | AGP 9.0.0 | Gradle 9.3.0)
+**Last Updated**: 2026-02-19
+**Template Version**: 3.0.0 (Kotlin 2.3.0 | Compose 1.10.0 | AGP 9.0.0 | Gradle 9.3.0)

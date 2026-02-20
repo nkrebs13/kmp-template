@@ -556,11 +556,6 @@ async function handleListDependencies() {
       "kotlin",
       "agp",
       "compose",
-      "gradle",
-      "ktor",
-      "koin",
-      "room",
-      "coil",
     ];
     coreKeys.forEach((key) => {
       if (versions[key]) {

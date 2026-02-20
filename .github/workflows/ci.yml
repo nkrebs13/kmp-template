@@ -21,33 +21,24 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Set up JDK 17
-        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
         with:
           java-version: '17'
           distribution: 'temurin'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
+        uses: gradle/actions/setup-gradle@fbcece063590cf3e99cc8f93ed063231c98bf95b # v5
         with:
           validate-wrappers: true
 
-      - name: Check formatting
-        run: ./gradlew spotlessCheck
+      - name: Check formatting & static analysis
+        run: ./gradlew spotlessCheck detekt
 
-      - name: Run Detekt
-        run: ./gradlew detekt
-
-      - name: Build Android Debug
-        run: ./gradlew :androidApp:assembleDebug
-
-      - name: Build iOS Framework
-        run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
-
-      - name: Run Tests
-        run: ./gradlew :shared:allTests
+      - name: Build & Test
+        run: ./gradlew :androidApp:assembleDebug :shared:linkDebugFrameworkIosSimulatorArm64 :shared:allTests
 
   template-test:
     name: Template Generation
@@ -58,16 +49,16 @@ jobs:
       TEST_PACKAGE: com.example.myapp
     steps:
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Set up JDK 17
-        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
         with:
           java-version: '17'
           distribution: 'temurin'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
+        uses: gradle/actions/setup-gradle@fbcece063590cf3e99cc8f93ed063231c98bf95b # v5
         with:
           validate-wrappers: true
 
@@ -113,11 +104,5 @@ jobs:
           fi
           echo "All template artifacts properly removed"
 
-      - name: Run tests on generated project
-        run: ./gradlew :shared:allTests
-
-      - name: Build generated Android project
-        run: ./gradlew :androidApp:assembleDebug
-
-      - name: Build generated iOS framework
-        run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
+      - name: Build & test generated project
+        run: ./gradlew :shared:allTests :androidApp:assembleDebug :shared:linkDebugFrameworkIosSimulatorArm64
