@@ -61,7 +61,7 @@ All historical CVEs identified during the audit are already patched in the versi
 
 ### Dependencies at latest stable
 
-These 15 dependencies are current and require no action:
+These 14 dependencies are current and require no action:
 
 - `androidx-core` 1.17.0, `androidx-appcompat` 1.7.1, `androidx-lifecycle` 2.10.0
 - `androidx-splashscreen` 1.2.0, `androidx-compose-material3` 1.4.0
