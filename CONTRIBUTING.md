@@ -101,6 +101,31 @@ Prefixes:
 4. **Ensure CI passes** (builds, linting, template tests)
 5. **Fill out the PR template** completely
 
+## CI Pipeline
+
+The GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and PR to `main`. It consists of two jobs:
+
+### Build & Lint
+
+Runs on `macos-14` with JDK 17:
+
+1. `spotlessCheck` - Verifies code formatting
+2. `detekt` - Runs static analysis
+3. `:androidApp:assembleDebug` - Builds the Android app
+4. `:shared:linkDebugFrameworkIosSimulatorArm64` - Builds the iOS framework
+5. `:shared:allTests` - Runs shared module tests
+
+### Template Generation
+
+Validates that `setup.sh` produces a working project:
+
+1. Runs `setup.sh` with test inputs (`MyApp` / `com.example.myapp`)
+2. Verifies no `com.template` or `TemplateApp` references remain
+3. Verifies template-only files (`setup.sh`, `CHANGELOG.md`, `docs/TEMPLATE_DEVELOPMENT.md`, `docs/CONFIGURATION.md`, `.github/`, etc.) are removed
+4. Builds and tests the generated project (shared tests, Android build, iOS framework)
+
+Both jobs must pass before a PR can be merged. The workflow uses concurrency groups to cancel in-progress runs when new commits are pushed.
+
 ## What to Contribute
 
 We welcome contributions in these areas:
