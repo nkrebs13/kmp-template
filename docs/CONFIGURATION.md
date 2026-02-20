@@ -43,9 +43,9 @@ All dependencies are managed through `gradle/libs.versions.toml` for centralized
 | Tool | Version | Purpose |
 |------|---------|---------|
 | detekt | 1.23.8 | Static analysis |
-| spotless | 8.1.0 | Code formatting |
+| spotless | 8.2.1 | Code formatting |
 | ktlint | 1.8.0 | Kotlin linter |
-| ksp | 2.3.3 | Kotlin Symbol Processing |
+| ksp | 2.3.6 | Kotlin Symbol Processing |
 
 ## Configuration Files
 
