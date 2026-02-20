@@ -52,8 +52,8 @@ kotlinx-datetime = "0.6.2"
 # Image Loading (uncomment as needed)
 # coil = "3.3.0"
 
-# Logging (uncomment as needed)
-# timber = "5.0.1"
+# Logging
+kermit = "2.0.8"
 
 # Security (uncomment as needed)
 # tink = "1.16.0"
@@ -131,8 +131,8 @@ kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.
 # coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 # coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 
-# Logging (uncomment as needed)
-# timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
+# Logging
+kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 
 # Security (uncomment as needed)
 # tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
