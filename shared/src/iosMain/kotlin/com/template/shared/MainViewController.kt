@@ -6,7 +6,7 @@ import androidx.compose.ui.window.ComposeUIViewController
 @Suppress("FunctionName")
 fun MainViewController() = ComposeUIViewController {
     LaunchedEffect(Unit) {
-        AppLogger.d { "MainViewController created" }
+        AppLogger.i { "MainViewController created" }
     }
     App()
 }

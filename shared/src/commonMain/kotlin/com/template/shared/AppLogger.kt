@@ -9,7 +9,7 @@ import co.touchlab.kermit.platformLogWriter
  * Application-wide logger backed by Kermit.
  *
  * Uses platform-native log writers (Logcat on Android, os_log on iOS).
- * Adjust [Severity] in the config for release builds.
+ * Defaults to [Severity.Info]; lower to [Severity.Debug] during development.
  */
 object AppLogger : Logger(
     config = StaticConfig(
