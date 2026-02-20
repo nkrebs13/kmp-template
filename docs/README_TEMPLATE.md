@@ -41,7 +41,7 @@ This app uses Kotlin Multiplatform with Compose Multiplatform for shared UI:
 
 Run all tests:
 ```bash
-./gradlew test
+./gradlew :shared:allTests
 ```
 
 ## 📦 Tech Stack

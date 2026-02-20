@@ -154,7 +154,7 @@ This template includes only essential dependencies to keep your project lean. Th
 ./gradlew :shared:linkReleaseFrameworkIosArm64
 
 # Testing
-./gradlew testDebugUnitTest
+./gradlew :shared:allTests
 
 # Code Quality
 ./gradlew spotlessApply    # Format code

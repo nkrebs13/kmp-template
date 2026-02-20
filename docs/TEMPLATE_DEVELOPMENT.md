@@ -157,7 +157,7 @@ The GitHub Actions workflow automatically tests:
    ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
    
    # Tests
-   ./gradlew testDebugUnitTest
+   ./gradlew :shared:allTests
    ```
 
 3. **Package Verification**:
