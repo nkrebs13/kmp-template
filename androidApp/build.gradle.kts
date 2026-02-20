@@ -35,9 +35,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            // Signing: configure your own signing config for production releases
-            // See: https://developer.android.com/studio/publish/app-signing
-            signingConfig = signingConfigs.getByName("debug")
+            // Without a release signing config, the generated release APK is unsigned and
+            // cannot be installed until it is signed. See:
+            // https://developer.android.com/studio/publish/app-signing
         }
     }
 
