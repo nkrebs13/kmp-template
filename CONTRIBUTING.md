@@ -121,7 +121,7 @@ Validates that `setup.sh` produces a working project:
 
 1. Runs `setup.sh` with test inputs (`MyApp` / `com.example.myapp`)
 2. Verifies no `com.template` or `TemplateApp` references remain
-3. Verifies template-only files (`setup.sh`, `CHANGELOG.md`, `docs/`, `.github/`, etc.) are removed
+3. Verifies template-only files (`setup.sh`, `CHANGELOG.md`, `docs/TEMPLATE_DEVELOPMENT.md`, `docs/CONFIGURATION.md`, `.github/`, etc.) are removed
 4. Builds and tests the generated project (shared tests, Android build, iOS framework)
 
 Both jobs must pass before a PR can be merged. The workflow uses concurrency groups to cancel in-progress runs when new commits are pushed.
