@@ -53,5 +53,5 @@
 -dontwarn kotlinx.atomicfu.**
 
 # Kermit logging — keep Logger subclass names for readable crash reports
--keep class co.touchlab.kermit.** { *; }
+-keepnames class co.touchlab.kermit.**
 -dontwarn co.touchlab.kermit.**

@@ -13,7 +13,7 @@ import co.touchlab.kermit.platformLogWriter
  */
 object AppLogger : Logger(
     config = StaticConfig(
-        minSeverity = Severity.Debug,
+        minSeverity = Severity.Info,
         logWriterList = listOf(platformLogWriter()),
     ),
     tag = "KmpTemplate",

@@ -40,7 +40,7 @@ kotlin {
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(libs.kotlinx.coroutines.core)
-            api(libs.kermit)
+            implementation(libs.kermit)
         }
 
         androidMain.dependencies {
