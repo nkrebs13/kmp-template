@@ -34,7 +34,7 @@ All historical CVEs identified during the audit are already patched in the versi
 | CVE-2020-29582 | kotlin-stdlib | Medium (5.3) | < 1.4.21 | 1.4.21 | 2.3.0 | Not affected |
 | CVE-2022-24329 | kotlin-stdlib | Medium (5.3) | < 1.6.0 | 1.6.0 | 2.3.0 | Not affected |
 | GHSA-2cfc-865j-gm4w | detekt-core | High (7.3) | < 1.20.0 | 1.20.0 | 1.23.8 | Not affected |
-| CVE-2019-9843 | spotless-plugin | Medium | < 3.20.0 | 3.20.0 | 8.1.0 | Not affected |
+| CVE-2019-9843 | spotless-plugin | Medium | < 3.20.0 | 3.20.0 | 8.2.1 | Not affected |
 | CVE-2026-22816 | Gradle | High (8.6) | 9.0.0–9.2.1 | 9.3.0 | 9.3.0 | Not affected |
 | CVE-2026-22865 | Gradle | High (8.6) | 9.0.0–9.2.1 | 9.3.0 | 9.3.0 | Not affected |
 
@@ -61,7 +61,7 @@ All historical CVEs identified during the audit are already patched in the versi
 
 ### Dependencies at latest stable
 
-These 11 dependencies are current and require no action:
+These 15 dependencies are current and require no action:
 
 - `androidx-core` 1.17.0, `androidx-appcompat` 1.7.1, `androidx-lifecycle` 2.10.0
 - `androidx-splashscreen` 1.2.0, `androidx-compose-material3` 1.4.0
@@ -102,7 +102,7 @@ Both alpha dependencies are confined to the `baselineprofile` module's test infr
 | `kotlinx-datetime` 0.6.2 | Dec 2023 | Irregular | 2 minor versions behind; 0.7.x is current but has breaking changes. Low release velocity. |
 | `detekt` 1.23.8 | Feb 2025 | ~Monthly | Stable 1.x line is well maintained. 2.0 alpha in progress. Known false positives with Kotlin 2.3.0 metadata ([issue #8865](https://github.com/detekt/detekt/issues/8865)). |
 | `ktlint` 1.8.0 | Nov 2024 | ~Quarterly | Active project, no concerns. |
-| `spotless` 8.1.0 | Late 2025 | ~Monthly | Active project, 8.2.1 available. |
+| `spotless` 8.2.1 | Late 2025 | ~Monthly | Active project, up to date as of this scan. |
 
 All other dependencies (JetBrains, Google, AndroidX) are backed by major organizations with regular release cadences and long-term support commitments. No orphaned or unmaintained dependencies were identified.
 
