@@ -409,7 +409,12 @@ style:
   ForbiddenImport:
     active: false
   ForbiddenMethodCall:
-    active: false
+    active: true
+    methods:
+      - reason: 'Use AppLogger instead of println'
+        value: 'kotlin.io.println'
+      - reason: 'Use AppLogger instead of print'
+        value: 'kotlin.io.print'
   ForbiddenSuppress:
     active: false
   ForbiddenVoid:
