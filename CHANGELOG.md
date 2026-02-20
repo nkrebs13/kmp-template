@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- Dogfooding notes section from README (LinkLocker-specific production patterns)
+
+### Fixed
+- Template version references across docs (2.3.0 → 3.0.0)
+- Stale dependency versions in docs/CONFIGURATION.md (Spotless 8.1.0 → 8.2.1, KSP 2.3.3 → 2.3.6)
+- Navigation version in README (2.9.0 → 2.9.7)
+- "Detekt + Spotless | Latest" in README replaced with actual versions
+
 ## [3.0.0] - 2026-02-18
 
 ### Added
