@@ -172,7 +172,7 @@ actual fun getPlatformName(): String = "iOS"
 
 ### iOS/Compose Bridge
 
-The iOS app hosts the shared Compose UI through a two-layer bridge:
+The iOS app hosts the shared Compose UI through a three-layer bridge:
 
 1. **Kotlin side** (`shared/src/iosMain/.../MainViewController.kt`):
    ```kotlin
