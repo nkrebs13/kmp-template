@@ -68,7 +68,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated README.md with badges, architecture diagram, and corrected version references
 - Expanded version catalog with production-proven library entries (commented out by default)
 - Updated dependencies documentation to reflect Navigation and DateTime version catalog entries
-- Fixed sed escaping in setup.sh for special characters
 
 ### Removed
 - Dead code: commented-out Preview in MainActivity.kt
@@ -83,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `kotlinAndroid` plugin (now built into AGP 9.0)
 
 ### Fixed
+- sed escaping in setup.sh for special characters
 - TODO comment in androidApp/build.gradle.kts that violated detekt ForbiddenComment rule
 - iOS app now actually uses shared KMP code (was purely static SwiftUI)
 - Android app now uses shared UI (was duplicating it)
