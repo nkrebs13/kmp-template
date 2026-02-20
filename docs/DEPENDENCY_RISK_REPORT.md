@@ -1,7 +1,7 @@
 # Dependency Risk Report
 
 **Generated:** 2026-02-19
-**Commit:** 56d2e49
+**Commit:** as of this PR
 **Branch:** nightshift/dependency-risk-scan
 
 ---
@@ -38,7 +38,7 @@ All historical CVEs identified during the audit are already patched in the versi
 | CVE-2026-22816 | Gradle | High (8.6) | 9.0.0–9.2.1 | 9.3.0 | 9.3.0 | Not affected |
 | CVE-2026-22865 | Gradle | High (8.6) | 9.0.0–9.2.1 | 9.3.0 | 9.3.0 | Not affected |
 
-**Navigation deep-link bypass** (no CVE assigned): AndroidX Navigation 2.8.1 fixed a vulnerability allowing deep links to bypass destination access control. The project uses 2.9.0, which inherits this fix.
+**Navigation deep-link bypass** (no CVE assigned): AndroidX Navigation 2.8.1 fixed a vulnerability allowing deep links to bypass destination access control. The project uses 2.9.7, which inherits this fix.
 
 ---
 
@@ -56,6 +56,8 @@ All historical CVEs identified during the audit are already patched in the versi
 | `spotless` | 8.1.0 | 8.2.1 | 2 patches | Low — OOM fix for large builds |
 | `kotlinx-datetime` | 0.6.2 | 0.7.1 | 2 minor | Low — **breaking API changes**, requires migration |
 | `androidx-test-uiautomator` | 2.4.0-alpha05 | 2.4.0-alpha07 | 2 alpha | Low — test-only dependency |
+
+> **Note:** The **Current** column in the table above reflects dependency versions *before* applying the changes in this PR. Several of these dependencies are updated as part of this PR; see the **Version Bumps Applied** section for post-PR versions. After merge, updated dependencies will no longer be considered outdated.
 
 ### Dependencies at latest stable
 
@@ -80,12 +82,12 @@ Two active dependencies use pre-release versions:
 - **Justification:** 1.5.x alpha is required for KMP baseline profile support and UiAutomator 2.4 integration features not available in 1.4.x stable.
 - **Mitigation:** Pin to specific alpha version (already done). Monitor for beta/RC promotions.
 
-### 2. `androidx-test-uiautomator` 2.4.0-alpha05
+### 2. `androidx-test-uiautomator` 2.4.0-alpha07
 
 - **Latest stable:** 2.3.0
 - **Risk:** Alpha APIs may change. Used only in instrumented test infrastructure.
 - **Justification:** Required by benchmark-macro-junit4 1.5.x alpha for UiAutomator 2.4 features.
-- **Mitigation:** Test-only dependency with no production impact. Update to 2.4.0-alpha07 to align with latest alpha.
+- **Mitigation:** Test-only dependency with no production impact. Pinned to 2.4.0-alpha07 to align with latest alpha.
 
 ### General alpha risk assessment
 
@@ -118,7 +120,7 @@ uses: actions/setup-java@v4         # Mutable tag
 uses: gradle/actions/setup-gradle@v4  # Mutable tag (third-party)
 ```
 
-**Why this matters:** Mutable tags can be repointed to malicious commits. The March 2025 `tj-actions/changed-files` supply-chain attack (CVE-2025-30066) compromised 23,000+ repositories by rewriting 350+ tags to a commit that exfiltrated CI secrets. CISA issued a formal alert.
+**Why this matters:** Mutable tags can be repointed to malicious commits. There have been real-world supply-chain attacks where attackers gained control of popular GitHub Actions and silently rewrote published tags to malicious commits that exfiltrated CI secrets from thousands of repositories. Security guidance from both GitHub and government agencies recommends pinning third-party actions to immutable commit SHAs instead of mutable tags.
 
 **Recommended SHA-pinned versions:**
 
@@ -137,7 +139,7 @@ uses: gradle/actions/setup-gradle@v4  # Mutable tag (third-party)
 ### Minor Gaps
 
 - **`template-test` job** does not set `validate-wrappers: true` on its `setup-gradle` step. Lower risk since `setup.sh` restructures the project, but consistency is recommended.
-- **No Dependabot configuration** for automatic GitHub Actions updates. Adding a `.github/dependabot.yml` with `package-ecosystem: "github-actions"` would automate SHA pin updates.
+- **Dependabot is configured** (`.github/dependabot.yml` with `github-actions` and `npm` ecosystems on weekly cadence), which will help automate future SHA pin updates once actions are pinned.
 
 ---
 
@@ -148,14 +150,19 @@ uses: gradle/actions/setup-gradle@v4  # Mutable tag (third-party)
 1. **Pin GitHub Actions to commit SHAs** — Replace `@v4` tags with full commit SHAs as listed above. This is the single highest-impact security improvement available.
 2. **Add `validate-wrappers: true`** to the `template-test` job's `setup-gradle` step for consistency.
 
+### Completed in this PR
+
+Items 3–7 were applied as part of this PR (see **Version Bumps Applied** section below):
+
+3. ~~**Update `ksp` 2.3.3 → 2.3.6**~~ — AGP 9.0 circular dependency fix. ✅ Applied.
+4. ~~**Update `androidx-activity` 1.12.2 → 1.12.4**~~ — URI security compat fix. ✅ Applied.
+5. ~~**Update `androidx-navigation-compose` 2.9.0 → 2.9.7**~~ — 7 accumulated patches. ✅ Applied.
+6. ~~**Update `spotless` 8.1.0 → 8.2.1**~~ — OOM fix for large builds. ✅ Applied.
+7. ~~**Update `androidx-test-uiautomator` 2.4.0-alpha05 → 2.4.0-alpha07**~~ — Latest alpha. ✅ Applied.
+
 ### Short-term (next release cycle)
 
-3. **Update `ksp` 2.3.3 → 2.3.6** — Fixes AGP 9.0 circular dependency issue (functional, not security).
-4. **Update `androidx-activity` 1.12.2 → 1.12.4** — URI security compat fix for photo/video pickers.
-5. **Update `androidx-navigation-compose` 2.9.0 → 2.9.7** — 7 accumulated bug fix patches.
-6. **Update `spotless` 8.1.0 → 8.2.1** — Fixes OOM in large multi-project builds.
-7. **Update `androidx-test-uiautomator` 2.4.0-alpha05 → 2.4.0-alpha07** — Latest alpha alignment.
-8. **Update `Gradle wrapper` 9.3.0 → 9.3.1** — Stability patch, embedded Kotlin update.
+8. **Update `Gradle wrapper` 9.3.0 → 9.3.1** — Stability patch, embedded Kotlin update. Not applied in this PR to keep changes scoped to `libs.versions.toml`.
 
 ### Medium-term (planned maintenance)
 
@@ -170,7 +177,7 @@ uses: gradle/actions/setup-gradle@v4  # Mutable tag (third-party)
 
 ### Infrastructure
 
-14. **Add `.github/dependabot.yml`** with `github-actions` ecosystem to automate SHA pin updates weekly.
+14. **Dependabot already configured** — `.github/dependabot.yml` is present with `github-actions` and `npm` ecosystems set to weekly updates; continue to rely on it for automated SHA pin and dependency updates.
 
 ---
 
