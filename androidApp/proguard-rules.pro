@@ -7,9 +7,9 @@
 
 # If your project uses WebView with JS, uncomment the following
 # and specify the fully qualified class name to the JavaScript interface
-# class:
+# class. Only methods annotated with @JavascriptInterface are exposed:
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
+#   @android.webkit.JavascriptInterface <methods>;
 #}
 
 # Uncomment this to preserve the line number information for
@@ -48,8 +48,12 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 
-# Coroutines
--keep class kotlinx.coroutines.** { *; }
+# Coroutines — keep only the internal machinery R8 cannot safely optimize
+-keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
+-keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+-keepclassmembers class kotlinx.coroutines.** {
+    volatile <fields>;
+}
 -dontwarn kotlinx.atomicfu.**
 
 # Kermit logging — keep Logger subclass names for readable crash reports
