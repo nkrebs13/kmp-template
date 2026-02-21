@@ -44,8 +44,10 @@ subprojects {
                         
                         // Disable rules that conflict with Android/Google style or common patterns
                         "ktlint_standard_no-wildcard-imports" to "disabled",
+                        "ktlint_standard_package-name" to "disabled",
+                        "ktlint_standard_filename" to "disabled",
+                        "ktlint_standard_import-ordering" to "disabled",
                         "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
-                        "disabled_rules" to "package-name,filename,import-ordering"
                     )
                 )
         }
