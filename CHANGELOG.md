@@ -1,3 +1,37 @@
+## 2026-02-26
+- fix: migrate deprecated ktlint config and simplify editorconfig globs (#21)
+- chore: remove dead code from build config (#20)
+- fix: harden Android security defaults (#19)
+- fix: pin CI actions, remove debug signing from release, scope profileable to debug (#18)
+- feat: add Kermit multiplatform logging foundation (#17)
+- docs: remove LinkLocker dogfooding section and fix version drift (#16)
+- docs: backfill missing documentation for architecture, CI, and tooling (#15)
+- docs: fix documentation drift with actual build system (#14)
+- test: close test gaps with platform-specific tests and build fixes (#11)
+- chore(deps): dependency risk scan and safe version bumps (#13)
+- perf: optimize build config and consolidate CI Gradle invocations (#10)
+- chore(deps): Bump actions/setup-java from 4 to 5 (#4)
+- chore(deps): Bump actions/checkout from 4 to 6 (#3)
+- chore(deps): Bump gradle/actions from 4 to 5 (#2)
+- docs: promote changelog to v3.0.0 release (#12)
+- chore(deps): Bump @modelcontextprotocol/sdk in /mcp (#5)
+- fix: apply linting and style auto-fixes (#7)
+- ci: reduce template-test to standard check only (#8)
+- docs: dogfooding feedback from LinkLocker production app (#6)
+- feat: comprehensive quality overhaul for production-grade template
+- chore(deps): update kotlinx-serialization to 1.10.0
+- feat: enhance validation and add dry-run mode
+- feat: add --with-mcp flag to optionally keep MCP server
+- chore: use built-in gradle wrapper validation
+- fix: correct Gradle wrapper validation action path
+- fix: add Java keyword validation and CI improvements
+- fix: apply spotless XML formatting to AndroidManifest.xml
+- fix: add gradle wrapper jar to repository
+- feat(mcp): add MCP tool for AI-assisted project generation
+- fix(template): iteration 1 improvements
+- feat: polish template for public release
+- fix: AGP 9.0 compatibility and template verification fixes
+- chore: re-architect documentation and update all dependencies
 # Changelog
 
 All notable changes to this project will be documented in this file.
