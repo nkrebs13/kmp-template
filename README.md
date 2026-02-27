@@ -224,3 +224,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Template Version:** 3.0.0 | **Kotlin:** 2.3.0 | **Compose:** 1.10.0 | **AGP:** 9.0.0 | **Gradle:** 9.3.0
+
+## Usage
+
+This section is a placeholder for usage instructions. Please update as needed.
+
