@@ -134,9 +134,9 @@ kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 # Security (uncomment as needed)
 # tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
 
-# Gradle Plugins (for buildSrc, uncomment as needed)
+# Gradle Plugins (for build-logic)
+android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 # kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
-# android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 # compose-gradlePlugin = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "compose-plugin" }
 
 [plugins]

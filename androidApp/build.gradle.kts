@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.androidx.baselineprofile)
+    id("kmptemplate.android.app")
 }
 
 android {
@@ -13,8 +14,7 @@ android {
         applicationId = "com.template.android"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        // versionCode and versionName set by kmptemplate.android.app convention plugin (CalVer)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -38,16 +38,7 @@ android {
         }
     }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-        }
-    }
+    // compileOptions set by kmptemplate.android.app convention plugin
 
     buildFeatures {
         compose = true

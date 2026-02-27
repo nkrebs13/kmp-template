@@ -3,8 +3,28 @@ name: CI
 on:
   push:
     branches: [main]
+    paths:
+      - 'androidApp/**'
+      - 'shared/**'
+      - 'build-logic/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'version.properties'
+      - '.github/workflows/ci.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'androidApp/**'
+      - 'shared/**'
+      - 'build-logic/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'version.properties'
+      - '.github/workflows/ci.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -36,6 +56,9 @@ jobs:
 
       - name: Check formatting & static analysis
         run: ./gradlew spotlessCheck detekt
+
+      - name: Print version
+        run: ./gradlew :androidApp:printVersion
 
       - name: Build & Test
         run: ./gradlew :androidApp:assembleDebug :shared:linkDebugFrameworkIosSimulatorArm64 :shared:allTests
