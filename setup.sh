@@ -481,6 +481,7 @@ else
     REMAINING=$(grep -ri -E "com\.template\.|com\.template[^a-z0-9]|com\.template$|TemplateApp" . \
         --include="*.kt" --include="*.kts" --include="*.xml" --include="*.swift" \
         --include="*.plist" --include="*.pro" --include="*.pbxproj" \
+        --include="*.xcscheme" \
         --exclude-dir=.git --exclude-dir=build 2>/dev/null | wc -l | tr -d ' ')
     if [ "$REMAINING" -gt 0 ]; then
         echo ""
@@ -488,6 +489,7 @@ else
         grep -ri -E "com\.template\.|com\.template[^a-z0-9]|com\.template$|TemplateApp" . \
             --include="*.kt" --include="*.kts" --include="*.xml" --include="*.swift" \
             --include="*.plist" --include="*.pro" --include="*.pbxproj" \
+            --include="*.xcscheme" \
             --exclude-dir=.git --exclude-dir=build -l 2>/dev/null
         echo ""
     else

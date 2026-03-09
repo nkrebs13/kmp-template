@@ -12,7 +12,7 @@ class AppLoggerTest {
     }
 
     @Test
-    fun loggerMinSeverityIsInfo() {
+    fun loggerMinSeverityIsAtMostInfo() {
         assertTrue(
             AppLogger.config.minSeverity <= Severity.Info,
             "Logger min severity should be Info or lower, got ${AppLogger.config.minSeverity}",
