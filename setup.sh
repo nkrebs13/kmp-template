@@ -289,7 +289,7 @@ replace_in_directory() {
         -name "*.kt" -o -name "*.kts" -o -name "*.xml" -o -name "*.gradle" \
         -o -name "*.properties" -o -name "*.swift" -o -name "*.plist" \
         -o -name "*.yml" -o -name "*.yaml" -o -name "*.json" -o -name "*.md" \
-        -o -name "*.pbxproj" -o -name "*.pro" \
+        -o -name "*.pbxproj" -o -name "*.pro" -o -name "*.xcscheme" \
     \) -print0 2>/dev/null)
 }
 
@@ -338,10 +338,7 @@ echo "• Updating app names..."
 if [ -f "androidApp/src/main/res/values/strings.xml" ]; then
     replace_in_file ">Template<" ">$PROJECT_NAME<" "androidApp/src/main/res/values/strings.xml"
 fi
-# Update theme name
-if [ -f "androidApp/src/main/res/values/themes.xml" ]; then
-    replace_in_file "Theme.Template" "Theme.${PROJECT_NAME}" "androidApp/src/main/res/values/themes.xml"
-fi
+# Theme uses generic name "Theme.App" which doesn't need project-specific renaming
 # Update Swift app name
 if [ -f "iosApp/iosApp/TemplateApp.swift" ]; then
     replace_in_file "TemplateApp" "${PROJECT_NAME}App" "iosApp/iosApp/TemplateApp.swift"
@@ -484,6 +481,7 @@ else
     REMAINING=$(grep -ri -E "com\.template\.|com\.template[^a-z0-9]|com\.template$|TemplateApp" . \
         --include="*.kt" --include="*.kts" --include="*.xml" --include="*.swift" \
         --include="*.plist" --include="*.pro" --include="*.pbxproj" \
+        --include="*.xcscheme" \
         --exclude-dir=.git --exclude-dir=build 2>/dev/null | wc -l | tr -d ' ')
     if [ "$REMAINING" -gt 0 ]; then
         echo ""
@@ -491,6 +489,7 @@ else
         grep -ri -E "com\.template\.|com\.template[^a-z0-9]|com\.template$|TemplateApp" . \
             --include="*.kt" --include="*.kts" --include="*.xml" --include="*.swift" \
             --include="*.plist" --include="*.pro" --include="*.pbxproj" \
+            --include="*.xcscheme" \
             --exclude-dir=.git --exclude-dir=build -l 2>/dev/null
         echo ""
     else
@@ -505,7 +504,7 @@ if [ "$DRY_RUN" = true ]; then
 else
     if [ ! -d ".git" ]; then
         git init
-        git add .
+        git add -A
         # Check if git user is configured
         if git config user.name >/dev/null 2>&1 && git config user.email >/dev/null 2>&1; then
             git commit -m "Initial commit: $PROJECT_NAME"

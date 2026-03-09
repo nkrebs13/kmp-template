@@ -81,6 +81,7 @@ detekt {
     source.setFrom(
         "androidApp/src",
         "shared/src",
+        "baselineprofile/src",
     )
 }
 

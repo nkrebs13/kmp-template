@@ -12,6 +12,7 @@ struct ComposeView: UIViewControllerRepresentable {
 struct ContentView: View {
     var body: some View {
         ComposeView()
-            .ignoresSafeArea(.keyboard)
+            // Compose Multiplatform handles its own safe area insets
+            .ignoresSafeArea()
     }
 }
