@@ -1,7 +1,6 @@
 package com.template.shared
 
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class AppIntegrationTest {
     @Test
