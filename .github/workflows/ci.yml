@@ -38,7 +38,19 @@ jobs:
         run: ./gradlew spotlessCheck detekt
 
       - name: Build & Test
-        run: ./gradlew :androidApp:assembleDebug :shared:linkDebugFrameworkIosSimulatorArm64 :shared:allTests
+        run: ./gradlew :androidApp:assembleDebug :shared:linkDebugFrameworkIosSimulatorArm64 :shared:allTests :shared:koverVerify
+
+      - name: Generate coverage report
+        if: always()
+        run: ./gradlew :shared:koverXmlReport :shared:koverHtmlReport
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: coverage-report
+          path: shared/build/reports/kover/
+          retention-days: 14
 
   template-test:
     name: Template Generation
