@@ -53,6 +53,17 @@ android {
         compose = true
     }
 
+    lint {
+        warningsAsErrors = true
+        abortOnError = true
+        checkDependencies = false
+        htmlReport = true
+        xmlReport = true
+        checkReleaseBuilds = true
+        // Version-upgrade notices are informational, not bugs
+        disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable")
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"

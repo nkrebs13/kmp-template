@@ -38,7 +38,7 @@ jobs:
         run: ./gradlew spotlessCheck detekt
 
       - name: Build & Test
-        run: ./gradlew :androidApp:assembleDebug :shared:linkDebugFrameworkIosSimulatorArm64 :shared:allTests :shared:koverVerify
+        run: ./gradlew :androidApp:assembleDebug :androidApp:lintDebug :shared:linkDebugFrameworkIosSimulatorArm64 :shared:allTests :shared:koverVerify
 
       - name: Generate coverage report
         if: always()
@@ -117,4 +117,4 @@ jobs:
           echo "All template artifacts properly removed"
 
       - name: Build & test generated project
-        run: ./gradlew :shared:allTests :androidApp:assembleDebug :shared:linkDebugFrameworkIosSimulatorArm64
+        run: ./gradlew :shared:allTests :androidApp:assembleDebug :androidApp:lintDebug :shared:linkDebugFrameworkIosSimulatorArm64
