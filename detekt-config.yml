@@ -112,7 +112,7 @@ coroutines:
   SleepInsteadOfDelay:
     active: true
   SuspendFunSwallowedCancellation:
-    active: false
+    active: true
   SuspendFunWithCoroutineScopeReceiver:
     active: false
   SuspendFunWithFlowReturnType:
@@ -160,7 +160,7 @@ exceptions:
   InstanceOfCheckForException:
     active: false
   NotImplementedDeclaration:
-    active: false
+    active: true
   ObjectExtendsThrowable:
     active: false
   PrintStackTrace:
@@ -295,7 +295,7 @@ potential-bugs:
   AvoidReferentialEquality:
     active: false
   CastNullableToNonNullableType:
-    active: false
+    active: true
   CastToNullableType:
     active: false
   Deprecation:
@@ -303,9 +303,9 @@ potential-bugs:
   DontDowncastCollectionTypes:
     active: false
   DoubleMutabilityForCollection:
-    active: false
+    active: true
   ElseCaseInsteadOfExhaustiveWhen:
-    active: false
+    active: true
   EqualsAlwaysReturnsTrueOrFalse:
     active: true
   EqualsWithHashCodeExist:
@@ -315,7 +315,7 @@ potential-bugs:
   ExplicitGarbageCollectionCall:
     active: true
   HasPlatformType:
-    active: false
+    active: true
   IgnoredReturnValue:
     active: false
   ImplicitDefaultLocale:
@@ -378,7 +378,7 @@ style:
   ClassOrdering:
     active: false
   CollapsibleIfStatements:
-    active: false
+    active: true
   DataClassContainsFunctions:
     active: false
   DataClassShouldBeImmutable:
@@ -394,7 +394,7 @@ style:
   ExplicitCollectionElementAccessMethod:
     active: false
   ExplicitItLambdaParameter:
-    active: false
+    active: true
   ExpressionBodySyntax:
     active: false
   ForbiddenAnnotation:
@@ -516,7 +516,7 @@ style:
   UnnecessaryAnnotationUseSiteTarget:
     active: false
   UnnecessaryApply:
-    active: false
+    active: true
   UnnecessaryBackticks:
     active: false
   UnnecessaryBracesAroundTrailingLambda:
@@ -528,7 +528,7 @@ style:
   UnnecessaryInnerClass:
     active: false
   UnnecessaryLet:
-    active: false
+    active: true
   UnnecessaryParentheses:
     active: false
   UntilInsteadOfRangeTo:
@@ -549,9 +549,9 @@ style:
   UseArrayLiteralsInAnnotations:
     active: false
   UseCheckNotNull:
-    active: false
+    active: true
   UseCheckOrError:
-    active: false
+    active: true
   UseDataClass:
     active: false
   UseEmptyCounterpart:
@@ -565,9 +565,9 @@ style:
   UseOrEmpty:
     active: false
   UseRequire:
-    active: false
+    active: true
   UseRequireNotNull:
-    active: false
+    active: true
   UseSumOfInsteadOfFlatMapSize:
     active: false
   UselessCallOnNotNull:
