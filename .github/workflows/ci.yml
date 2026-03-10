@@ -117,4 +117,4 @@ jobs:
           echo "All template artifacts properly removed"
 
       - name: Build & test generated project
-        run: ./gradlew :shared:allTests :androidApp:assembleDebug :shared:linkDebugFrameworkIosSimulatorArm64
+        run: ./gradlew :shared:allTests :androidApp:assembleDebug :androidApp:lintDebug :shared:linkDebugFrameworkIosSimulatorArm64

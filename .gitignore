@@ -409,6 +409,7 @@ google-maps-*.json
 # AI coding assistants
 .cursor/
 .claude/
+!.claude/rules/
 
 # Xcode Cloud
 iosApp/ci_scripts/
@@ -444,3 +445,4 @@ id_dsa
 id_ecdsa
 id_ed25519
 *.ppk
+.claude/vibe-state.local.md
