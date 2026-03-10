@@ -38,7 +38,7 @@ jobs:
         run: ./gradlew spotlessCheck detekt
 
       - name: Build & Test
-        run: ./gradlew :androidApp:assembleDebug :shared:linkDebugFrameworkIosSimulatorArm64 :shared:allTests :shared:koverVerify
+        run: ./gradlew :androidApp:assembleDebug :androidApp:lintDebug :shared:linkDebugFrameworkIosSimulatorArm64 :shared:allTests :shared:koverVerify
 
       - name: Generate coverage report
         if: always()
