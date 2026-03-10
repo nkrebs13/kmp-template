@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.androidKotlinMultiplatformLibrary)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
+    alias(libs.plugins.kover)
 }
 
 kotlin {
@@ -49,6 +50,32 @@ kotlin {
 
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+        }
+    }
+}
+
+kover {
+    reports {
+        filters {
+            excludes {
+                androidGeneratedClasses()
+                classes(
+                    // Compose compiler-generated singletons (not testable via unit tests)
+                    "*ComposableSingletons*",
+                    // Compose Multiplatform generated resource collectors
+                    "*.generated.resources.*",
+                )
+            }
+        }
+
+        verify {
+            rule("Line coverage") {
+                bound {
+                    minValue.set(60)
+                    coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE
+                    aggregationForGroup = kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE
+                }
+            }
         }
     }
 }

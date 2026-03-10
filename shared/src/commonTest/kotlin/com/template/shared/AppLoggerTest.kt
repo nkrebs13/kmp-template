@@ -33,4 +33,20 @@ class AppLoggerTest {
         AppLogger.d { "Test debug message" }
         AppLogger.w { "Test warning message" }
     }
+
+    @Test
+    fun loggerErrorLevelDoesNotCrash() {
+        AppLogger.e { "Test error message" }
+    }
+
+    @Test
+    fun loggerVerboseLevelDoesNotCrash() {
+        AppLogger.v { "Test verbose message" }
+    }
+
+    @Test
+    fun loggerWithThrowableDoesNotCrash() {
+        val exception = RuntimeException("test exception")
+        AppLogger.e(exception) { "Error with throwable" }
+    }
 }
