@@ -1,7 +1,7 @@
 [versions]
 # Core
 agp = "9.0.0"
-kotlin = "2.3.0"
+kotlin = "2.3.10"
 compose-plugin = "1.10.0"
 
 # AndroidX - Core
