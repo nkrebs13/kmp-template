@@ -50,7 +50,7 @@ kotlinx-coroutines = "1.10.2"
 # coil = "3.3.0"
 
 # Logging
-kermit = "2.0.8"
+kermit = "2.1.0"
 
 # Security (uncomment as needed)
 # tink = "1.16.0"
