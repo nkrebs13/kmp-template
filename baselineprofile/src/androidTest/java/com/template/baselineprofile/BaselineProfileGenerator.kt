@@ -7,6 +7,13 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+/**
+ * Generates a baseline profile for app startup optimization.
+ *
+ * Expand this with realistic user journeys (navigation, scrolling, data loading)
+ * as your app grows beyond the initial template. Each interaction traced here
+ * will be AOT-compiled on install, reducing jank on first launch.
+ */
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class BaselineProfileGenerator {
@@ -15,14 +22,12 @@ class BaselineProfileGenerator {
     val baselineProfileRule = BaselineProfileRule()
 
     @Test
-    fun generateBaselineProfile() = baselineProfileRule.collect(
+    fun generateStartupProfile() = baselineProfileRule.collect(
         packageName = "com.template.android",
         includeInStartupProfile = true,
     ) {
         pressHome()
         startActivityAndWait()
-
-        // Add interactions to generate a profile
         device.waitForIdle()
     }
 }

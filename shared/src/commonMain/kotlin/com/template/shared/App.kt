@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
+/** Root Composable — renders a greeting with the current [getPlatformName]. */
 @Composable
 @Preview
 fun App() {
