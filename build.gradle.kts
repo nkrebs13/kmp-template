@@ -77,6 +77,7 @@ detekt {
     buildUponDefaultConfig = true
     config.setFrom("$projectDir/detekt-config.yml")
     parallel = true
+    // Eager read required — detekt's autoCorrect is a plain Boolean, not a Provider.
     autoCorrect = !providers.environmentVariable("CI").isPresent
     source.setFrom(
         "androidApp/src",
