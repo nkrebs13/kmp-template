@@ -58,7 +58,7 @@ kermit = "2.0.8"
 # Code Quality
 detekt = "1.23.8"
 kover = "0.9.4"
-spotless = "8.2.1"
+spotless = "8.3.0"
 ktlint = "1.8.0"
 
 # Build Tools (uncomment as needed)
