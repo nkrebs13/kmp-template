@@ -17,34 +17,33 @@ subprojects {
         kotlin {
             target("**/*.kt")
             targetExclude("**/build/**/*.kt", "**/.*")
-            ktlint("1.8.0")
+            ktlint(libs.versions.ktlint.get())
                 .editorConfigOverride(
                     mapOf(
                         // Google & Kotlin style guide settings
                         "indent_size" to "4",
                         "continuation_indent_size" to "4",
                         "max_line_length" to "120",
-                        
+
                         // Trailing commas (Kotlin best practice)
                         "ij_kotlin_allow_trailing_comma" to "true",
                         "ij_kotlin_allow_trailing_comma_on_call_site" to "true",
-                        
+
                         // Import organization
                         "ij_kotlin_packages_to_use_import_on_demand" to "java.util.*,kotlinx.android.synthetic.**",
                         "ij_kotlin_imports_layout" to "*,java.**,javax.**,kotlin.**,^",
-                        
+
                         // Wrapping
                         "ij_kotlin_parameter_annotation_wrap" to "off",
                         "ij_kotlin_variable_annotation_wrap" to "off",
-                        
+
                         // Spacing
                         "ij_kotlin_space_before_type_colon" to "false",
                         "ij_kotlin_space_after_type_colon" to "true",
                         "ij_kotlin_space_before_extend_colon" to "true",
                         "ij_kotlin_space_after_extend_colon" to "true",
-                        
+
                         // Disable rules that conflict with Android/Google style or common patterns
-                        "ktlint_standard_no-wildcard-imports" to "disabled",
                         "ktlint_standard_package-name" to "disabled",
                         "ktlint_standard_filename" to "disabled",
                         "ktlint_standard_import-ordering" to "disabled",
@@ -56,7 +55,7 @@ subprojects {
         kotlinGradle {
             target("**/*.gradle.kts")
             targetExclude("**/build/**/*.gradle.kts", "**/.*")
-            ktlint("1.8.0")
+            ktlint(libs.versions.ktlint.get())
         }
         
         format("xml") {
@@ -78,7 +77,7 @@ detekt {
     buildUponDefaultConfig = true
     config.setFrom("$projectDir/detekt-config.yml")
     parallel = true
-    autoCorrect = true
+    autoCorrect = !providers.environmentVariable("CI").isPresent
     source.setFrom(
         "androidApp/src",
         "shared/src",

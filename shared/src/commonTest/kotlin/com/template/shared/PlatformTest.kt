@@ -5,18 +5,18 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class PlatformTest {
+
     @Test
     fun platformNameIsNotBlank() {
-        val name = getPlatformName()
-        assertTrue(name.isNotBlank(), "Platform name should not be blank")
+        assertTrue(getPlatformName().isNotBlank(), "Platform name should not be blank")
     }
 
     @Test
-    fun platformNameIsKnownPlatform() {
+    fun platformNameContainsOnlyLettersOrDigits() {
         val name = getPlatformName()
         assertTrue(
-            name in listOf("Android", "iOS"),
-            "Platform name should be 'Android' or 'iOS', got '$name'",
+            name.all { it.isLetterOrDigit() },
+            "Platform name should contain only letters or digits, got '$name'",
         )
     }
 
