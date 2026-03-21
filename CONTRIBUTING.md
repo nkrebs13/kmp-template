@@ -55,7 +55,7 @@ Before contributing, ensure you have:
 
 5. Verify no template references remain:
    ```bash
-   grep -r "com.template" . --include="*.kt" --include="*.kts" --include="*.xml" --exclude-dir=.git
+   ./scripts/validate.sh
    ```
 
 ### Testing Guidelines
@@ -112,8 +112,10 @@ Runs on `macos-14` with JDK 17:
 1. `spotlessCheck` - Verifies code formatting
 2. `detekt` - Runs static analysis
 3. `:androidApp:assembleDebug` - Builds the Android app
-4. `:shared:linkDebugFrameworkIosSimulatorArm64` - Builds the iOS framework
-5. `:shared:allTests` - Runs shared module tests
+4. `:androidApp:lintDebug` - Runs Android lint (warnings as errors)
+5. `:shared:linkDebugFrameworkIosSimulatorArm64` - Builds the iOS framework
+6. `:shared:allTests` - Runs shared module tests (includes iOS simulator)
+7. `:shared:koverVerify` - Verifies code coverage meets minimum threshold
 
 ### Template Generation
 

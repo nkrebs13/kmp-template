@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew *)",
+      "Bash(bash setup.sh*)",
+      "Bash(bash scripts/*)",
+      "Bash(node --check *)",
+      "Bash(cd mcp && npm install)",
+      "Bash(git status)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git tag *)",
+      "Bash(git branch *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(grep *)"
+    ]
+  }
+}

@@ -1,37 +1,3 @@
-## 2026-02-26
-- fix: migrate deprecated ktlint config and simplify editorconfig globs (#21)
-- chore: remove dead code from build config (#20)
-- fix: harden Android security defaults (#19)
-- fix: pin CI actions, remove debug signing from release, scope profileable to debug (#18)
-- feat: add Kermit multiplatform logging foundation (#17)
-- docs: remove LinkLocker dogfooding section and fix version drift (#16)
-- docs: backfill missing documentation for architecture, CI, and tooling (#15)
-- docs: fix documentation drift with actual build system (#14)
-- test: close test gaps with platform-specific tests and build fixes (#11)
-- chore(deps): dependency risk scan and safe version bumps (#13)
-- perf: optimize build config and consolidate CI Gradle invocations (#10)
-- chore(deps): Bump actions/setup-java from 4 to 5 (#4)
-- chore(deps): Bump actions/checkout from 4 to 6 (#3)
-- chore(deps): Bump gradle/actions from 4 to 5 (#2)
-- docs: promote changelog to v3.0.0 release (#12)
-- chore(deps): Bump @modelcontextprotocol/sdk in /mcp (#5)
-- fix: apply linting and style auto-fixes (#7)
-- ci: reduce template-test to standard check only (#8)
-- docs: dogfooding feedback from LinkLocker production app (#6)
-- feat: comprehensive quality overhaul for production-grade template
-- chore(deps): update kotlinx-serialization to 1.10.0
-- feat: enhance validation and add dry-run mode
-- feat: add --with-mcp flag to optionally keep MCP server
-- chore: use built-in gradle wrapper validation
-- fix: correct Gradle wrapper validation action path
-- fix: add Java keyword validation and CI improvements
-- fix: apply spotless XML formatting to AndroidManifest.xml
-- fix: add gradle wrapper jar to repository
-- feat(mcp): add MCP tool for AI-assisted project generation
-- fix(template): iteration 1 improvements
-- feat: polish template for public release
-- fix: AGP 9.0 compatibility and template verification fixes
-- chore: re-architect documentation and update all dependencies
 # Changelog
 
 All notable changes to this project will be documented in this file.
@@ -41,14 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `.gitattributes` for consistent line endings across platforms
+- Raster launcher icons (mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi) for pre-API-26 devices
+- Monochrome adaptive icon layer for Android 13+ themed icons
+- Dark mode splash screen (`values-night/styles.xml`)
+- Kotlin keywords to package name validation in setup.sh and MCP server
+- CODEOWNERS file for automatic PR review assignment
+- `.tool-versions` for consistent JDK via asdf/mise
+- Dry-run preview in setup.sh now shows affected files
+
+### Changed
+- Detekt: enabled `warningsAsErrors` and `checkExhaustiveness`
+- Detekt: restored `FindingsReport` to console output
+- Compose Stability config: narrowed to immutable collections only (`List`, `Set`, `Map`)
+- Spotless: added `editorConfigOverride` to `kotlinGradle` block for consistent `.gradle.kts` formatting
+- Gradle wrapper upgraded from `-bin` to `-all` distribution
+- `.editorconfig`: fixed `[*.gradle]` → `[*.{gradle,gradle.kts}]`
+- Xcode: Swift 5.0 → 5.9, C++ gnu++14 → gnu++20, C gnu11 → gnu17
+- Xcode: Removed stale Preview Content group and asset references
+- Xcode: `DEBUG_INFORMATION_FORMAT` corrected per config (dwarf for Debug, dwarf-with-dsym for Release)
+- setup.sh: excluded `.git/`, `build/`, `.gradle/`, `node_modules/` from `replace_in_directory`
+- setup.sh: added `.toml`, `.conf`, `.sh` to replacement file extensions
+- setup.sh: added `KmpTemplate` and `orgName` replacement targets
+- setup.sh: reinitializes git repo (`rm -rf .git && git init`) for clean history in generated projects
+- setup.sh: uses `__PROJECT_NAME__` placeholder in README_TEMPLATE.md (avoids overbroad 'Template' replace)
+- setup.sh: updates LICENSE copyright year and project name during generation
+- CI: provide all 4 stdin inputs to setup.sh (project, package, bundle ID, confirm)
+- CI: `allTests` documented to include `iosSimulatorArm64Test`
+- MCP: TOML version regex `\w+` → `[\w-]` to parse hyphenated keys
+- MCP: Fixed `coreKeys`: `compose` → `compose-plugin`
+- MCP: `cpSync` now excludes `.git/` during template copies
+- MCP: Added macOS system paths to `dangerousPaths`
+- KSP version comment corrected to `2.3.0-1.0.31` scheme with explanation
+
 ### Removed
-- Dogfooding notes section from README (LinkLocker-specific production patterns)
+- Dead `themes.xml` (empty; theme is in `styles.xml`)
+- Unused `INTERNET` permission from `AndroidManifest.xml`
+- Stale `scripts/project.properties` (dead file, nothing reads it)
+- Duplicate root-level `DEPENDENCY_RISK_REPORT.md` (canonical copy in `docs/`)
+- 37+ stale remote branches cleaned up
 
 ### Fixed
-- Template version references across docs (2.3.0 → 3.0.0)
-- Stale dependency versions in docs/CONFIGURATION.md (Spotless 8.1.0 → 8.2.1, KSP 2.3.3 → 2.3.6)
-- Navigation version in README (2.9.0 → 2.9.7)
-- "Detekt + Spotless | Latest" in README replaced with actual versions
+- `AndroidManifest.xml`: added `fullBackupContent` for pre-API-31 compat with `dataExtractionRules`
+- CI template-test stdin: was missing iOS bundle ID prompt (3 inputs → 4)
+- CI: added zero `.claude/` assertion — generated projects must contain no Claude Code files
+- setup.sh verification regex unified with CI (both now check `.toml`, `.conf`, `.sh`)
+- Detekt: added missing `UseLet` rule (discovered by `checkExhaustiveness: true`)
+- CHANGELOG header ordering (entries were prepended above `# Changelog` header)
+- SECURITY.md version table updated to 3.x.x
+- Kermit multiplatform logging (#17)
+- ktlint config migration (#21)
+- Android security hardening (#19)
+- CI action SHA pinning (#18)
+- Documentation drift fixes (#14, #15, #16)
+- Build config dead code removal (#20)
+- Gradle invocation consolidation (#10)
+- Dependency risk scan and safe version bumps (#13)
+- Test coverage improvements (#11)
 
 ## [3.0.0] - 2026-02-18
 
@@ -75,7 +91,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Template replacement verification in setup.sh
 - Git uncommitted changes warning in setup.sh
 - Credential file patterns (.env, API keys, certificates) added to .gitignore
-- Dogfooding notes section in README with production patterns from LinkLocker
 - Commented-out version catalog entries for commonly-needed libraries:
   Room, DataStore, WorkManager, Ktor Client, Koin, Coil, Timber, Tink
 - `androidx-navigation-compose` version catalog entry (2.9.0)
@@ -105,12 +120,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated androidx-compose-material3 from 1.3.1 to 1.4.0
 - Updated androidx-benchmark from 1.3.3 to 1.4.1
 - Updated ktlint from 1.7.0 to 1.8.0
-- Updated docs/CONFIGURATION.md: kotlinx-serialization 1.9.0 -> 1.10.0, SDK 35 -> 36
-- Updated docs/TEMPLATE_DEVELOPMENT.md: Kotlin version 2.1.0 -> 2.3.0, fixed file listings
-- Updated docs/README_TEMPLATE.md: removed false library claims, fixed architecture description
-- Updated README.md with badges, architecture diagram, and corrected version references
-- Expanded version catalog with production-proven library entries (commented out by default)
-- Updated dependencies documentation to reflect Navigation and DateTime version catalog entries
 
 ### Removed
 - Dead code: commented-out Preview in MainActivity.kt

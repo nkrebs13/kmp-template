@@ -32,7 +32,7 @@ All dependencies are managed through `gradle/libs.versions.toml` for centralized
 |------------|---------|---------|
 | androidx-core | 1.17.0 | Android core KTX |
 | androidx-appcompat | 1.7.1 | AppCompat library |
-| androidx-activity | 1.12.2 | Activity APIs |
+| androidx-activity | 1.12.4 | Activity APIs |
 | androidx-lifecycle | 2.10.0 | Lifecycle components |
 | androidx-splashscreen | 1.2.0 | Splash screen API |
 | androidx-compose-bom | 2026.01.00 | Compose BOM |
@@ -45,7 +45,7 @@ All dependencies are managed through `gradle/libs.versions.toml` for centralized
 | detekt | 1.23.8 | Static analysis |
 | spotless | 8.2.1 | Code formatting |
 | ktlint | 1.8.0 | Kotlin linter |
-| ksp | 2.3.6 | Kotlin Symbol Processing |
+| ksp | 2.3.0-1.0.31 | Kotlin Symbol Processing (must match Kotlin version prefix) |
 
 ## Configuration Files
 
@@ -221,11 +221,11 @@ The `compose-stability.conf` file at the project root tells the Compose compiler
 compose.multiplatform.stabilityConfigPath=compose-stability.conf
 ```
 
-The default configuration marks standard library collections, `kotlinx.datetime`, `java.time`, and `UUID` as stable. When you add your own immutable data classes, add them to this file:
+The default configuration marks the standard library's immutable collection interfaces (`List`, `Set`, `Map`), `java.time.*`, `java.util.UUID`, and `kotlin.time.*` as stable. When you add your own immutable data classes, add them to this file:
 
 ```
 # Mark your package's model classes as stable
-com.yourpackage.model.*
+com.yourapp.model.*
 ```
 
 Without this, Compose may unnecessarily recompose UI when passing instances of types it cannot verify as stable.

@@ -10,7 +10,7 @@ assignees: ''
 
 - **OS**: [e.g., macOS 14.2]
 - **JDK Version**: [e.g., 17.0.9]
-- **Android Studio**: [e.g., Ladybug 2024.2.1]
+- **Android Studio**: [e.g., Meerkat 2024.3.2]
 - **Xcode**: [e.g., 15.2]
 
 ## Bug Description

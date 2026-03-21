@@ -6,25 +6,25 @@ This is a project template. Security updates apply to the template itself and ge
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 2.x.x   | :white_check_mark: |
-| < 2.0   | :x:                |
+| 3.x.x   | :white_check_mark: |
+| < 3.0   | :x:                |
 
 ## Reporting a Vulnerability
 
-If you discover a security issue in this template, please report it by:
+If you discover a security issue in this template, please report it via [GitHub Security Advisories](https://github.com/nkrebs13/kmp-template/security/advisories/new) — do not open a public issue.
 
-1. **Do not** open a public GitHub issue for security vulnerabilities
-2. Email the maintainer directly with details
-3. Include steps to reproduce the issue if possible
-4. Allow reasonable time for a response before public disclosure
+Include:
+- Steps to reproduce the issue
+- Affected versions
+- Potential impact
 
 ## Security Best Practices for Generated Projects
 
 When using this template to generate your project, consider these practices:
 
 ### Dependencies
-- Regularly update dependencies using `./gradlew dependencyUpdates`
-- Review changelogs for security-related updates
+- Regularly review `gradle/libs.versions.toml` and Dependabot PRs for security-related updates
+- Review changelogs before upgrading libraries
 - Use dependency scanning tools in your CI/CD pipeline
 
 ### Secrets Management

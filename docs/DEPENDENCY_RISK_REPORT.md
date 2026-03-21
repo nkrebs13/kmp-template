@@ -16,7 +16,7 @@ This report audits all 28 active dependencies in the KMP Template project across
 - **2 historical CVEs** in Kotlin stdlib (pre-2.x) and 1 in detekt (pre-1.20) are fully patched
 - **2 alpha/pre-release dependencies** flagged for stability risk
 - **10 dependencies** are behind the latest stable release
-- **3 GitHub Actions** use mutable tag references (`@v4`) instead of SHA-pinned commits — the highest supply-chain risk identified
+- **All GitHub Actions are SHA-pinned** to immutable commit hashes (addressed since initial report)
 - **Gradle 9.3.0** already contains fixes for CVE-2026-22816 and CVE-2026-22865
 
 **Risk level: LOW** — No urgent security action required. Recommended improvements are preventive.
