@@ -38,6 +38,7 @@ jobs:
         run: ./gradlew spotlessCheck detekt
 
       - name: Build & Test
+        # :shared:allTests includes iosSimulatorArm64Test — iOS tests run here
         run: ./gradlew :androidApp:assembleDebug :androidApp:lintDebug :shared:linkDebugFrameworkIosSimulatorArm64 :shared:allTests :shared:koverVerify
 
       - name: Generate coverage report
@@ -76,22 +77,25 @@ jobs:
 
       - name: Run setup.sh
         run: |
-          printf '%s\n%s\n\ny\n' "$TEST_PROJECT" "$TEST_PACKAGE" | ./setup.sh
+          # Provide all 4 prompts: project name, package name, iOS bundle ID (same), confirm
+          printf '%s\n%s\n%s\ny\n' "$TEST_PROJECT" "$TEST_PACKAGE" "$TEST_PACKAGE" | ./setup.sh
 
       - name: Verify no template references
         run: |
-          FOUND=$(grep -rI -E "com[./]template[./]|com[./]template[^a-z0-9]|TemplateApp" . \
+          FOUND=$(grep -rI -E "com[./]template[./]|com[./]template[^a-z0-9]|TemplateApp|KmpTemplate|orgName" . \
             --include="*.kt" --include="*.kts" --include="*.xml" \
             --include="*.swift" --include="*.plist" --include="*.pro" \
             --include="*.pbxproj" --include="*.xcscheme" \
+            --include="*.toml" --include="*.conf" --include="*.sh" \
             --exclude-dir=.git --exclude-dir=build --exclude-dir=.gradle \
             2>/dev/null | wc -l | tr -d ' ')
           if [ "$FOUND" -gt 0 ]; then
             echo "ERROR: Found template references in generated project:"
-            grep -rI -E "com[./]template[./]|com[./]template[^a-z0-9]|TemplateApp" . \
+            grep -rI -E "com[./]template[./]|com[./]template[^a-z0-9]|TemplateApp|KmpTemplate|orgName" . \
               --include="*.kt" --include="*.kts" --include="*.xml" \
               --include="*.swift" --include="*.plist" --include="*.pro" \
               --include="*.pbxproj" --include="*.xcscheme" \
+              --include="*.toml" --include="*.conf" --include="*.sh" \
               --exclude-dir=.git --exclude-dir=build --exclude-dir=.gradle
             exit 1
           fi
@@ -108,6 +112,11 @@ jobs:
           done
           if [ -d ".github" ]; then
             echo "ERROR: .github directory not removed"
+            ERRORS=$((ERRORS + 1))
+          fi
+          # Enforce zero .claude/ files — generated projects must have NO Claude Code tooling
+          if [ -d ".claude" ]; then
+            echo "ERROR: .claude/ directory was not removed — generated projects must contain zero Claude Code files"
             ERRORS=$((ERRORS + 1))
           fi
           if [ "$ERRORS" -gt 0 ]; then

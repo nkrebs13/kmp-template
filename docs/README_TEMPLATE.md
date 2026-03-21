@@ -1,4 +1,4 @@
-# Template
+# __PROJECT_NAME__
 
 A Kotlin Multiplatform application for iOS and Android.
 

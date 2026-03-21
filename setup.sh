@@ -128,13 +128,14 @@ case "$PACKAGE_NAME" in
         ;;
 esac
 
-# Check for Java keywords and reserved words in package name parts
+# Check for Java/Kotlin keywords and reserved words in package name parts
 # This list includes:
 # - All Java keywords (JLS 3.9)
 # - Reserved keywords (const, goto)
 # - Literals that cannot be identifiers (true, false, null)
 # - Underscore (reserved since Java 9)
 # - Contextual keywords that should be avoided (var, yield, record, sealed, permits)
+# - Kotlin-specific keywords that are invalid as package name parts
 JAVA_KEYWORDS=(
     # Keywords
     "abstract" "assert" "boolean" "break" "byte" "case" "catch" "char" "class"
@@ -149,6 +150,9 @@ JAVA_KEYWORDS=(
     "_"
     # Contextual keywords (Java 10+) - technically allowed in some contexts but problematic
     "var" "yield" "record" "sealed" "permits"
+    # Kotlin-specific keywords invalid as package name components
+    "fun" "val" "when" "in" "is" "as" "object" "companion" "data" "inner"
+    "typealias" "actual" "expect"
 )
 
 # Build regex pattern from array
@@ -264,8 +268,21 @@ replace_in_directory() {
     local replace="$2"
     local dir="$3"
 
-    # Dry-run mode: just return
+    # Dry-run mode: show which files would be modified
     if [ "$DRY_RUN" = true ]; then
+        local dry_matches
+        dry_matches=$(grep -rl "$search" "$dir" \
+            --exclude-dir=.git --exclude-dir=build --exclude-dir=.gradle --exclude-dir=node_modules \
+            --include="*.kt" --include="*.kts" --include="*.xml" --include="*.gradle" \
+            --include="*.properties" --include="*.swift" --include="*.plist" \
+            --include="*.yml" --include="*.yaml" --include="*.json" --include="*.md" \
+            --include="*.pbxproj" --include="*.pro" --include="*.xcscheme" \
+            --include="*.toml" --include="*.conf" --include="*.sh" \
+            2>/dev/null || true)
+        if [ -n "$dry_matches" ]; then
+            echo "[DRY-RUN] Would replace '$search' → '$replace' in:"
+            echo "$dry_matches" | while read -r f; do echo "  $f"; done
+        fi
         return 0
     fi
 
@@ -282,20 +299,28 @@ replace_in_directory() {
         sed_inplace=(-i)
     fi
 
-    # Find and process files
+    # Find and process files, excluding directories that should never be modified
     while IFS= read -r -d '' file; do
         sed "${sed_inplace[@]}" "s/${escaped_search}/${escaped_replace}/g" "$file"
-    done < <(find "$dir" -type f \( \
+    done < <(find "$dir" -type f \
+        -not -path '*/.git/*' \
+        -not -path '*/build/*' \
+        -not -path '*/.gradle/*' \
+        -not -path '*/node_modules/*' \
+        \( \
         -name "*.kt" -o -name "*.kts" -o -name "*.xml" -o -name "*.gradle" \
         -o -name "*.properties" -o -name "*.swift" -o -name "*.plist" \
         -o -name "*.yml" -o -name "*.yaml" -o -name "*.json" -o -name "*.md" \
         -o -name "*.pbxproj" -o -name "*.pro" -o -name "*.xcscheme" \
-    \) -print0 2>/dev/null)
+        -o -name "*.toml" -o -name "*.conf" -o -name "*.sh" \
+        \) -print0 2>/dev/null)
 }
 
 # 1. Update settings.gradle.kts
 echo "• Updating project settings..."
 replace_in_file "rootProject.name = \"Template\"" "rootProject.name = \"$PROJECT_NAME\"" "settings.gradle.kts"
+# Update project name references (AppLogger tag, test files, etc.)
+replace_in_directory "KmpTemplate" "$PROJECT_NAME" "."
 
 # 2. Update package names in all Kotlin files
 echo "• Updating package names..."
@@ -325,6 +350,8 @@ if [ -f "iosApp/iosApp.xcodeproj/project.pbxproj" ]; then
     replace_in_file "com.template.ios" "$IOS_BUNDLE_ID" "iosApp/iosApp.xcodeproj/project.pbxproj"
     # Update Swift file references in Xcode project
     replace_in_file "TemplateApp.swift" "${PROJECT_NAME}App.swift" "iosApp/iosApp.xcodeproj/project.pbxproj"
+    # Update ORGANIZATIONNAME placeholder
+    replace_in_file "orgName" "$PROJECT_NAME" "iosApp/iosApp.xcodeproj/project.pbxproj"
 fi
 
 # 4b. Update ProGuard rules with new package name
@@ -415,10 +442,10 @@ fi
 echo "• Setting up documentation..."
 if [ -f "docs/README_TEMPLATE.md" ]; then
     if [ "$DRY_RUN" = true ]; then
-        echo "[DRY-RUN] Would: Copy docs/README_TEMPLATE.md to README.md"
+        echo "[DRY-RUN] Would: Copy docs/README_TEMPLATE.md to README.md and replace __PROJECT_NAME__ placeholder"
     else
         cp docs/README_TEMPLATE.md README.md
-        replace_in_file "Template" "$PROJECT_NAME" "README.md" || true
+        replace_in_file "__PROJECT_NAME__" "$PROJECT_NAME" "README.md" || true
         replace_in_file "com.template" "$PACKAGE_NAME" "README.md" || true
     fi
 else
@@ -433,9 +460,13 @@ if [ "$DRY_RUN" = true ]; then
 else
     rm -f README_TEMPLATE.md 2>/dev/null || true
     rm -f local.properties.template 2>/dev/null || true
+    rm -f DEPENDENCY_RISK_REPORT.md 2>/dev/null || true
     rm -rf docs 2>/dev/null || true
     rm -rf scripts 2>/dev/null || true
     rm -f setup.sh 2>/dev/null || true
+    # Update LICENSE with current year and project name
+    CURRENT_YEAR=$(date +%Y)
+    replace_in_file "2025 Nathan Krebs" "${CURRENT_YEAR} ${PROJECT_NAME}" "LICENSE" || true
     # Remove template-specific community files
     rm -f CONTRIBUTING.md 2>/dev/null || true
     rm -f SECURITY.md 2>/dev/null || true
@@ -478,45 +509,51 @@ else
     # Comprehensive check for template references across all relevant file types
     # Use com\.template\. (with trailing dot) to avoid matching packages like "com.mytemplate.app"
     # Also match com\.template[^a-z] to catch com.template at end of line or before non-letter
-    REMAINING=$(grep -ri -E "com\.template\.|com\.template[^a-z0-9]|com\.template$|TemplateApp" . \
+    REMAINING=$(grep -ri -E "com[./]template[./]|com[./]template[^a-z0-9]|com[./]template$|TemplateApp|KmpTemplate|orgName" . \
         --include="*.kt" --include="*.kts" --include="*.xml" --include="*.swift" \
         --include="*.plist" --include="*.pro" --include="*.pbxproj" \
-        --include="*.xcscheme" \
-        --exclude-dir=.git --exclude-dir=build 2>/dev/null | wc -l | tr -d ' ')
+        --include="*.xcscheme" --include="*.toml" --include="*.conf" --include="*.sh" \
+        --exclude-dir=.git --exclude-dir=build --exclude-dir=.gradle 2>/dev/null | wc -l | tr -d ' ')
     if [ "$REMAINING" -gt 0 ]; then
         echo ""
         echo "WARNING: Found $REMAINING occurrences of template references that may need manual review:"
-        grep -ri -E "com\.template\.|com\.template[^a-z0-9]|com\.template$|TemplateApp" . \
+        grep -ri -E "com[./]template[./]|com[./]template[^a-z0-9]|com[./]template$|TemplateApp|KmpTemplate|orgName" . \
             --include="*.kt" --include="*.kts" --include="*.xml" --include="*.swift" \
             --include="*.plist" --include="*.pro" --include="*.pbxproj" \
-            --include="*.xcscheme" \
-            --exclude-dir=.git --exclude-dir=build -l 2>/dev/null
+            --include="*.xcscheme" --include="*.toml" --include="*.conf" --include="*.sh" \
+            --exclude-dir=.git --exclude-dir=build --exclude-dir=.gradle -l 2>/dev/null
         echo ""
     else
         echo "  All template references successfully replaced"
     fi
+
+    # Enforce zero .claude/ files — generated projects must have NO Claude Code tooling
+    if [ -d ".claude" ]; then
+        echo ""
+        echo "ERROR: .claude/ directory was not removed during cleanup!"
+        echo "  Generated projects must contain zero Claude Code files."
+        echo "  This is a setup.sh bug — please report it."
+        exit 1
+    fi
 fi
 
-# 12. Initialize git repository
-echo "• Initializing Git repository..."
+# 12. Reinitialize git repository (clean start — removes template commit history)
+echo "• Reinitializing Git repository..."
 if [ "$DRY_RUN" = true ]; then
-    echo "[DRY-RUN] Would: Initialize git repository and create initial commit"
+    echo "[DRY-RUN] Would: Reinitialize git repository with a fresh initial commit"
 else
-    if [ ! -d ".git" ]; then
-        git init
-        git add -A
-        # Check if git user is configured
-        if git config user.name >/dev/null 2>&1 && git config user.email >/dev/null 2>&1; then
-            git commit -m "Initial commit: $PROJECT_NAME"
-            echo "  Git repository initialized with initial commit"
-        else
-            echo "  Git repository initialized (commit skipped - please configure git user.name and user.email)"
-            echo "  Run: git config user.name \"Your Name\""
-            echo "       git config user.email \"your@email.com\""
-            echo "  Then: git commit -m \"Initial commit: $PROJECT_NAME\""
-        fi
+    rm -rf .git 2>/dev/null || true
+    git init
+    git add .
+    # Check if git user is configured
+    if git config user.name >/dev/null 2>&1 && git config user.email >/dev/null 2>&1; then
+        git commit -m "Initial commit from kmp-template: $PROJECT_NAME"
+        echo "  Git repository reinitialized with initial commit"
     else
-        echo "  Git repository already exists, skipping initialization"
+        echo "  Git repository reinitialized (commit skipped - please configure git user)"
+        echo "  Run: git config user.name \"Your Name\""
+        echo "       git config user.email \"your@email.com\""
+        echo "  Then: git commit -m \"Initial commit from kmp-template: $PROJECT_NAME\""
     fi
 fi
 
