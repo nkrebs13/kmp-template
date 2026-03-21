@@ -2,6 +2,10 @@
 <manifest
 	xmlns:android="http://schemas.android.com/apk/res/android">
 
+	<!-- allowBackup="false" disables backup on API 24-30. fullBackupContent 
+		is redundant given allowBackup=false, but Android lint requires it when dataExtractionRules 
+		is present (dataExtractionRules only covers API 31+). dataExtractionRules 
+		disables cloud backup and device transfer on API 31+. -->
 	<application android:allowBackup="false"
 		android:fullBackupContent="@xml/backup_rules"
 		android:dataExtractionRules="@xml/data_extraction_rules"
