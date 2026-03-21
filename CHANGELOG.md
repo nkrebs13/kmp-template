@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-03-21
+
 ### Added
 - `.gitattributes` for consistent line endings across platforms
 - Raster launcher icons (mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi) for pre-API-26 devices
@@ -182,7 +184,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Complete rewrite from single-platform template
 
-[Unreleased]: https://github.com/nkrebs13/kmp-template/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/nkrebs13/kmp-template/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/nkrebs13/kmp-template/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/nkrebs13/kmp-template/compare/v2.2.0...v3.0.0
 [2.2.0]: https://github.com/nkrebs13/kmp-template/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/nkrebs13/kmp-template/compare/v2.0.0...v2.1.0
