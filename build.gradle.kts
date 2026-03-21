@@ -56,6 +56,19 @@ subprojects {
             target("**/*.gradle.kts")
             targetExclude("**/build/**/*.gradle.kts", "**/.*")
             ktlint(libs.versions.ktlint.get())
+                .editorConfigOverride(
+                    mapOf(
+                        "indent_size" to "4",
+                        "continuation_indent_size" to "4",
+                        "max_line_length" to "120",
+                        "ij_kotlin_allow_trailing_comma" to "true",
+                        "ij_kotlin_allow_trailing_comma_on_call_site" to "true",
+                        "ktlint_standard_package-name" to "disabled",
+                        "ktlint_standard_filename" to "disabled",
+                        "ktlint_standard_import-ordering" to "disabled",
+                        "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
+                    )
+                )
         }
         
         format("xml") {

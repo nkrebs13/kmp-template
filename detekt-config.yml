@@ -9,8 +9,8 @@ build:
 
 config:
   validation: true
-  warningsAsErrors: false
-  checkExhaustiveness: false
+  warningsAsErrors: true
+  checkExhaustiveness: true
   excludes: ''
 
 processors:
@@ -24,7 +24,6 @@ console-reports:
      - 'ProjectStatisticsReport'
      - 'ComplexityReport'
      - 'NotificationReport'
-     - 'FindingsReport'
      - 'FileBasedFindingsReport'
      - 'LiteFindingsReport'
 
@@ -561,6 +560,8 @@ style:
   UseIfInsteadOfWhen:
     active: false
   UseIsNullOrEmpty:
+    active: false
+  UseLet:
     active: false
   UseOrEmpty:
     active: false
