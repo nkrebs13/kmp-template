@@ -1,5 +1,5 @@
 rootProject.name = "Template"
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS") // Still experimental in Gradle 9.3 — no deprecation warning
 
 pluginManagement {
     repositories {

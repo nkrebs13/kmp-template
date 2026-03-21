@@ -249,7 +249,10 @@ async function handleGenerate(args) {
     // Reserved identifier (Java 9+)
     "_",
     // Contextual keywords (Java 10+) - technically allowed in some contexts but problematic
-    "var", "yield", "record", "sealed", "permits"
+    "var", "yield", "record", "sealed", "permits",
+    // Kotlin-specific keywords invalid as package name components
+    "fun", "val", "when", "in", "is", "as", "object", "companion", "data", "inner",
+    "typealias", "actual", "expect",
   ]);
   const packageParts = packageName.split(".");
   for (const part of packageParts) {
@@ -270,7 +273,12 @@ async function handleGenerate(args) {
   const normalizedOutputDir = pathValidation.normalizedPath;
 
   // Additional safety: reject paths that look like system directories
-  const dangerousPaths = ["/etc", "/usr", "/bin", "/sbin", "/var", "/root"];
+  const dangerousPaths = [
+    // Linux system paths
+    "/etc", "/usr", "/bin", "/sbin", "/var", "/root",
+    // macOS system paths
+    "/System", "/Library", "/Applications", "/private",
+  ];
   for (const dangerous of dangerousPaths) {
     if (normalizedOutputDir.startsWith(dangerous)) {
       return errorResponse(
@@ -325,8 +333,11 @@ async function handleGenerate(args) {
     // Create target directory
     mkdirSync(normalizedOutputDir, { recursive: true });
 
-    // Copy template to target
-    cpSync(TEMPLATE_DIR, normalizedOutputDir, { recursive: true });
+    // Copy template to target, excluding .git directory
+    cpSync(TEMPLATE_DIR, normalizedOutputDir, {
+      recursive: true,
+      filter: (src) => !src.includes("/.git/") && !src.endsWith("/.git"),
+    });
 
     // Remove .git directory
     const gitDir = join(normalizedOutputDir, ".git");
@@ -540,7 +551,7 @@ async function handleListDependencies() {
     if (versionsMatch) {
       const lines = versionsMatch[1].split("\n");
       lines.forEach((line) => {
-        const match = line.match(/^(\w+)\s*=\s*"([^"]+)"/);
+        const match = line.match(/^([\w-]+)\s*=\s*"([^"]+)"/);
         if (match) {
           versions[match[1]] = match[2];
         }
@@ -555,7 +566,7 @@ async function handleListDependencies() {
     const coreKeys = [
       "kotlin",
       "agp",
-      "compose",
+      "compose-plugin",
     ];
     coreKeys.forEach((key) => {
       if (versions[key]) {

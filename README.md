@@ -1,5 +1,6 @@
 # Kotlin Multiplatform Template
 
+[![CI](https://github.com/nkrebs13/kmp-template/actions/workflows/ci.yml/badge.svg)](https://github.com/nkrebs13/kmp-template/actions/workflows/ci.yml)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.3.0-7F52FF.svg?logo=kotlin)](https://kotlinlang.org)
 [![Compose Multiplatform](https://img.shields.io/badge/Compose_Multiplatform-1.10.0-4285F4.svg)](https://www.jetbrains.com/lp/compose-multiplatform/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -137,11 +138,11 @@ template/
 | **Build** | Android Gradle Plugin | 9.0.0 |
 | **Build** | Gradle | 9.3.0 |
 | **Async** | Kotlinx Coroutines | 1.10.2 |
-| **Serialization** | Kotlinx Serialization | 1.10.0 |
 | **Code Quality** | Detekt | 1.23.8 |
 | **Code Quality** | Spotless | 8.2.1 |
+| **Coverage** | Kover | 0.9.4 |
 
-This template includes only essential dependencies to keep your project lean. The version catalog also includes entries for commonly-needed libraries that are not wired into module builds by default — add them to your module `dependencies {}` as needed. This includes Jetpack Compose Navigation (2.9.7), Kotlinx DateTime (0.6.2), and commented-out entries for Room, Ktor, Koin, and more (see [libs.versions.toml](gradle/libs.versions.toml)).
+This template includes only essential dependencies to keep your project lean. The version catalog also includes entries for commonly-needed libraries that are not wired into module builds by default — add them to your module `dependencies {}` as needed. This includes Kotlinx Serialization (1.10.0), Jetpack Compose Navigation (2.9.7), Kotlinx DateTime (0.6.2), and commented-out entries for Room, Ktor, Koin, and more (see [libs.versions.toml](gradle/libs.versions.toml)).
 
 ## Build Commands
 
@@ -160,6 +161,7 @@ This template includes only essential dependencies to keep your project lean. Th
 # Code Quality
 ./gradlew spotlessApply    # Format code
 ./gradlew detekt           # Static analysis
+./gradlew :shared:koverVerify  # Verify code coverage (60% minimum)
 
 # Validation (for template development)
 ./scripts/validate.sh      # Check for template references

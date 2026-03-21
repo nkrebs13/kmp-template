@@ -62,7 +62,8 @@ spotless = "8.2.1"
 ktlint = "1.8.0"
 
 # Build Tools (uncomment as needed)
-# ksp = "2.3.6"
+# KSP version must match Kotlin version prefix (e.g. Kotlin 2.3.0 → KSP 2.3.0-x.y.z)
+# ksp = "2.3.0-1.0.31"
 
 [libraries]
 # Core

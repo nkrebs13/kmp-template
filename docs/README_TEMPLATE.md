@@ -1,4 +1,4 @@
-# Template
+# __PROJECT_NAME__
 
 A Kotlin Multiplatform application for iOS and Android.
 
@@ -7,7 +7,7 @@ A Kotlin Multiplatform application for iOS and Android.
 ### Prerequisites
 
 - **JDK 17 or higher** - **Required** for Gradle 9.0 and build system compatibility
-- **Android Studio Ladybug (2024.2.1) or newer** - Latest stable IDE with KMP support
+- **Android Studio Meerkat (2024.3.2) or newer** - Latest stable IDE with KMP support
 - **Xcode 15.0 or newer** - For iOS development and latest iOS SDK support  
 - **macOS** - Required for iOS development and Xcode
 
@@ -65,4 +65,4 @@ Run all tests:
 
 ## 📄 License
 
-Copyright © 2026 Template. All rights reserved.
+Copyright © 2026 __PROJECT_NAME__. All rights reserved.
