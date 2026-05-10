@@ -204,6 +204,27 @@ function errorResponse(message) {
   };
 }
 
+function resolveProjectDir(projectDir) {
+  const pathResult = validatePath(projectDir);
+  if (!pathResult.isValid) {
+    return { error: `Invalid project directory: ${pathResult.error}` };
+  }
+  const resolvedDir = pathResult.normalizedPath;
+  if (!existsSync(resolvedDir)) {
+    return { error: `Project directory does not exist: ${resolvedDir}` };
+  }
+  return { resolvedDir };
+}
+
+function commentedVersionKeys(catalogContent) {
+  const versionsMatch = catalogContent.match(/\[versions\]([\s\S]*?)(?=\[|$)/);
+  if (!versionsMatch) return [];
+  return versionsMatch[1]
+    .split("\n")
+    .map((line) => line.match(/^#\s*([\w-]+)\s*=/)?.[1])
+    .filter(Boolean);
+}
+
 async function handleGenerate(args) {
   // Validate args object exists
   if (!args || typeof args !== "object") {
@@ -515,20 +536,11 @@ async function handleValidate(args) {
     return errorResponse("Error: projectDir is required and must be a string");
   }
 
-  // Validate and normalize the path
-  const pathValidation = validatePath(projectDir);
-  if (!pathValidation.isValid) {
-    return errorResponse(
-      `Error: Invalid project directory: ${pathValidation.error}`
-    );
+  const dirResult = resolveProjectDir(projectDir);
+  if (dirResult.error) {
+    return errorResponse(`Error: ${dirResult.error}`);
   }
-  const normalizedProjectDir = pathValidation.normalizedPath;
-
-  if (!existsSync(normalizedProjectDir)) {
-    return errorResponse(
-      `Error: Project directory does not exist: ${normalizedProjectDir}`
-    );
-  }
+  const normalizedProjectDir = dirResult.resolvedDir;
 
   const result = validateProject(normalizedProjectDir);
 
@@ -630,15 +642,11 @@ function handleSetDependency({ key, projectDir, dryRun = false }) {
     return errorResponse("key is required");
   }
 
-  const pathResult = validatePath(projectDir);
-  if (!pathResult.isValid) {
-    return errorResponse(pathResult.error);
+  const dirResult = resolveProjectDir(projectDir);
+  if (dirResult.error) {
+    return errorResponse(dirResult.error);
   }
-  const resolvedDir = pathResult.normalizedPath;
-
-  if (!existsSync(resolvedDir)) {
-    return errorResponse(`Project directory does not exist: ${resolvedDir}`);
-  }
+  const resolvedDir = dirResult.resolvedDir;
 
   const catalogPath = join(resolvedDir, "gradle", "libs.versions.toml");
   if (!existsSync(catalogPath)) {
@@ -663,10 +671,12 @@ function handleSetDependency({ key, projectDir, dryRun = false }) {
   });
 
   if (enabled.length === 0) {
+    const available = commentedVersionKeys(content);
+    const availableHint = available.length
+      ? `Available optional dependencies: ${available.join(", ")}`
+      : "Check gradle/libs.versions.toml for available optional dependencies.";
     return errorResponse(
-      `No commented-out entries found matching prefix: "${key}"\n\n` +
-        `Available optional dependencies: room, datastore, ktor, koin, coil, ` +
-        `kotlinx-serialization, kotlinx-datetime, ksp, androidx-core, androidx-lifecycle, androidx-compose-bom`
+      `No commented-out entries found matching prefix: "${key}"\n\n${availableHint}`
     );
   }
 
@@ -674,10 +684,9 @@ function handleSetDependency({ key, projectDir, dryRun = false }) {
     writeFileSync(catalogPath, newContent, "utf-8");
   }
 
-  const verb = dryRun ? "Would enable" : "Enabled";
-  const suffix = dryRun
-    ? "\n\nRe-run with dryRun: false to apply."
-    : "\n\nSync Gradle to pick up the changes.";
+  const [verb, suffix] = dryRun
+    ? ["Would enable", "\n\nRe-run with dryRun: false to apply."]
+    : ["Enabled", "\n\nSync Gradle to pick up the changes."];
 
   return {
     content: [
