@@ -17,7 +17,7 @@ import {
   writeFileSync,
   realpathSync,
 } from "fs";
-import { join, dirname, resolve, normalize } from "path";
+import { join, dirname, resolve, normalize, relative, isAbsolute, sep } from "path";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -642,12 +642,12 @@ async function handleListDependencies() {
 
 async function handleSetDependency(args) {
   if (!args || typeof args !== "object") {
-    return errorResponse("key is required");
+    return errorResponse("Error: Invalid arguments provided");
   }
   const { key, projectDir, dryRun = false } = args;
 
   if (!key || typeof key !== "string" || !key.trim()) {
-    return errorResponse("key is required");
+    return errorResponse("Error: key is required and must be a non-empty string");
   }
 
   const dirResult = resolveProjectDir(projectDir);
@@ -657,13 +657,17 @@ async function handleSetDependency(args) {
   const resolvedDir = dirResult.resolvedDir;
 
   // Guard against modifying the template source itself
+  let realResolvedDir;
   try {
-    if (realpathSync(resolvedDir) === realpathSync(TEMPLATE_DIR)) {
+    realResolvedDir = realpathSync(resolvedDir);
+    if (realResolvedDir === realpathSync(TEMPLATE_DIR)) {
       return errorResponse(
         "Cannot modify the template source directory. Provide the path to a generated project."
       );
     }
-  } catch { /* realpathSync failure handled below */ }
+  } catch (e) {
+    return errorResponse(`Cannot resolve project directory: ${e.message}`);
+  }
 
   const catalogPath = join(resolvedDir, "gradle", "libs.versions.toml");
   if (!existsSync(catalogPath)) {
@@ -671,20 +675,25 @@ async function handleSetDependency(args) {
   }
 
   // Guard against symlink traversal: verify the resolved catalog stays within the project dir
-  let realCatalog, realDir;
+  let realCatalog;
   try {
-    realDir = realpathSync(resolvedDir);
     realCatalog = realpathSync(catalogPath);
   } catch (e) {
     return errorResponse(`Cannot resolve catalog path: ${e.message}`);
   }
-  if (!realCatalog.startsWith(realDir + "/")) {
+  const rel = relative(realResolvedDir, realCatalog);
+  if (rel.startsWith("..") || isAbsolute(rel)) {
     return errorResponse(
       "Version catalog path escapes the project directory (symlink detected)."
     );
   }
 
-  const content = readFileSync(catalogPath, "utf-8");
+  let content;
+  try {
+    content = readFileSync(catalogPath, "utf-8");
+  } catch (e) {
+    return errorResponse(`Failed to read version catalog: ${e.message}`);
+  }
 
   // Match commented entries whose key starts with the provided prefix followed by
   // a hyphen separator or end-of-identifier. This prevents 'kotlin' from matching
@@ -712,7 +721,11 @@ async function handleSetDependency(args) {
   }
 
   if (!dryRun) {
-    writeFileSync(catalogPath, newContent, "utf-8");
+    try {
+      writeFileSync(catalogPath, newContent, "utf-8");
+    } catch (e) {
+      return errorResponse(`Failed to write version catalog: ${e.message}`);
+    }
   }
 
   const [verb, suffix] = dryRun

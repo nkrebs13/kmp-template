@@ -588,9 +588,9 @@ else
     echo "  9. ./gradlew :shared:allTests :shared:koverVerify        # tests + coverage"
     echo ""
     echo "  Release signing (Android):"
-    echo " 10. Add signing.* keys to your local.properties (see the template repo's"
-    echo "     local.properties.template for the full format), then uncomment the"
-    echo "     signingConfigs block in androidApp/build.gradle.kts"
+    echo " 10. Add signing.* keys to local.properties (format documented in README.md → Release Signing),"
+    echo "     then uncomment the releaseKeystore loader, signingConfigs block, and"
+    echo "     signingConfig line in androidApp/build.gradle.kts"
     echo ""
     echo "Happy coding!"
 fi

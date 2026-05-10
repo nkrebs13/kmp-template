@@ -48,14 +48,14 @@ Run all tests:
 
 To sign release APKs, add your keystore details to `local.properties` (never commit this file):
 
-```
+```properties
 signing.storeFile=/absolute/path/to/release.jks
 signing.storePassword=your_store_password
 signing.keyAlias=your_key_alias
 signing.keyPassword=your_key_password
 ```
 
-Then uncomment the `signingConfigs` block in `androidApp/build.gradle.kts`.
+Then uncomment all three sections in `androidApp/build.gradle.kts` (the `releaseKeystore` loader, the `signingConfigs` block, and the `signingConfig =` line in the release build type).
 
 Generate a new keystore if you don't have one:
 ```bash

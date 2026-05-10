@@ -5,8 +5,8 @@ plugins {
     alias(libs.plugins.androidx.baselineprofile)
 }
 
-// --- Release Signing ---
-// Populate local.properties with signing.* keys (see local.properties.template), then uncomment.
+// --- Release Signing (uncomment all three sections below together) ---
+// Step 1: Populate local.properties with signing.* keys (see README.md → Release Signing).
 // val releaseKeystore = java.util.Properties().apply {
 //     val f = rootProject.file("local.properties")
 //     if (f.exists()) load(f.inputStream())
@@ -16,6 +16,7 @@ android {
     namespace = "com.template.android"
     compileSdk = 36
 
+    // // Step 2: Uncomment signingConfigs block
     // signingConfigs {
     //     create("release") {
     //         storeFile = releaseKeystore.getProperty("signing.storeFile")?.let { file(it) }
@@ -48,7 +49,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            // signingConfig = signingConfigs.getByName("release")
+            // signingConfig = signingConfigs.getByName("release") // Step 3
         }
     }
 

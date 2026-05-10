@@ -44,7 +44,7 @@ All dependencies are managed through `gradle/libs.versions.toml` for centralized
 
 ### Optional Dependencies (commented out in `gradle/libs.versions.toml`)
 
-Uncomment the relevant lines in `gradle/libs.versions.toml` to enable. Use the MCP `set_dependency` tool to enable them automatically (e.g., `set_dependency("ktor", projectDir)`).
+Uncomment the relevant lines in `gradle/libs.versions.toml` to enable. Use the MCP `set_dependency` tool to enable them automatically (e.g., invoke with `key: "ktor"` and your project path).
 
 | Dependency | Version | Purpose |
 |------------|---------|---------|
