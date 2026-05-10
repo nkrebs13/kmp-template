@@ -24,18 +24,14 @@ All dependencies are managed through `gradle/libs.versions.toml` for centralized
 | compose | 1.10.0 | Compose Multiplatform UI framework |
 | agp | 9.0.0 | Android Gradle Plugin |
 | kotlinx-coroutines | 1.10.2 | Async/concurrency |
-| kotlinx-serialization | 1.10.0 | JSON serialization |
 
 ### AndroidX Versions
 
 | Dependency | Version | Purpose |
 |------------|---------|---------|
-| androidx-core | 1.17.0 | Android core KTX |
 | androidx-appcompat | 1.7.1 | AppCompat library |
 | androidx-activity | 1.12.4 | Activity APIs |
-| androidx-lifecycle | 2.10.0 | Lifecycle components |
 | androidx-splashscreen | 1.2.0 | Splash screen API |
-| androidx-compose-bom | 2026.01.00 | Compose BOM |
 | androidx-compose-material3 | 1.4.0 | Material 3 components |
 
 ### Code Quality Tools
@@ -45,7 +41,24 @@ All dependencies are managed through `gradle/libs.versions.toml` for centralized
 | detekt | 1.23.8 | Static analysis |
 | spotless | 8.2.1 | Code formatting |
 | ktlint | 1.8.0 | Kotlin linter |
-| ksp | 2.3.0-1.0.31 | Kotlin Symbol Processing (must match Kotlin version prefix) |
+
+### Optional Dependencies (commented out in `gradle/libs.versions.toml`)
+
+Uncomment the relevant lines in `gradle/libs.versions.toml` to enable. Use the MCP `set_dependency` tool to enable them automatically (e.g., invoke with `key: "ktor"` and your project path).
+
+| Dependency | Version | Purpose |
+|------------|---------|---------|
+| kotlinx-serialization | 1.10.0 | JSON serialization |
+| androidx-core | 1.17.0 | Android core KTX |
+| androidx-lifecycle | 2.10.0 | Lifecycle / ViewModel / Flow |
+| androidx-compose-bom | 2026.01.00 | Compose BOM (pin all Compose versions together) |
+| ksp | 2.3.0-1.0.31 | Kotlin Symbol Processing (required by Room, Koin annotations) |
+| room | 2.7.2 | SQLite ORM with KMP support |
+| datastore | — | Typed key-value + proto storage (version carried by androidx-datastore catalog entry) |
+| ktor | 3.1.3 | Multiplatform HTTP client |
+| koin | 4.1.0 | Dependency injection |
+| coil | 3.3.0 | Image loading |
+| kotlinx-datetime | 0.6.2 | Multiplatform date/time |
 
 ## Configuration Files
 

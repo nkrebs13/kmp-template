@@ -5,9 +5,26 @@ plugins {
     alias(libs.plugins.androidx.baselineprofile)
 }
 
+// --- Release Signing (uncomment all three sections below together) ---
+// Step 1: Populate local.properties with signing.* keys (see README.md → Release Signing).
+// val releaseKeystore = java.util.Properties().apply {
+//     val f = rootProject.file("local.properties")
+//     if (f.exists()) load(f.inputStream())
+// }
+
 android {
     namespace = "com.template.android"
     compileSdk = 36
+
+    // // Step 2: Uncomment signingConfigs block
+    // signingConfigs {
+    //     create("release") {
+    //         storeFile = releaseKeystore.getProperty("signing.storeFile")?.let { file(it) }
+    //         storePassword = releaseKeystore.getProperty("signing.storePassword")
+    //         keyAlias = releaseKeystore.getProperty("signing.keyAlias")
+    //         keyPassword = releaseKeystore.getProperty("signing.keyPassword")
+    //     }
+    // }
 
     defaultConfig {
         applicationId = "com.template.android"
@@ -32,9 +49,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            // Without a release signing config, the generated release APK is unsigned and
-            // cannot be installed until it is signed. See:
-            // https://developer.android.com/studio/publish/app-signing
+            // signingConfig = signingConfigs.getByName("release") // Step 3
         }
     }
 
@@ -61,7 +76,7 @@ android {
         xmlReport = true
         checkReleaseBuilds = true
         // Version-upgrade notices are informational, not bugs
-        disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable")
+        disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable", "OldTargetApi")
     }
 
     packaging {

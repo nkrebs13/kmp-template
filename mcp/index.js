@@ -14,8 +14,10 @@ import {
   rmSync,
   readFileSync,
   readdirSync,
+  writeFileSync,
+  realpathSync,
 } from "fs";
-import { join, dirname, resolve, normalize } from "path";
+import { join, dirname, resolve, normalize, relative, isAbsolute, sep } from "path";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -98,6 +100,34 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {},
         },
       },
+      {
+        name: "set_dependency",
+        description:
+          "Enable one or more commented-out dependencies in a generated project's version catalog (gradle/libs.versions.toml). " +
+          "Matches the provided key as a prefix — e.g., 'ktor' enables ktor, ktor-client-core, ktor-client-android, etc. " +
+          "Use list_dependencies to discover which optional dependency keys are available.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            key: {
+              type: "string",
+              description:
+                "Dependency key prefix to enable (e.g., 'ktor', 'room', 'koin', 'coil', 'kotlinx-serialization').",
+            },
+            projectDir: {
+              type: "string",
+              description:
+                "Absolute path to the generated project directory containing gradle/libs.versions.toml.",
+            },
+            dryRun: {
+              type: "boolean",
+              description:
+                "If true, preview which entries would be enabled without writing to disk. Default: false.",
+            },
+          },
+          required: ["key", "projectDir"],
+        },
+      },
     ],
   };
 });
@@ -113,6 +143,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return handleValidate(args);
     case "list_dependencies":
       return handleListDependencies();
+    case "set_dependency":
+      return handleSetDependency(args);
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -171,6 +203,29 @@ function errorResponse(message) {
     content: [{ type: "text", text: message }],
     isError: true,
   };
+}
+
+function resolveProjectDir(projectDir) {
+  const pathResult = validatePath(projectDir);
+  if (!pathResult.isValid) {
+    return { error: `Invalid project directory: ${pathResult.error}` };
+  }
+  const resolvedDir = pathResult.normalizedPath;
+  if (!existsSync(resolvedDir)) {
+    return { error: `Project directory does not exist: ${resolvedDir}` };
+  }
+  return { resolvedDir };
+}
+
+function commentedEntryKeys(catalogContent) {
+  return [
+    ...new Set(
+      catalogContent
+        .split("\n")
+        .map((line) => line.match(/^#\s*([\w-]+)\s*=/)?.[1])
+        .filter(Boolean)
+    ),
+  ];
 }
 
 async function handleGenerate(args) {
@@ -484,20 +539,11 @@ async function handleValidate(args) {
     return errorResponse("Error: projectDir is required and must be a string");
   }
 
-  // Validate and normalize the path
-  const pathValidation = validatePath(projectDir);
-  if (!pathValidation.isValid) {
-    return errorResponse(
-      `Error: Invalid project directory: ${pathValidation.error}`
-    );
+  const dirResult = resolveProjectDir(projectDir);
+  if (dirResult.error) {
+    return errorResponse(`Error: ${dirResult.error}`);
   }
-  const normalizedProjectDir = pathValidation.normalizedPath;
-
-  if (!existsSync(normalizedProjectDir)) {
-    return errorResponse(
-      `Error: Project directory does not exist: ${normalizedProjectDir}`
-    );
-  }
+  const normalizedProjectDir = dirResult.resolvedDir;
 
   const result = validateProject(normalizedProjectDir);
 
@@ -592,6 +638,111 @@ async function handleListDependencies() {
   } catch (error) {
     return errorResponse(`Error reading dependencies: ${error.message}`);
   }
+}
+
+async function handleSetDependency(args) {
+  if (!args || typeof args !== "object") {
+    return errorResponse("Error: Invalid arguments provided");
+  }
+  const { key, projectDir, dryRun = false } = args;
+
+  if (!key || typeof key !== "string" || !key.trim()) {
+    return errorResponse("Error: key is required and must be a non-empty string");
+  }
+
+  const dirResult = resolveProjectDir(projectDir);
+  if (dirResult.error) {
+    return errorResponse(dirResult.error);
+  }
+  const resolvedDir = dirResult.resolvedDir;
+
+  // Guard against modifying the template source itself
+  let realResolvedDir;
+  try {
+    realResolvedDir = realpathSync(resolvedDir);
+    if (realResolvedDir === realpathSync(TEMPLATE_DIR)) {
+      return errorResponse(
+        "Cannot modify the template source directory. Provide the path to a generated project."
+      );
+    }
+  } catch (e) {
+    return errorResponse(`Cannot resolve project directory: ${e.message}`);
+  }
+
+  const catalogPath = join(resolvedDir, "gradle", "libs.versions.toml");
+  if (!existsSync(catalogPath)) {
+    return errorResponse(`Version catalog not found: ${catalogPath}`);
+  }
+
+  // Guard against symlink traversal: verify the resolved catalog stays within the project dir
+  let realCatalog;
+  try {
+    realCatalog = realpathSync(catalogPath);
+  } catch (e) {
+    return errorResponse(`Cannot resolve catalog path: ${e.message}`);
+  }
+  const rel = relative(realResolvedDir, realCatalog);
+  if (rel.startsWith("..") || isAbsolute(rel)) {
+    return errorResponse(
+      "Version catalog path escapes the project directory (symlink detected)."
+    );
+  }
+
+  let content;
+  try {
+    content = readFileSync(catalogPath, "utf-8");
+  } catch (e) {
+    return errorResponse(`Failed to read version catalog: ${e.message}`);
+  }
+
+  // Match commented entries whose key starts with the provided prefix followed by
+  // a hyphen separator or end-of-identifier. This prevents 'kotlin' from matching
+  // 'kotlinx-*' entries, since 'x' is not a hyphen boundary.
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(
+    `^(#\\s*)(${escapedKey}(?:-[\\w]+)*)\\s*=`,
+    "gm"
+  );
+
+  const enabled = [];
+  const newContent = content.replace(pattern, (match, hash, entryKey) => {
+    enabled.push(entryKey);
+    return match.slice(hash.length);
+  });
+
+  if (enabled.length === 0) {
+    const available = commentedEntryKeys(content);
+    const availableHint = available.length
+      ? `Available optional dependencies: ${available.join(", ")}`
+      : "Check gradle/libs.versions.toml for available optional dependencies.";
+    return errorResponse(
+      `No commented-out entries found matching prefix: "${key}"\n\n${availableHint}`
+    );
+  }
+
+  if (!dryRun) {
+    try {
+      writeFileSync(catalogPath, newContent, "utf-8");
+    } catch (e) {
+      return errorResponse(`Failed to write version catalog: ${e.message}`);
+    }
+  }
+
+  const [verb, suffix] = dryRun
+    ? ["Would enable", "\n\nRe-run with dryRun: false to apply."]
+    : ["Enabled", "\n\nSync Gradle to pick up the changes."];
+
+  return {
+    content: [
+      {
+        type: "text",
+        text:
+          `${verb} ${enabled.length} entr${enabled.length === 1 ? "y" : "ies"} matching "${key}":\n` +
+          enabled.map((e) => `  • ${e}`).join("\n") +
+          suffix,
+      },
+    ],
+  };
 }
 
 // Start server
