@@ -8,11 +8,13 @@ android {
     compileSdk = 36
 
     defaultConfig {
+        // minSdk 28: required by androidx.benchmark.macro (Macrobenchmark APIs are API 28+).
         minSdk = 28
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Java/Kotlin target parity required on AGP 9.x — see androidApp/build.gradle.kts for rationale.
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

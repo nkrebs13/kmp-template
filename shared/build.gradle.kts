@@ -9,6 +9,11 @@ plugins {
 }
 
 kotlin {
+    // Hierarchy template is auto-applied on Kotlin 2.x when source sets aren't
+    // manually re-parented; calling it explicitly documents the contract and
+    // protects against future auto-apply behavior changes.
+    applyDefaultHierarchyTemplate()
+
     androidLibrary {
         namespace = "com.template.shared"
         compileSdk = 36
@@ -50,7 +55,19 @@ kotlin {
 
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
         }
+    }
+}
+
+// Compose compiler metrics + stability reports — gated behind a project property.
+// Enable with: ./gradlew -Pkmp.composeCompilerReports=true :shared:compileAndroidMain
+// Reports land under shared/build/compose-reports/
+composeCompiler {
+    if (providers.gradleProperty("kmp.composeCompilerReports").orNull == "true") {
+        val dir = layout.buildDirectory.dir("compose-reports")
+        reportsDestination.set(dir)
+        metricsDestination.set(dir)
     }
 }
 
