@@ -59,7 +59,7 @@ Then uncomment the `signingConfigs` block in `androidApp/build.gradle.kts`.
 
 Generate a new keystore if you don't have one:
 ```bash
-keytool -genkey -v -keystore release.jks -alias key0 -keyAlg RSA -keySize 2048 -validity 10000
+keytool -genkey -v -keystore release.jks -alias key0 -keyalg RSA -keysize 2048 -validity 10000
 ```
 
 For CI/CD, inject signing values as environment variables and read them in `build.gradle.kts` instead of `local.properties`.

@@ -75,7 +75,7 @@ android {
         xmlReport = true
         checkReleaseBuilds = true
         // Version-upgrade notices are informational, not bugs
-        disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable")
+        disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable", "OldTargetApi")
     }
 
     packaging {

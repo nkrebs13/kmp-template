@@ -8,7 +8,7 @@ sdk.dir=/path/to/android/sdk
 # ndk.dir=/path/to/android/ndk
 
 # Release signing — uncomment and fill in to enable signed release builds.
-# Generate a keystore: keytool -genkey -v -keystore release.jks -alias key0 -keyAlg RSA -keySize 2048 -validity 10000
+# Generate a keystore: keytool -genkey -v -keystore release.jks -alias key0 -keyalg RSA -keysize 2048 -validity 10000
 # signing.storeFile=/absolute/path/to/release.jks
 # signing.storePassword=
 # signing.keyAlias=key0
