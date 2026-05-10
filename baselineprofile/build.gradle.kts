@@ -14,8 +14,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // compileOptions sets Java target; kotlin.compilerOptions sets Kotlin target.
-    // Both required on AGP 9.x — JVM toolchain alone doesn't propagate to AGP's Java task.
+    // Java/Kotlin target parity required on AGP 9.x — see androidApp/build.gradle.kts for rationale.
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

@@ -9,8 +9,9 @@ plugins {
 }
 
 kotlin {
-    // Auto-wires intermediate source sets (appleMain, iosMain, nativeMain, …)
-    // so the three iOS targets share iosMain without manual dependsOn() plumbing.
+    // Hierarchy template is auto-applied on Kotlin 2.x when source sets aren't
+    // manually re-parented; calling it explicitly documents the contract and
+    // protects against future auto-apply behavior changes.
     applyDefaultHierarchyTemplate()
 
     androidLibrary {
@@ -60,7 +61,7 @@ kotlin {
 }
 
 // Compose compiler metrics + stability reports — gated behind a project property.
-// Enable with: ./gradlew -Pkmp.composeCompilerReports=true :shared:compileDebugKotlinAndroid
+// Enable with: ./gradlew -Pkmp.composeCompilerReports=true :shared:compileAndroidMain
 // Reports land under shared/build/compose-reports/
 composeCompiler {
     if (providers.gradleProperty("kmp.composeCompilerReports").orNull == "true") {

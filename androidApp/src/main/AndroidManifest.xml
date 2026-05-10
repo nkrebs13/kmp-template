@@ -3,12 +3,13 @@
 	xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:tools="http://schemas.android.com/tools">
 
-	<!-- allowBackup="false" disables backup on API 24-30. fullBackupContent 
+	<!-- Backup: allowBackup="false" disables backup on API 24-30. fullBackupContent 
 		is redundant given allowBackup=false, but Android lint requires it when dataExtractionRules 
 		is present (dataExtractionRules only covers API 31+). dataExtractionRules 
-		disables cloud backup and device transfer on API 31+. enableOnBackInvokedCallback 
-		and localeConfig are no-ops on API < 33 (silently ignored); tools:targetApi 
-		tells lint they're intentional Android 13+ features. -->
+		disables cloud backup and device transfer on API 31+. -->
+	<!-- Android 13+ features: enableOnBackInvokedCallback enables predictive 
+		back; localeConfig declares per-app language picker support. Both are no-ops 
+		on API < 33; tools:targetApi="33" tells lint these are intentional. -->
 	<application android:allowBackup="false"
 		android:fullBackupContent="@xml/backup_rules"
 		android:dataExtractionRules="@xml/data_extraction_rules"
