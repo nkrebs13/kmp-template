@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import com.template.shared.AppHost
+import com.template.shared.App
 import com.template.shared.AppLogger
 
 class MainActivity : ComponentActivity() {
@@ -14,6 +14,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         AppLogger.i { "MainActivity.onCreate" }
-        setContent { AppHost() }
+        setContent { App() }
     }
 }

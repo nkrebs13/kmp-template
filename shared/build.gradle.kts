@@ -80,11 +80,6 @@ kover {
                     "*ComposableSingletons*",
                     // Compose Multiplatform generated resource collectors
                     "*.generated.resources.*",
-                    // Compose entry-point shells — UI hosts verified via Preview / manual /
-                    // Compose UI tests rather than commonTest unit tests. Logic-bearing
-                    // helpers (Platform, AppLogger) remain covered.
-                    "com.template.shared.AppKt",
-                    "com.template.shared.AppHostKt",
                 )
             }
         }

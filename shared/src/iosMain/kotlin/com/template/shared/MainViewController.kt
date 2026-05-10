@@ -9,4 +9,4 @@ import androidx.compose.ui.window.ComposeUIViewController
  * (mirrors UIKit's `UIViewController` naming, not Kotlin's typical camelCase).
  */
 @Suppress("FunctionName")
-fun MainViewController() = ComposeUIViewController { AppHost() }
+fun MainViewController() = ComposeUIViewController { App() }

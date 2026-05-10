@@ -221,15 +221,9 @@ The iOS app hosts the shared Compose UI through a three-layer bridge:
 
 1. **Kotlin side** (`shared/src/iosMain/.../MainViewController.kt`):
    ```kotlin
-   fun MainViewController() = ComposeUIViewController {
-       val sizePx = LocalWindowInfo.current.containerSize
-       val sizeDp = with(LocalDensity.current) {
-           DpSize(sizePx.width.toDp(), sizePx.height.toDp())
-       }
-       App(windowSize = sizeDp)
-   }
+   fun MainViewController() = ComposeUIViewController { App() }
    ```
-   `ComposeUIViewController` wraps the shared `@Composable` `App()` in a `UIViewController`. The window container size is derived from Compose's `LocalWindowInfo` and threaded into `App(windowSize)` so cross-platform code can branch on form-factor.
+   `ComposeUIViewController` wraps the shared `@Composable` `App()` in a `UIViewController`.
 
 2. **Swift side** (`iosApp/iosApp/ContentView.swift`):
    A `UIViewControllerRepresentable` wraps `MainViewController()` so it can be used in SwiftUI.

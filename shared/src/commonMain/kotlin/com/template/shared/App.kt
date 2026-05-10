@@ -10,20 +10,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-/**
- * Root Composable — renders a greeting with the current [getPlatformName].
- *
- * [windowSize] is the container size in dp, threaded in from the platform host
- * so downstream code can branch on form-factor (phone / foldable / tablet)
- * without retro-fitting the entry point. The skeleton does not use it yet.
- */
+/** Root Composable — renders a greeting with the current [getPlatformName]. */
 @Composable
 @Preview
-fun App(windowSize: DpSize) {
+fun App() {
     MaterialTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
