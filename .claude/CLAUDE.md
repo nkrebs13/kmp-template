@@ -84,8 +84,9 @@ CI_MINUTES: OUT_OF_MINUTES until ~2026-04-01. All verification must be done loca
 cd mcp && npm install && node --check index.js  # Verify syntax
 ```
 
-The MCP `list_dependencies` tool parses `gradle/libs.versions.toml` with regex `[\w-]+` (supports
-hyphenated keys like `compose-plugin`, `kotlinx-coroutines`).
+The MCP server has three tools: `list_dependencies`, `generate`, `validate`, and `set_dependency`.
+`set_dependency` uncomments optional deps in `libs.versions.toml` by key prefix (e.g., `key: "ktor"`)
+using `path.relative()` for portable symlink guard. The TOML regex `[\w-]+` supports hyphenated keys.
 
 ## Version Tags
 
