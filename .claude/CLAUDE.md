@@ -76,7 +76,9 @@ cd - && rm -rf /tmp/e2e-test
 
 ## CI Minutes Status
 
-CI_MINUTES: OUT_OF_MINUTES until ~2026-04-01. All verification must be done locally.
+CI_MINUTES: AVAILABLE. PR-open CI runs the full Build & Lint + Template Generation
+matrix on `macos-14` runners. Local verification still preferred during iteration;
+push to open a PR for the authoritative run.
 
 ## MCP Server
 
