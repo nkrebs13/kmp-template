@@ -44,6 +44,37 @@ Run all tests:
 ./gradlew :shared:allTests
 ```
 
+## 🔐 Release Signing
+
+To sign release APKs, add your keystore details to `local.properties` (never commit this file):
+
+```
+signing.storeFile=/absolute/path/to/release.jks
+signing.storePassword=your_store_password
+signing.keyAlias=your_key_alias
+signing.keyPassword=your_key_password
+```
+
+Then uncomment the `signingConfigs` block in `androidApp/build.gradle.kts`.
+
+Generate a new keystore if you don't have one:
+```bash
+keytool -genkey -v -keystore release.jks -alias key0 -keyAlg RSA -keySize 2048 -validity 10000
+```
+
+For CI/CD, inject signing values as environment variables and read them in `build.gradle.kts` instead of `local.properties`.
+
+## ⚡ Baseline Profiles
+
+This template includes a `baselineprofile` module for [Android Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/overview) — a performance optimization that pre-compiles critical code paths, reducing app startup by up to 40%.
+
+To generate a profile:
+1. Connect a physical device (API 28+) or configure a managed device in `baselineprofile/build.gradle.kts`
+2. Run: `./gradlew :baselineprofile:generateBaselineProfile`
+3. Commit the generated `baseline-prof.txt` in `androidApp/src/main/`
+
+The module is pre-wired with `dexLayoutOptimization = true`. Most projects can ignore this until they have stable user flows worth optimizing.
+
 ## 📦 Tech Stack
 
 - **Kotlin Multiplatform**: Code sharing between platforms

@@ -7,8 +7,9 @@ sdk.dir=/path/to/android/sdk
 # Uncomment and set your NDK path if using NDK
 # ndk.dir=/path/to/android/ndk
 
-# Optional: Set up signing configs
-# android.injected.signing.store.file=/path/to/keystore.jks
-# android.injected.signing.store.password=password
-# android.injected.signing.key.alias=alias
-# android.injected.signing.key.password=password
+# Release signing — uncomment and fill in to enable signed release builds.
+# Generate a keystore: keytool -genkey -v -keystore release.jks -alias key0 -keyAlg RSA -keySize 2048 -validity 10000
+# signing.storeFile=/absolute/path/to/release.jks
+# signing.storePassword=
+# signing.keyAlias=key0
+# signing.keyPassword=

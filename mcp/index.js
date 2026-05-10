@@ -14,6 +14,7 @@ import {
   rmSync,
   readFileSync,
   readdirSync,
+  writeFileSync,
 } from "fs";
 import { join, dirname, resolve, normalize } from "path";
 import { fileURLToPath } from "url";
@@ -98,6 +99,34 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {},
         },
       },
+      {
+        name: "set_dependency",
+        description:
+          "Enable one or more commented-out dependencies in a generated project's version catalog (gradle/libs.versions.toml). " +
+          "Matches the provided key as a prefix — e.g., 'ktor' enables ktor, ktor-client-core, ktor-client-android, etc. " +
+          "Supports: room, datastore, ktor, koin, coil, kotlinx-serialization, kotlinx-datetime, ksp, androidx-core, androidx-lifecycle, androidx-compose-bom.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            key: {
+              type: "string",
+              description:
+                "Dependency key prefix to enable (e.g., 'ktor', 'room', 'koin', 'coil', 'kotlinx-serialization').",
+            },
+            projectDir: {
+              type: "string",
+              description:
+                "Absolute path to the generated project directory containing gradle/libs.versions.toml.",
+            },
+            dryRun: {
+              type: "boolean",
+              description:
+                "If true, preview which entries would be enabled without writing to disk. Default: false.",
+            },
+          },
+          required: ["key", "projectDir"],
+        },
+      },
     ],
   };
 });
@@ -113,6 +142,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return handleValidate(args);
     case "list_dependencies":
       return handleListDependencies();
+    case "set_dependency":
+      return handleSetDependency(args);
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -592,6 +623,73 @@ async function handleListDependencies() {
   } catch (error) {
     return errorResponse(`Error reading dependencies: ${error.message}`);
   }
+}
+
+function handleSetDependency({ key, projectDir, dryRun = false }) {
+  if (!key || typeof key !== "string" || !key.trim()) {
+    return errorResponse("key is required");
+  }
+
+  const pathResult = validatePath(projectDir);
+  if (!pathResult.isValid) {
+    return errorResponse(pathResult.error);
+  }
+  const resolvedDir = pathResult.normalizedPath;
+
+  if (!existsSync(resolvedDir)) {
+    return errorResponse(`Project directory does not exist: ${resolvedDir}`);
+  }
+
+  const catalogPath = join(resolvedDir, "gradle", "libs.versions.toml");
+  if (!existsSync(catalogPath)) {
+    return errorResponse(`Version catalog not found: ${catalogPath}`);
+  }
+
+  const content = readFileSync(catalogPath, "utf-8");
+
+  // Match commented entries whose key starts with the provided prefix followed by
+  // a hyphen separator or end-of-identifier. This prevents 'kotlin' from matching
+  // 'kotlinx-*' entries, since 'x' is not a hyphen boundary.
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(
+    `^(#\\s*)(${escapedKey}(?:-[\\w]+)*)\\s*=`,
+    "gm"
+  );
+
+  const enabled = [];
+  const newContent = content.replace(pattern, (match, hash, entryKey) => {
+    enabled.push(entryKey);
+    return match.slice(hash.length);
+  });
+
+  if (enabled.length === 0) {
+    return errorResponse(
+      `No commented-out entries found matching prefix: "${key}"\n\n` +
+        `Available optional dependencies: room, datastore, ktor, koin, coil, ` +
+        `kotlinx-serialization, kotlinx-datetime, ksp, androidx-core, androidx-lifecycle, androidx-compose-bom`
+    );
+  }
+
+  if (!dryRun) {
+    writeFileSync(catalogPath, newContent, "utf-8");
+  }
+
+  const verb = dryRun ? "Would enable" : "Enabled";
+  const suffix = dryRun
+    ? "\n\nRe-run with dryRun: false to apply."
+    : "\n\nSync Gradle to pick up the changes.";
+
+  return {
+    content: [
+      {
+        type: "text",
+        text:
+          `${verb} ${enabled.length} entr${enabled.length === 1 ? "y" : "ies"} matching "${key}":\n` +
+          enabled.map((e) => `  • ${e}`).join("\n") +
+          suffix,
+      },
+    ],
+  };
 }
 
 // Start server

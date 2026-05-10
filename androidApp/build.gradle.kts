@@ -5,9 +5,25 @@ plugins {
     alias(libs.plugins.androidx.baselineprofile)
 }
 
+// --- Release Signing ---
+// Populate local.properties with signing.* keys (see local.properties.template), then uncomment.
+// val releaseKeystore = java.util.Properties().apply {
+//     val f = rootProject.file("local.properties")
+//     if (f.exists()) load(f.inputStream())
+// }
+
 android {
     namespace = "com.template.android"
     compileSdk = 36
+
+    // signingConfigs {
+    //     create("release") {
+    //         storeFile = releaseKeystore.getProperty("signing.storeFile")?.let { file(it) }
+    //         storePassword = releaseKeystore.getProperty("signing.storePassword")
+    //         keyAlias = releaseKeystore.getProperty("signing.keyAlias")
+    //         keyPassword = releaseKeystore.getProperty("signing.keyPassword")
+    //     }
+    // }
 
     defaultConfig {
         applicationId = "com.template.android"
@@ -32,9 +48,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            // Without a release signing config, the generated release APK is unsigned and
-            // cannot be installed until it is signed. See:
-            // https://developer.android.com/studio/publish/app-signing
+            // signingConfig = signingConfigs.getByName("release")
         }
     }
 
