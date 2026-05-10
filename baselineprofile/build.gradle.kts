@@ -8,11 +8,14 @@ android {
     compileSdk = 36
 
     defaultConfig {
+        // minSdk 28: required by androidx.benchmark.macro (Macrobenchmark APIs are API 28+).
         minSdk = 28
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // compileOptions sets Java target; kotlin.compilerOptions sets Kotlin target.
+    // Both required on AGP 9.x — JVM toolchain alone doesn't propagate to AGP's Java task.
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

@@ -1,5 +1,5 @@
-rootProject.name = "Template"
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS") // Still experimental in Gradle 9.3 — no deprecation warning
+// Type-safe project accessors are still feature-gated in Gradle 9.x (incubating).
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
     repositories {
@@ -27,6 +27,8 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
+
+rootProject.name = "Template"
 
 include(":androidApp")
 include(":shared")

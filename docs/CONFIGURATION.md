@@ -170,6 +170,32 @@ dependencies {
 ./gradlew check
 ```
 
+### Performance Profiling
+
+Compose compiler stability + metrics reports are gated behind a project property so they
+don't run on every build. Enable with:
+
+```bash
+./gradlew -Pkmp.composeCompilerReports=true :shared:compileAndroidMain
+```
+
+Reports land under `shared/build/compose-reports/`. The `<module>-classes.txt` file lists
+which classes are skippable / stable; `<module>-composables.csv` shows recomposition
+classification per `@Composable`. Read these to debug unnecessary recomposition.
+
+### Coroutine Tests
+
+`kotlinx-coroutines-test` is wired into `commonTest` by default. Use `runTest { … }` and a
+`TestDispatcher` so virtual time replaces real `delay()`:
+
+```kotlin
+@Test fun example() = runTest {
+    val dispatcher = StandardTestDispatcher(testScheduler)
+    // … exercise a suspend function on `dispatcher`, advance time with
+    // `testScheduler.advanceTimeBy(N.milliseconds)` instead of waiting.
+}
+```
+
 ## Architecture Details
 
 ### The `expect`/`actual` Pattern
@@ -195,9 +221,15 @@ The iOS app hosts the shared Compose UI through a three-layer bridge:
 
 1. **Kotlin side** (`shared/src/iosMain/.../MainViewController.kt`):
    ```kotlin
-   fun MainViewController() = ComposeUIViewController { App() }
+   fun MainViewController() = ComposeUIViewController {
+       val sizePx = LocalWindowInfo.current.containerSize
+       val sizeDp = with(LocalDensity.current) {
+           DpSize(sizePx.width.toDp(), sizePx.height.toDp())
+       }
+       App(windowSize = sizeDp)
+   }
    ```
-   `ComposeUIViewController` wraps the shared `@Composable` `App()` in a `UIViewController`.
+   `ComposeUIViewController` wraps the shared `@Composable` `App()` in a `UIViewController`. The window container size is derived from Compose's `LocalWindowInfo` and threaded into `App(windowSize)` so cross-platform code can branch on form-factor.
 
 2. **Swift side** (`iosApp/iosApp/ContentView.swift`):
    A `UIViewControllerRepresentable` wraps `MainViewController()` so it can be used in SwiftUI.
@@ -302,9 +334,16 @@ Spotless is configured in the root `build.gradle.kts`:
 The Android app module (`androidApp/`) uses:
 - Material 3 theming
 - Splash screen API
+- Edge-to-edge by default (`enableEdgeToEdge()`)
+- Predictive back gesture (`android:enableOnBackInvokedCallback="true"`)
+- Per-app language preferences (`@xml/locales_config`, App Bundle language splits disabled)
 - Compose Activity
 - ProGuard rules for release
 - Baseline profile integration with DEX layout optimization
+
+**Adding a new locale:** edit `androidApp/src/main/res/xml/locales_config.xml` and add a
+`<locale android:name="…"/>` entry; ship matching string resources under
+`res/values-<bcp47>/strings.xml`.
 
 ### iOS
 

@@ -9,6 +9,10 @@ plugins {
 }
 
 kotlin {
+    // Auto-wires intermediate source sets (appleMain, iosMain, nativeMain, …)
+    // so the three iOS targets share iosMain without manual dependsOn() plumbing.
+    applyDefaultHierarchyTemplate()
+
     androidLibrary {
         namespace = "com.template.shared"
         compileSdk = 36
@@ -50,7 +54,19 @@ kotlin {
 
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
         }
+    }
+}
+
+// Compose compiler metrics + stability reports — gated behind a project property.
+// Enable with: ./gradlew -Pkmp.composeCompilerReports=true :shared:compileDebugKotlinAndroid
+// Reports land under shared/build/compose-reports/
+composeCompiler {
+    if (providers.gradleProperty("kmp.composeCompilerReports").orNull == "true") {
+        val dir = layout.buildDirectory.dir("compose-reports")
+        reportsDestination.set(dir)
+        metricsDestination.set(dir)
     }
 }
 
@@ -64,6 +80,11 @@ kover {
                     "*ComposableSingletons*",
                     // Compose Multiplatform generated resource collectors
                     "*.generated.resources.*",
+                    // Compose entry-point shells — UI hosts verified via Preview / manual /
+                    // Compose UI tests rather than commonTest unit tests. Logic-bearing
+                    // helpers (Platform, AppLogger) remain covered.
+                    "com.template.shared.AppKt",
+                    "com.template.shared.AppHostKt",
                 )
             }
         }

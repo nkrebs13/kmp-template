@@ -53,6 +53,9 @@ android {
         }
     }
 
+    // compileOptions sets Java target; kotlin.compilerOptions sets Kotlin target.
+    // Both are required on AGP 9.x — JVM toolchain alone doesn't propagate to AGP's
+    // Java compile task, and a mismatch fails compileDebugKotlin.
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -82,6 +85,14 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+
+    // Disable language split so per-app locale APIs (LocaleManager / @xml/locales_config)
+    // work correctly with App Bundles.
+    bundle {
+        language {
+            enableSplit = false
         }
     }
 }
