@@ -15,6 +15,7 @@ import {
   readFileSync,
   readdirSync,
   writeFileSync,
+  realpathSync,
 } from "fs";
 import { join, dirname, resolve, normalize } from "path";
 import { fileURLToPath } from "url";
@@ -104,7 +105,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         description:
           "Enable one or more commented-out dependencies in a generated project's version catalog (gradle/libs.versions.toml). " +
           "Matches the provided key as a prefix — e.g., 'ktor' enables ktor, ktor-client-core, ktor-client-android, etc. " +
-          "Supports: room, datastore, ktor, koin, coil, kotlinx-serialization, kotlinx-datetime, ksp, androidx-core, androidx-lifecycle, androidx-compose-bom.",
+          "Use list_dependencies to discover which optional dependency keys are available.",
         inputSchema: {
           type: "object",
           properties: {
@@ -216,13 +217,15 @@ function resolveProjectDir(projectDir) {
   return { resolvedDir };
 }
 
-function commentedVersionKeys(catalogContent) {
-  const versionsMatch = catalogContent.match(/\[versions\]([\s\S]*?)(?=\[|$)/);
-  if (!versionsMatch) return [];
-  return versionsMatch[1]
-    .split("\n")
-    .map((line) => line.match(/^#\s*([\w-]+)\s*=/)?.[1])
-    .filter(Boolean);
+function commentedEntryKeys(catalogContent) {
+  return [
+    ...new Set(
+      catalogContent
+        .split("\n")
+        .map((line) => line.match(/^#\s*([\w-]+)\s*=/)?.[1])
+        .filter(Boolean)
+    ),
+  ];
 }
 
 async function handleGenerate(args) {
@@ -637,7 +640,12 @@ async function handleListDependencies() {
   }
 }
 
-function handleSetDependency({ key, projectDir, dryRun = false }) {
+async function handleSetDependency(args) {
+  if (!args || typeof args !== "object") {
+    return errorResponse("key is required");
+  }
+  const { key, projectDir, dryRun = false } = args;
+
   if (!key || typeof key !== "string" || !key.trim()) {
     return errorResponse("key is required");
   }
@@ -648,9 +656,32 @@ function handleSetDependency({ key, projectDir, dryRun = false }) {
   }
   const resolvedDir = dirResult.resolvedDir;
 
+  // Guard against modifying the template source itself
+  try {
+    if (realpathSync(resolvedDir) === realpathSync(TEMPLATE_DIR)) {
+      return errorResponse(
+        "Cannot modify the template source directory. Provide the path to a generated project."
+      );
+    }
+  } catch { /* realpathSync failure handled below */ }
+
   const catalogPath = join(resolvedDir, "gradle", "libs.versions.toml");
   if (!existsSync(catalogPath)) {
     return errorResponse(`Version catalog not found: ${catalogPath}`);
+  }
+
+  // Guard against symlink traversal: verify the resolved catalog stays within the project dir
+  let realCatalog, realDir;
+  try {
+    realDir = realpathSync(resolvedDir);
+    realCatalog = realpathSync(catalogPath);
+  } catch (e) {
+    return errorResponse(`Cannot resolve catalog path: ${e.message}`);
+  }
+  if (!realCatalog.startsWith(realDir + "/")) {
+    return errorResponse(
+      "Version catalog path escapes the project directory (symlink detected)."
+    );
   }
 
   const content = readFileSync(catalogPath, "utf-8");
@@ -671,7 +702,7 @@ function handleSetDependency({ key, projectDir, dryRun = false }) {
   });
 
   if (enabled.length === 0) {
-    const available = commentedVersionKeys(content);
+    const available = commentedEntryKeys(content);
     const availableHint = available.length
       ? `Available optional dependencies: ${available.join(", ")}`
       : "Check gradle/libs.versions.toml for available optional dependencies.";

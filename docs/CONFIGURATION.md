@@ -54,7 +54,7 @@ Uncomment the relevant lines in `gradle/libs.versions.toml` to enable. Use the M
 | androidx-compose-bom | 2026.01.00 | Compose BOM (pin all Compose versions together) |
 | ksp | 2.3.0-1.0.31 | Kotlin Symbol Processing (required by Room, Koin annotations) |
 | room | 2.7.2 | SQLite ORM with KMP support |
-| datastore | (via androidx-datastore) | Typed key-value + proto storage |
+| datastore | — | Typed key-value + proto storage (version carried by androidx-datastore catalog entry) |
 | ktor | 3.1.3 | Multiplatform HTTP client |
 | koin | 4.1.0 | Dependency injection |
 | coil | 3.3.0 | Image loading |

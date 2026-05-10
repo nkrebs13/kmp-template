@@ -588,8 +588,9 @@ else
     echo "  9. ./gradlew :shared:allTests :shared:koverVerify        # tests + coverage"
     echo ""
     echo "  Release signing (Android):"
-    echo " 10. Copy local.properties.template → local.properties and fill in signing.* keys"
-    echo "     Then uncomment the signingConfigs block in androidApp/build.gradle.kts"
+    echo " 10. Add signing.* keys to your local.properties (see the template repo's"
+    echo "     local.properties.template for the full format), then uncomment the"
+    echo "     signingConfigs block in androidApp/build.gradle.kts"
     echo ""
     echo "Happy coding!"
 fi
