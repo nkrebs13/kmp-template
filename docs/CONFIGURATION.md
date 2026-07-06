@@ -6,10 +6,10 @@ This document provides detailed configuration information for the Kotlin Multipl
 
 | Component | Version |
 |-----------|---------|
-| Kotlin | 2.3.0 |
-| Compose Multiplatform | 1.10.0 |
-| Android Gradle Plugin | 9.0.0 |
-| Gradle | 9.3.0 |
+| Kotlin | 2.4.0 |
+| Compose Multiplatform | 1.10.3 |
+| Android Gradle Plugin | 9.1.0 |
+| Gradle | 9.5.0 |
 | JDK Requirement | 17+ |
 
 ## Version Catalog System
@@ -20,17 +20,17 @@ All dependencies are managed through `gradle/libs.versions.toml` for centralized
 
 | Dependency | Version | Purpose |
 |------------|---------|---------|
-| kotlin | 2.3.0 | Kotlin compiler and stdlib |
-| compose | 1.10.0 | Compose Multiplatform UI framework |
-| agp | 9.0.0 | Android Gradle Plugin |
-| kotlinx-coroutines | 1.10.2 | Async/concurrency |
+| kotlin | 2.4.0 | Kotlin compiler and stdlib |
+| compose | 1.10.3 | Compose Multiplatform UI framework |
+| agp | 9.1.0 | Android Gradle Plugin |
+| kotlinx-coroutines | 1.11.0 | Async/concurrency |
 
 ### AndroidX Versions
 
 | Dependency | Version | Purpose |
 |------------|---------|---------|
 | androidx-appcompat | 1.7.1 | AppCompat library |
-| androidx-activity | 1.12.4 | Activity APIs |
+| androidx-activity | 1.13.0 | Activity APIs |
 | androidx-splashscreen | 1.2.0 | Splash screen API |
 | androidx-compose-material3 | 1.4.0 | Material 3 components |
 
@@ -39,7 +39,7 @@ All dependencies are managed through `gradle/libs.versions.toml` for centralized
 | Tool | Version | Purpose |
 |------|---------|---------|
 | detekt | 1.23.8 | Static analysis |
-| spotless | 8.2.1 | Code formatting |
+| spotless | 8.8.0 | Code formatting |
 | ktlint | 1.8.0 | Kotlin linter |
 
 ### Optional Dependencies (commented out in `gradle/libs.versions.toml`)
@@ -52,7 +52,6 @@ Uncomment the relevant lines in `gradle/libs.versions.toml` to enable. Use the M
 | androidx-core | 1.17.0 | Android core KTX |
 | androidx-lifecycle | 2.10.0 | Lifecycle / ViewModel / Flow |
 | androidx-compose-bom | 2026.01.00 | Compose BOM (pin all Compose versions together) |
-| ksp | 2.3.0-1.0.31 | Kotlin Symbol Processing (required by Room, Koin annotations) |
 | room | 2.7.2 | SQLite ORM with KMP support |
 | datastore | — | Typed key-value + proto storage (version carried by androidx-datastore catalog entry) |
 | ktor | 3.1.3 | Multiplatform HTTP client |

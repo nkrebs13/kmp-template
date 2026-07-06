@@ -1,8 +1,8 @@
 [versions]
 # Core
-agp = "9.0.0"
-kotlin = "2.3.0"
-compose-plugin = "1.10.0"
+agp = "9.1.0"
+kotlin = "2.4.0"
+compose-plugin = "1.10.3"
 
 # AndroidX - Core
 # androidx-core = "1.17.0"
@@ -12,7 +12,7 @@ androidx-splashscreen = "1.2.0"
 # AndroidX - Compose
 # androidx-compose-bom = "2026.01.00"
 androidx-compose-material3 = "1.4.0"
-androidx-activity-compose = "1.12.4"
+androidx-activity-compose = "1.13.0"
 # androidx-lifecycle-compose = "2.10.0"
 # androidx-navigation-compose = "2.9.7"
 
@@ -25,18 +25,18 @@ androidx-activity-compose = "1.12.4"
 # androidx-work = "2.10.0"
 
 # AndroidX - Performance (alpha required for AGP 9.x compatibility)
-androidx-benchmark = "1.5.0-alpha03"
+androidx-benchmark = "1.5.0-alpha07"
 androidx-profileinstaller = "1.4.1"
 
 # AndroidX - Testing
 androidx-test-ext-junit = "1.3.0"
 androidx-test-espresso = "3.7.0"
-androidx-test-uiautomator = "2.3.0"
+androidx-test-uiautomator = "2.4.0"
 # androidx-test-runner = "1.7.0"
 # androidx-test-core = "1.7.0"
 
 # Kotlinx
-kotlinx-coroutines = "1.10.2"
+kotlinx-coroutines = "1.11.0"
 # kotlinx-serialization = "1.10.0"
 # kotlinx-datetime = "0.6.2"
 
@@ -50,20 +50,16 @@ kotlinx-coroutines = "1.10.2"
 # coil = "3.3.0"
 
 # Logging
-kermit = "2.0.8"
+kermit = "2.1.0"
 
 # Security (uncomment as needed)
 # tink = "1.16.0"
 
 # Code Quality
 detekt = "1.23.8"
-kover = "0.9.4"
-spotless = "8.2.1"
+kover = "0.9.8"
+spotless = "8.8.0"
 ktlint = "1.8.0"
-
-# Build Tools (uncomment as needed)
-# KSP version must match Kotlin version prefix (e.g. Kotlin 2.3.0 → KSP 2.3.0-x.y.z)
-# ksp = "2.3.0-1.0.31"
 
 [libraries]
 # Core
@@ -161,6 +157,3 @@ spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 # AndroidX & Performance
 androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "androidx-benchmark" }
 # androidx-room = { id = "androidx.room", version.ref = "androidx-room" }
-
-# Build Tools (uncomment as needed)
-# ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

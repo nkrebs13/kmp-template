@@ -108,5 +108,5 @@ cd test-project
 
 ---
 
-**Last Updated**: 2026-05-10
-**Template Version**: 3.1.0 (Kotlin 2.3.0 | Compose 1.10.0 | AGP 9.0.0 | Gradle 9.3.0)
+**Last Updated**: 2026-07-06
+**Template Version**: 3.1.0 (Kotlin 2.4.0 | Compose 1.10.3 | AGP 9.1.0 | Gradle 9.5.0)
