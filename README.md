@@ -1,8 +1,8 @@
 # Kotlin Multiplatform Template
 
 [![CI](https://github.com/nkrebs13/kmp-template/actions/workflows/ci.yml/badge.svg)](https://github.com/nkrebs13/kmp-template/actions/workflows/ci.yml)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.0-7F52FF.svg?logo=kotlin)](https://kotlinlang.org)
-[![Compose Multiplatform](https://img.shields.io/badge/Compose_Multiplatform-1.10.0-4285F4.svg)](https://www.jetbrains.com/lp/compose-multiplatform/)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.0-7F52FF.svg?logo=kotlin)](https://kotlinlang.org)
+[![Compose Multiplatform](https://img.shields.io/badge/Compose_Multiplatform-1.10.3-4285F4.svg)](https://www.jetbrains.com/lp/compose-multiplatform/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A production-ready Kotlin Multiplatform template for iOS and Android apps with Compose Multiplatform.
@@ -133,14 +133,14 @@ template/
 
 | Category | Library | Version |
 |----------|---------|---------|
-| **Language** | Kotlin | 2.3.0 |
-| **UI** | Compose Multiplatform | 1.10.0 |
-| **Build** | Android Gradle Plugin | 9.0.0 |
-| **Build** | Gradle | 9.3.0 |
-| **Async** | Kotlinx Coroutines | 1.10.2 |
+| **Language** | Kotlin | 2.4.0 |
+| **UI** | Compose Multiplatform | 1.10.3 |
+| **Build** | Android Gradle Plugin | 9.1.0 |
+| **Build** | Gradle | 9.5.0 |
+| **Async** | Kotlinx Coroutines | 1.11.0 |
 | **Code Quality** | Detekt | 1.23.8 |
-| **Code Quality** | Spotless | 8.2.1 |
-| **Coverage** | Kover | 0.9.4 |
+| **Code Quality** | Spotless | 8.8.0 |
+| **Coverage** | Kover | 0.9.8 |
 
 This template includes only essential dependencies to keep your project lean. The version catalog also includes entries for commonly-needed libraries that are not wired into module builds by default — add them to your module `dependencies {}` as needed. This includes Kotlinx Serialization (1.10.0), Jetpack Compose Navigation (2.9.7), Kotlinx DateTime (0.6.2), and commented-out entries for Room, Ktor, Koin, and more (see [libs.versions.toml](gradle/libs.versions.toml)).
 
@@ -225,4 +225,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Template Version:** 3.1.0 | **Kotlin:** 2.3.0 | **Compose:** 1.10.0 | **AGP:** 9.0.0 | **Gradle:** 9.3.0
+**Template Version:** 3.1.0 | **Kotlin:** 2.4.0 | **Compose:** 1.10.3 | **AGP:** 9.1.0 | **Gradle:** 9.5.0

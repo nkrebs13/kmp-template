@@ -14,7 +14,7 @@ kotlin {
     // protects against future auto-apply behavior changes.
     applyDefaultHierarchyTemplate()
 
-    androidLibrary {
+    android {
         namespace = "com.template.shared"
         compileSdk = 36
         minSdk = 24
