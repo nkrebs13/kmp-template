@@ -36,7 +36,6 @@ proguard/
 *.moved-aside
 *.pbxuser
 *.perspectivev3
-**/*sync/
 .sconsign.dblite
 .tags*
 **/.vagrant/
@@ -408,8 +407,11 @@ google-maps-*.json
 
 # AI coding assistants
 .cursor/
-.claude/
+# '.claude/' (the directory) would make the re-includes below no-ops: git never descends into it.
+.claude/*
 !.claude/rules/
+!.claude/settings.json
+!.claude/CLAUDE.md
 
 # Xcode Cloud
 iosApp/ci_scripts/
