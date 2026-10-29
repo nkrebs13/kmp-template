@@ -41,7 +41,7 @@ jobs:
         run: ./gradlew spotlessCheck detekt
 
   android:
-    name: Android
+    name: Android & Desktop
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -59,9 +59,11 @@ jobs:
         with:
           validate-wrappers: true
 
-      # `check` skips the iOS targets on Linux; the ios job covers them.
-      - name: Check, release build, baseline profile module
-        run: ./gradlew check :shared:koverHtmlReport :androidApp:assembleRelease :baselineprofile:assemble
+      # `check` skips the iOS targets on Linux (the ios job covers them) and runs the jvm tests.
+      # createDistributable builds the jpackage app image; packageDistributionForCurrentOS would
+      # also need dpkg/fakeroot on the runner for the installer, which adds nothing to the check.
+      - name: Check, release build, baseline profile module, desktop distributable
+        run: ./gradlew check :shared:koverHtmlReport :androidApp:assembleRelease :baselineprofile:assemble :desktopApp:createDistributable
 
       - name: Upload reports
         if: always()

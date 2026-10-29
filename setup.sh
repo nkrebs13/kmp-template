@@ -326,6 +326,8 @@ replace_in_directory "com.template.android" "$PACKAGE_NAME" "."
 replace_in_directory "com/template/android" "$PACKAGE_PATH" "."
 replace_in_directory "com.template.baselineprofile" "${PACKAGE_NAME}.baselineprofile" "."
 replace_in_directory "com/template/baselineprofile" "${PACKAGE_PATH}/baselineprofile" "."
+replace_in_directory "com.template.desktop" "${PACKAGE_NAME}.desktop" "."
+replace_in_directory "com/template/desktop" "${PACKAGE_PATH}/desktop" "."
 
 # 3. Update Android application ID
 echo "• Updating Android configuration..."
@@ -336,6 +338,10 @@ replace_in_file "namespace = \"com.template.baselineprofile\"" "namespace = \"${
 if [ -f "baselineprofile/src/main/kotlin/com/template/baselineprofile/BaselineProfileGenerator.kt" ]; then
     replace_in_file "packageName = \"com.template.android\"" "packageName = \"$PACKAGE_NAME\"" "baselineprofile/src/main/kotlin/com/template/baselineprofile/BaselineProfileGenerator.kt"
 fi
+
+# Desktop display name (window title, defaults in gradle.properties and main.kt)
+replace_in_file "app.displayName=KMP Template" "app.displayName=$PROJECT_NAME" "gradle.properties"
+replace_in_file "DEFAULT_TITLE = \"KMP Template\"" "DEFAULT_TITLE = \"$PROJECT_NAME\"" "desktopApp/src/main/kotlin/com/template/desktop/main.kt" || true
 
 # 4. Update iOS bundle identifier and project references
 echo "• Updating iOS configuration..."
@@ -374,6 +380,9 @@ else
     mkdir -p "shared/src/androidHostTest/kotlin/$PACKAGE_PATH/shared"
     mkdir -p "shared/src/iosMain/kotlin/$PACKAGE_PATH/shared"
     mkdir -p "shared/src/iosTest/kotlin/$PACKAGE_PATH/shared"
+    mkdir -p "shared/src/jvmMain/kotlin/$PACKAGE_PATH/shared"
+    mkdir -p "shared/src/jvmTest/kotlin/$PACKAGE_PATH/shared"
+    mkdir -p "desktopApp/src/main/kotlin/$PACKAGE_PATH/desktop"
     mkdir -p "androidApp/src/main/kotlin/$PACKAGE_PATH"
     mkdir -p "androidApp/src/androidTest/kotlin/$PACKAGE_PATH"
     mkdir -p "baselineprofile/src/main/kotlin/$PACKAGE_PATH/baselineprofile"
@@ -397,6 +406,15 @@ else
     if [ -d "shared/src/androidHostTest/kotlin/com/template/shared" ]; then
         mv shared/src/androidHostTest/kotlin/com/template/shared/* "shared/src/androidHostTest/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
     fi
+    if [ -d "shared/src/jvmMain/kotlin/com/template/shared" ]; then
+        mv shared/src/jvmMain/kotlin/com/template/shared/* "shared/src/jvmMain/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
+    fi
+    if [ -d "shared/src/jvmTest/kotlin/com/template/shared" ]; then
+        mv shared/src/jvmTest/kotlin/com/template/shared/* "shared/src/jvmTest/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
+    fi
+    if [ -d "desktopApp/src/main/kotlin/com/template/desktop" ]; then
+        mv desktopApp/src/main/kotlin/com/template/desktop/* "desktopApp/src/main/kotlin/$PACKAGE_PATH/desktop/" 2>/dev/null || true
+    fi
     if [ -d "androidApp/src/main/kotlin/com/template/android" ]; then
         mv androidApp/src/main/kotlin/com/template/android/* "androidApp/src/main/kotlin/$PACKAGE_PATH/" 2>/dev/null || true
     fi
@@ -407,6 +425,7 @@ else
     # Clean up old directories
     rm -rf shared/src/*/kotlin/com/template 2>/dev/null || true
     rm -rf androidApp/src/*/kotlin/com/template 2>/dev/null || true
+    rm -rf desktopApp/src/*/kotlin/com/template 2>/dev/null || true
     rm -rf baselineprofile/src/*/kotlin/com/template 2>/dev/null || true
 fi
 
@@ -557,6 +576,9 @@ else
     echo "  4. Open iosApp/iosApp.xcodeproj in Xcode"
     echo "  5. Set your Development Team: Signing & Capabilities → Team"
     echo "  6. Build (⌘B) — the Kotlin framework builds automatically via the pre-build script"
+    echo ""
+    echo "  Desktop:"
+    echo "  Run:  ./gradlew :desktopApp:run     (hot reload: ./gradlew :desktopApp:hotRun --auto)"
     echo ""
     echo "  Code quality:"
     echo "  7. ./gradlew spotlessApply                               # auto-format"
