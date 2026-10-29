@@ -8,9 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Desktop (JVM) target: `shared` gains `jvm()` (`Platform.jvm.kt`, `PlatformJvmTest`), and a new `desktopApp` module built by the new `convention.jvm.application` plugin runs the shared `App()` in a Compose window and packages Dmg/Msi/Deb installers. The window title and package name come from `app.displayName` and `app.packageName` in `gradle.properties`.
+- Desktop (JVM) target: `shared` gains `jvm()` (`Platform.jvm.kt`, `PlatformJvmTest`), and a new `desktopApp` module built by the new `convention.jvm.application` plugin runs the shared `App()` in a Compose window and packages Dmg/Msi/Deb installers. The installer name comes from `app.packageName` in `gradle.properties` (lowercased for Deb); `app.versionName` is validated as `major.minor.patch` with major > 0, and the Windows upgrade UUID is derived from the package name.
 - Compose Hot Reload: `./gradlew :desktopApp:hotRun --auto` (bundled with the Compose Multiplatform plugin; no extra plugin needed).
-- `// region desktop` markers around every desktop line in `settings.gradle.kts` and the `jvm()` target, for removing the desktop target.
+- `// region desktop` markers around exactly two Gradle lines: `include(":desktopApp")` and the `jvm()` target. The generator removes everything else desktop-related by path.
 - `build-logic/` included build with convention plugins: `convention.kmp.library`, `convention.compose`, `convention.android.application`, `convention.quality` and `convention.root`. Module build files now declare only what is specific to them.
 - `./gradlew verifyCatalog`: asks Maven Central, Google Maven and the Gradle Plugin Portal for the POM of every catalog library and plugin marker (including iOS-only artifacts) on every run, and names any alias that is not published. An unreachable repository is reported as a network problem, not a broken entry. Not part of `check`.
 - Compose rules for detekt (`io.nlopez.compose.rules:detekt` 0.4.28).

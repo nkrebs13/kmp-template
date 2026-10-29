@@ -73,16 +73,18 @@ from the constants in `ProjectExtensions.kt`. ktlint settings live in `.editorco
 
 ## Desktop Notes
 
-- Desktop lines are wrapped in `// region desktop` / `// endregion desktop` (`settings.gradle.kts`,
-  the `jvm()` target in `KmpLibraryConventionPlugin`) so a generator flag can strip them. Keep each
-  region on whole lines.
-- `hotRun` comes from the Compose Multiplatform plugin's bundled Compose Hot Reload; it attaches to
+- The `// region desktop` markers cover exactly two Gradle lines: `include(":desktopApp")` in
+  `settings.gradle.kts` and the `jvm()` target in `KmpLibraryConventionPlugin`. Everything else
+  (`desktopApp/`, `shared/src/jvmMain`, `jvmTest`, the `kotlin-jvm` catalog and root plugin lines, CI,
+  setup.sh, docs) is removed by the generator by path, not by markers.
+- `hotRun` comes from the Compose Multiplatform plugin's bundled Compose Hot Reload (it runs on JetBrains Runtime, which the toolchain resolver provisioned in testing); it attaches to
   `kotlin("jvm")` modules, so no `org.jetbrains.compose.hot-reload` plugin is applied explicitly.
 - CI builds `:desktopApp:createDistributable` (jpackage app image), not installers, which would need
   dpkg/fakeroot on the runner and add nothing to the check.
 - Packaging with a Homebrew JDK fails `checkRuntime` (compose-multiplatform#3107). Use a Temurin/Corretto/JBR
   toolchain, or pass `-Pcompose.desktop.packaging.checkJdkVendor=false` on a machine that has only Homebrew.
-- The window title and installer name come from `app.displayName` / `app.packageName` in `gradle.properties`.
+- The installer name comes from `app.packageName` in `gradle.properties` (lowercased for Deb);
+  `app.versionName` must be `major.minor.patch` with major > 0. The window title is a literal in `main.kt`.
 
 ## Template Generation Test
 

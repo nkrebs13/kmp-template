@@ -339,9 +339,8 @@ if [ -f "baselineprofile/src/main/kotlin/com/template/baselineprofile/BaselinePr
     replace_in_file "packageName = \"com.template.android\"" "packageName = \"$PACKAGE_NAME\"" "baselineprofile/src/main/kotlin/com/template/baselineprofile/BaselineProfileGenerator.kt"
 fi
 
-# Desktop display name (window title, defaults in gradle.properties and main.kt)
-replace_in_file "app.displayName=KMP Template" "app.displayName=$PROJECT_NAME" "gradle.properties"
-replace_in_file "DEFAULT_TITLE = \"KMP Template\"" "DEFAULT_TITLE = \"$PROJECT_NAME\"" "desktopApp/src/main/kotlin/com/template/desktop/main.kt" || true
+# Desktop window title (human-readable name)
+replace_in_directory "KMP Template" "$PROJECT_NAME" "desktopApp/src"
 
 # 4. Update iOS bundle identifier and project references
 echo "• Updating iOS configuration..."

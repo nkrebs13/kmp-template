@@ -75,8 +75,7 @@ kotlin.native.ignoreDisabledTargets=true
 app.versionCode=1
 app.versionName=1.0.0
 
-# Desktop app: window title (app.displayName) and installer package name (app.packageName)
-app.displayName=KMP Template
+# Desktop installer package name (lowercased for Linux .deb); version is app.versionName
 app.packageName=KmpTemplate
 ```
 

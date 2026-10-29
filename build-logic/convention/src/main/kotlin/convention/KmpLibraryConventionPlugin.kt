@@ -31,7 +31,7 @@ class KmpLibraryConventionPlugin : Plugin<Project> {
             configureAndroidTarget(this@with)
             configureIosTargets(this@with)
             // region desktop
-            jvm()
+            jvm { compilerOptions.jvmTarget.set(KOTLIN_JVM_TARGET) }
             // endregion desktop
         }
 
