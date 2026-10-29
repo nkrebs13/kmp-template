@@ -586,7 +586,7 @@ fi
 
 GH_FAIL=1 cleanup_case "workflow files refused, then the issue cannot be opened" workflow 0
 if [ "$RC" = 0 ] && origin_has .github/workflows/template.yml && grep -qx "initialized=true" "$SIM/push-out" &&
-    grep -q "::warning::Could not open an issue.*git rm -q .github/workflows/template-cleanup.yml" "$SIM/push.log"; then
+    lists_all_template_workflows "$(grep "::warning::Could not open an issue" "$SIM/push.log")"; then
     pass
 else
     fail "exit $RC, outputs: $(cat "$SIM/push-out"), log: $(tail -2 "$SIM/push.log")"
