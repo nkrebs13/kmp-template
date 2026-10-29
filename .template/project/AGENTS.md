@@ -44,7 +44,7 @@ Desktop: `main()` in `desktopApp/src/main/kotlin/com/template/desktop/main.kt`.
 `./gradlew check` is **the** verification command. In every module it runs Spotless (check only;
 it never reformats), detekt, the unit tests of every target this host can build, Kover (at least
 60% line coverage per KMP library module) and Android lint (`lintDebug`). On macOS that includes
-the iOS simulator tests. Warnings are errors in detekt, lint and Kotlin.
+the iOS simulator tests. Warnings are errors in detekt and Android lint.
 
 `check` does not build the iOS app, package any app or run R8. Run these too when they apply:
 
