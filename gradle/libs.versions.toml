@@ -1,6 +1,6 @@
 [versions]
 # Core
-agp = "9.1.0"
+agp = "9.5.0"
 kotlin = "2.4.10"
 compose-plugin = "1.10.3"
 
