@@ -1,0 +1,43 @@
+# Template-only: turns on auto-merge for non-major Dependabot PRs. setup.sh deletes this file;
+# the guard keeps it inert in any other repository.
+#
+# `gh pr merge --auto` only queues the merge: GitHub merges after the checks that branch
+# protection requires have passed. Without that protection it would merge at once, so set it
+# up first (see docs/MAINTAINING.md). Major updates are never queued and stay manual.
+name: Dependabot auto-merge
+
+# pull_request_target runs the workflow file and the pinned action from the BASE branch, so a
+# Dependabot PR that bumps dependabot/fetch-metadata cannot run its own version with this write
+# token. That is safe here because nothing from the PR is checked out or executed: the job only
+# reads event metadata, queries the GitHub API and queues the merge. Never add a checkout of
+# the PR head to this workflow.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automerge:
+    name: Auto-merge non-major update
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'nkrebs13/kmp-template'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ github.token }}
+
+      # update-type is the HIGHEST semver change in the PR (fetch-metadata README), so a grouped
+      # PR with any major in it reports major and stays manual. An allow-list rather than
+      # `!= major`: an empty or unknown value must not merge.
+      - name: Enable auto-merge
+        if: contains(fromJSON('["version-update:semver-minor","version-update:semver-patch"]'), steps.metadata.outputs.update-type)
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr merge --auto --squash "$PR_URL"

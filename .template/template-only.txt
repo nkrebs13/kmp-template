@@ -14,3 +14,5 @@ SECURITY.md
 .github/CODEOWNERS
 .github/workflows/template.yml
 .github/workflows/template-cleanup.yml
+.github/workflows/dependabot-automerge.yml
+.github/workflows/release.yml

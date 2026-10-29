@@ -1,0 +1,56 @@
+# Template-only: publishes a GitHub Release when a vX.Y.Z tag is pushed (scripts/release.sh does
+# that). The notes are the tag's section of CHANGELOG.md. setup.sh deletes this file.
+name: Release
+
+on:
+  push:
+    # GitHub glob: [0-9] is a digit and * matches any characters (dots included), so this
+    # matches v4.0.0 and v10.2.31. release.sh only creates plain vX.Y.Z tags.
+    tags: ["v[0-9]*.[0-9]*.[0-9]*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create GitHub Release
+    if: github.repository == 'nkrebs13/kmp-template'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # Only commits that are on main may be released, whoever pushed the tag.
+      - name: Verify the tag is on main
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if ! git merge-base --is-ancestor "$TAG^{commit}" origin/main; then
+            echo "::error::$TAG does not point at a commit reachable from main; refusing to release it"
+            exit 1
+          fi
+
+      - name: Extract release notes from CHANGELOG.md
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=${TAG#v}
+          # From "## [X.Y.Z]" up to the next "## [", without the heading line.
+          awk -v v="$version" '
+            /^## \[/ { if (found) exit; if (index($0, "## [" v "]") == 1) { found = 1; next } }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          if ! grep -q '[^[:space:]]' notes.md; then
+            echo "::error::CHANGELOG.md has no section, or an empty one, for [$version]"
+            exit 1
+          fi
+          cat notes.md
+
+      - name: Create the release
+        env:
+          TAG: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$TAG" --title "$TAG" --notes-file notes.md --verify-tag

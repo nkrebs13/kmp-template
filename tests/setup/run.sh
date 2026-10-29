@@ -117,7 +117,8 @@ generated_ok() {
     [ "$(json status)" = ok ] || { fail "JSON status is not ok"; return 1; }
     for f in .template setup.sh docs tests scripts .claude CHANGELOG.md CONTRIBUTING.md \
         CODE_OF_CONDUCT.md SECURITY.md .github/CODEOWNERS .github/workflows/template.yml \
-        .github/workflows/template-cleanup.yml; do
+        .github/workflows/template-cleanup.yml .github/workflows/dependabot-automerge.yml \
+        .github/workflows/release.yml scripts/release.sh; do
         [ ! -e "$DIR/$f" ] || { fail "$f survived"; return 1; }
     done
     for f in AGENTS.md README.md LICENSE local.properties.template .github/workflows/ci.yml \
@@ -565,11 +566,19 @@ else
     fail "exit $RC, origin: $(origin_head)"
 fi
 
+# True when the git rm line names every template-only workflow.
+lists_all_template_workflows() {
+    local wf
+    for wf in template.yml template-cleanup.yml dependabot-automerge.yml release.yml; do
+        case "$1" in *".github/workflows/$wf"*) ;; *) return 1 ;; esac
+    done
+}
+
 cleanup_case "workflow files refused" workflow 0
 if [ "$RC" = 0 ] && [ "$(origin_head)" = "Initialize project from kmp-template" ] &&
     origin_has .github/workflows/template.yml && ! origin_has setup.sh &&
     grep -q "^Delete the leftover template workflows$" "$SIM/gh.log" 2>/dev/null &&
-    grep -q "git rm -q .github/workflows/template-cleanup.yml .github/workflows/template.yml" "$SIM/gh.log"; then
+    lists_all_template_workflows "$(grep "git rm -q " "$SIM/gh.log" 2>/dev/null)"; then
     pass
 else
     fail "exit $RC, origin: $(origin_head), issue: $(cat "$SIM/gh.log" 2>/dev/null)"
@@ -577,7 +586,7 @@ fi
 
 GH_FAIL=1 cleanup_case "workflow files refused, then the issue cannot be opened" workflow 0
 if [ "$RC" = 0 ] && origin_has .github/workflows/template.yml && grep -qx "initialized=true" "$SIM/push-out" &&
-    grep -q "::warning::Could not open an issue.*git rm -q .github/workflows/template-cleanup.yml" "$SIM/push.log"; then
+    lists_all_template_workflows "$(grep "::warning::Could not open an issue" "$SIM/push.log")"; then
     pass
 else
     fail "exit $RC, outputs: $(cat "$SIM/push-out"), log: $(tail -2 "$SIM/push.log")"
