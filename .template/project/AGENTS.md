@@ -286,8 +286,9 @@ These come from third-party tools. Leave them; don't spend time on them.
 1. `./gradlew spotlessApply`, then `./gradlew check` passes.
 2. On macOS, if you changed `shared/src/*Main` or `iosApp/`, the `xcodebuild` command above
    passes too.
+3. New logic has tests, in the narrowest source set that can run it.
+4. No new warnings, no weakened gates.
 <!-- region desktop -->
-3. If you changed `desktopApp/` or the desktop build logic, `./gradlew :desktopApp:createDistributable` passes.
+5. If you changed `desktopApp/` or the desktop build logic, `./gradlew :desktopApp:createDistributable`
+   passes too.
 <!-- endregion desktop -->
-4. New logic has tests, in the narrowest source set that can run it.
-5. No new warnings, no weakened gates.
