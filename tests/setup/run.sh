@@ -207,6 +207,12 @@ if generated_ok; then
         fail "ci.yml job is not renamed to Android"
     elif grep -q 'app.packageName' "$DIR/gradle.properties"; then
         fail "app.packageName survived"
+    elif ! (cd "$DIR" && git ls-files -z -co --exclude-standard | perl -0ne '
+        chomp; next unless -f && /\.(?:kts?|properties|ya?ml|md)$/;
+        open my $f, "<", $_ or die; local $/; my $t = <$f>;
+        if ($t =~ /\n\n[ \t]*[)\]}]/ || $t =~ /\n\n\z/) { print "$_\n"; $bad = 1 }
+        END { exit($bad ? 1 : 0) }' >"$TMP/hits"); then
+        fail "a removed block left a blank line before a bracket or at the end of: $(cat "$TMP/hits")"
     else
         pass
     fi

@@ -41,8 +41,11 @@ sub rewrite_regions {
     $text =~ s/${marker}region desktop\b[^\n]*\n.*?${marker}endregion desktop\b[^\n]*\n//gms;
     die "rewrite.pl: $file: nested or misordered 'region desktop' markers\n"
         if $text =~ /${marker}(?:end)?region desktop\b/m;
-    # A removed block often leaves two blank lines where it stood.
+    # Tidy what a removed block leaves behind: two blank lines where it stood, a blank line before
+    # a closing bracket (ktlint rejects it), or blank lines at the end of the file.
     $text =~ s/\n{3,}/\n\n/g;
+    $text =~ s/\n\n([ \t]*[)\]}])/\n$1/g;
+    $text =~ s/\n+\z/\n/;
     return $text;
 }
 
