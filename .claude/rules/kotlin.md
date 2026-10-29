@@ -1,7 +1,7 @@
 # Kotlin & KMP Conventions
 
-- Log with `AppLogger`; never `println`/`print`. detekt's `ForbiddenMethodCall` for them needs type
-  resolution, which `check` does not run, so review for it yourself.
+- Log with `AppLogger`; never `println`/`print`. `checkForbiddenCalls` (part of `check`) fails on
+  them in production sources; detekt's `ForbiddenMethodCall` would need type resolution.
 - Shared public API lives in `shared/src/commonMain/`. Swift sees only the `shared` framework.
 - Platform code uses `expect`/`actual`: declare in `commonMain`, implement in `androidMain`,
   `iosMain` and `jvmMain`, in files named `<Name>.android.kt`, `<Name>.ios.kt`, `<Name>.jvm.kt`.

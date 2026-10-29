@@ -123,35 +123,35 @@ Each looks like something to clean up; each is deliberate.
   Dependabot ignores `io.nlopez.compose.rules:detekt` 0.5+ and cannot see detekt 2's plugin-id
   change, so check by hand monthly: `gh api repos/detekt/detekt/releases --jq '.[0:5][] |
   {tag_name, prerelease}'`. Moving to 2.x also retires the accepted `ReportingExtension.file`
-  deprecation. ([HB-1580][1])
-- **detekt does not catch `println`.** `ForbiddenMethodCall` is configured, but it needs type
-  resolution and `check` runs the plain `detekt` tasks, so it never fires. The generated
-  `AGENTS.md` says so instead of promising enforcement.
+  deprecation.
+- **`checkForbiddenCalls`, not detekt, catches `println`.** detekt's `ForbiddenMethodCall` needs
+  type resolution, and `check` runs the plain `detekt` tasks, so it never fires. A line-based task in
+  `convention.quality` (`CheckForbiddenCallsTask.kt`) fails `check` on `print`/`println` in
+  production sources instead.
 - **Spotless's `clean` hook is removed** (`applySpotlessWithoutCleanHook` in `Spotless.kt`). The
   hook closes every formatter classloader in the daemon, which fails parallel `spotless*` tasks and
   leaked Metaspace until the daemon died (diffplug/spotless#3067). Its `check()` fails the build if
-  Spotless's hook changes shape, which is the signal to delete the workaround. ([HB-1582][2])
+  Spotless's hook changes shape, which is the signal to delete the workaround.
 - **Isolated Projects is `org.gradle.unsafe.isolated-projects=true`.** Gradle silently ignores the
   name without `unsafe.`, so a "cleanup" turns it off with no error. Every build script and
   convention plugin must stay isolated: no `subprojects`/`allprojects`, no cross-project reads.
 - **`desktopApp` packages with JetBrains Runtime** (toolchain vendor pinned, `javaHome` set from
   it). Compose packaging rejects some JDK builds, Homebrew's among them
-  (JetBrains/compose-multiplatform#3107), and Hot Reload works best on JBR. ([HB-1583][3])
+  (JetBrains/compose-multiplatform#3107), and Hot Reload works best on JBR.
 - **iOS deployment target 16.0.** Don't raise it to silence the `ld: warning` about Skiko's
   `libicu.icudtl_dat.o` being built for iOS 18.5: that is Skiko's prebuilt, harmless, and raising
-  the minimum would drop every device on iOS 16 and 17. ([HB-1584][4])
+  the minimum would drop every device on iOS 16 and 17.
 - **No screenshot tests (Roborazzi) in `check`.** Font rendering differs between macOS and Linux,
-  and `check` must be green on both. ([HB-1585][5])
+  and `check` must be green on both.
 - **`com.template` stays the sentinel package.** The leftover check and validation (packages inside
   `com.template` are rejected) give the safety a unique sentinel would, without moving every source
-  file. ([HB-1586][6])
+  file.
 - **The MCP server was removed.** `setup.sh --yes --json` already gives agents a non-interactive,
   machine-readable interface; the npm server duplicated it and was one more thing to keep working.
-  ([HB-1579][7])
 - **The first-push cleanup cannot delete workflows.** `GITHUB_TOKEN` has no `workflows`
   permission, so GitHub refuses a push that changes `.github/workflows`. `template-cleanup.yml`
   restores the template-only workflows, pushes everything else and opens an issue with the one
-  `git rm` command. They stay inert because each is guarded on the repository name. ([HB-1586][6])
+  `git rm` command. They stay inert because each is guarded on the repository name.
 - **No `docs/adr/`.** Reasoning lives where its reader looks: agent rules in the generated
   `AGENTS.md`, maintainer facts here, history on the homeboard cards.
 
@@ -273,13 +273,3 @@ group, so one major in a group keeps the whole PR manual.
 
 Merges made with `GITHUB_TOKEN` (auto-merge) do not trigger `push: main` workflows. The PR-time
 checks are therefore the gate, and the weekly `ci.yml` schedule catches drift afterwards.
-
-## References
-
-[1]: http://127.0.0.1:8777/c/1580 "HB-1580: build-logic convention plugins + quality tooling"
-[2]: http://127.0.0.1:8777/c/1582 "HB-1582: Android correctness + baseline profile producer"
-[3]: http://127.0.0.1:8777/c/1583 "HB-1583: Desktop target + desktopApp + hot reload"
-[4]: http://127.0.0.1:8777/c/1584 "HB-1584: iOS xcconfig, synchronized folders, privacy manifest"
-[5]: http://127.0.0.1:8777/c/1585 "HB-1585: tests + compose resources"
-[6]: http://127.0.0.1:8777/c/1586 "HB-1586: generator rewrite"
-[7]: http://127.0.0.1:8777/c/1579 "HB-1579: clear backlog (Dependabot, MCP removal)"

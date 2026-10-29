@@ -239,9 +239,8 @@ A partial set fails release packaging and names the missing keys. Never commit a
 
 ## Conventions
 
-- **Logging:** `AppLogger` (Kermit), e.g. `AppLogger.i { "message" }`. Never `println`/`print`.
-  detekt's rule against them needs type resolution, which `check` does not run, so nothing catches
-  it for you.
+- **Logging:** `AppLogger` (Kermit), e.g. `AppLogger.i { "message" }`. Never `println`/`print`:
+  `checkForbiddenCalls` (part of `check`) fails on them in production code. Tests may print.
 - **No gate weakening:** no detekt baselines, no `@Suppress` without a comment saying why, no
   lowering Kover's minimum, no disabling lint checks to get green. Fix the code.
 - **Zero new warnings** from Kotlin, detekt, lint or Xcode (except the accepted ones below).

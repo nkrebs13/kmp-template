@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--no-desktop` also removes the desktop build logic (`convention.jvm.application`, the `kotlin-jvm` plugin entries). detekt's test-source excludes use `**/*Test/**` instead of naming each source set.
 
 ### Added
+- `checkForbiddenCalls` (part of `check` in every module) fails on `print`/`println` in production Kotlin sources. detekt's `ForbiddenMethodCall` never fired, because it needs type resolution that `check` does not run.
 - Desktop (JVM) target: `shared` gains `jvm()` (`Platform.jvm.kt`, `PlatformJvmTest`), and a new `desktopApp` module built by the new `convention.jvm.application` plugin runs the shared `App()` in a Compose window and packages Dmg/Msi/Deb installers. The installer name comes from `app.packageName` in `gradle.properties` (lowercased for Deb); `app.versionName` is validated as `major.minor.patch` with major > 0, and the Windows upgrade UUID is derived from the package name.
 - Compose Hot Reload: `./gradlew :desktopApp:hotRun --auto` (bundled with the Compose Multiplatform plugin; no extra plugin needed).
 - `// region desktop` markers around exactly two Gradle lines: `include(":desktopApp")` and the `jvm()` target. The generator removes everything else desktop-related by path.
