@@ -18,7 +18,8 @@ private const val MIN_LINE_COVERAGE_PERCENT = 60
  * A Kotlin Multiplatform library for Android, iOS (device + Apple-silicon simulator) and desktop (JVM).
  *
  * Each iOS target exports a static framework named after the module, with an explicit bundle ID
- * taken from the Android `namespace`. The module sets `kotlin { android { namespace = "…" } }`.
+ * taken from the Android `namespace`, with `_` replaced by `-`. The module sets
+ * `kotlin { android { namespace = "…" } }`.
  */
 class KmpLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project): Unit = with(target) {
@@ -67,7 +68,9 @@ class KmpLibraryConventionPlugin : Plugin<Project> {
                 baseName = project.name
                 isStatic = true
                 linkTaskProvider.configure {
-                    toolOptions.freeCompilerArgs.addAll(androidNamespace.map { listOf("-Xbinary=bundleId=$it") })
+                    // Bundle IDs allow - but not _, which Kotlin packages (and so namespaces) may contain.
+                    val bundleId = androidNamespace.map { it.replace('_', '-') }
+                    toolOptions.freeCompilerArgs.addAll(bundleId.map { listOf("-Xbinary=bundleId=$it") })
                 }
             }
         }

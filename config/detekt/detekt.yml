@@ -93,7 +93,7 @@ complexity:
     active: false
   TooManyFunctions:
     active: true
-    excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidHostTest/**', '**/iosTest/**']
+    excludes: ['**/test/**', '**/*Test/**']
     thresholdInFiles: 11
     thresholdInClasses: 11
     thresholdInInterfaces: 11
@@ -186,7 +186,7 @@ exceptions:
     active: true
   TooGenericExceptionCaught:
     active: true
-    excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidHostTest/**', '**/iosTest/**']
+    excludes: ['**/test/**', '**/*Test/**']
     exceptionNames:
       - 'ArrayIndexOutOfBoundsException'
       - 'Error'
@@ -228,7 +228,7 @@ naming:
     active: false
   FunctionNaming:
     active: true
-    excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidHostTest/**', '**/iosTest/**']
+    excludes: ['**/test/**', '**/*Test/**']
     functionPattern: '[a-z][a-zA-Z0-9]*'
     excludeClassPattern: '$^'
     ignoreAnnotated:
@@ -283,7 +283,7 @@ performance:
     active: true
   SpreadOperator:
     active: true
-    excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidHostTest/**', '**/iosTest/**']
+    excludes: ['**/test/**', '**/*Test/**']
   UnnecessaryPartOfBinaryExpression:
     active: false
   UnnecessaryTemporaryInstantiation:
@@ -425,7 +425,7 @@ style:
     maxJumpCount: 1
   MagicNumber:
     active: true
-    excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidHostTest/**', '**/iosTest/**']
+    excludes: ['**/test/**', '**/*Test/**']
     ignoreNumbers:
       - '-1'
       - '0'
@@ -581,7 +581,7 @@ style:
     active: true
   WildcardImport:
     active: true
-    excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidHostTest/**', '**/iosTest/**']
+    excludes: ['**/test/**', '**/*Test/**']
     excludeImports: []
 
 # Compose rules (io.nlopez.compose.rules:detekt, added by the convention.quality plugin).
