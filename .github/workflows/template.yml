@@ -1,0 +1,93 @@
+# Template-only: tests that setup.sh turns this template into a clean, building project.
+name: Template
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  template-test:
+    name: Template Generation
+    if: github.repository == 'nkrebs13/kmp-template'
+    runs-on: macos-26
+    timeout-minutes: 20
+    env:
+      TEST_PROJECT: MyApp
+      TEST_PACKAGE: com.example.myapp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          validate-wrappers: true
+
+      - name: Run setup.sh
+        run: |
+          # Provide all 4 prompts: project name, package name, iOS bundle ID (same), confirm
+          printf '%s\n%s\n%s\ny\n' "$TEST_PROJECT" "$TEST_PACKAGE" "$TEST_PACKAGE" | ./setup.sh
+
+      - name: Verify no template references
+        run: |
+          FOUND=$(grep -rI -E "com[./]template[./]|com[./]template[^a-z0-9]|TemplateApp|KmpTemplate|orgName" . \
+            --include="*.kt" --include="*.kts" --include="*.xml" \
+            --include="*.swift" --include="*.plist" --include="*.pro" \
+            --include="*.pbxproj" --include="*.xcscheme" \
+            --include="*.toml" --include="*.conf" --include="*.sh" \
+            --exclude-dir=.git --exclude-dir=build --exclude-dir=.gradle \
+            2>/dev/null | wc -l | tr -d ' ')
+          if [ "$FOUND" -gt 0 ]; then
+            echo "ERROR: Found template references in generated project:"
+            grep -rI -E "com[./]template[./]|com[./]template[^a-z0-9]|TemplateApp|KmpTemplate|orgName" . \
+              --include="*.kt" --include="*.kts" --include="*.xml" \
+              --include="*.swift" --include="*.plist" --include="*.pro" \
+              --include="*.pbxproj" --include="*.xcscheme" \
+              --include="*.toml" --include="*.conf" --include="*.sh" \
+              --exclude-dir=.git --exclude-dir=build --exclude-dir=.gradle
+            exit 1
+          fi
+          echo "No template references found"
+
+      - name: Verify template artifacts removed
+        run: |
+          ERRORS=0
+          for f in setup.sh CHANGELOG.md CONTRIBUTING.md SECURITY.md CODE_OF_CONDUCT.md docs/TEMPLATE_DEVELOPMENT.md docs/CONFIGURATION.md; do
+            if [ -f "$f" ]; then
+              echo "ERROR: Template file not removed: $f"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+          if [ -d ".github" ]; then
+            echo "ERROR: .github directory not removed"
+            ERRORS=$((ERRORS + 1))
+          fi
+          # Enforce zero .claude/ files — generated projects must have NO Claude Code tooling
+          if [ -d ".claude" ]; then
+            echo "ERROR: .claude/ directory was not removed — generated projects must contain zero Claude Code files"
+            ERRORS=$((ERRORS + 1))
+          fi
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "Found $ERRORS template artifacts that should have been removed"
+            exit 1
+          fi
+          echo "All template artifacts properly removed"
+
+      - name: Build & test generated project
+        run: ./gradlew :shared:allTests :androidApp:assembleDebug :androidApp:lintDebug :shared:linkDebugFrameworkIosSimulatorArm64

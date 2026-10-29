@@ -139,10 +139,9 @@ docs/
 ## 🧪 Testing Strategy
 
 ### CI/CD Testing
-The GitHub Actions workflow automatically tests:
-- Template generation with various package name patterns
-- Build verification for Android and iOS
-- Package name validation
+Two GitHub Actions workflows run on pull requests targeting `main` and on pushes to `main`; `template.yml` runs only in `nkrebs13/kmp-template` (details in `CONTRIBUTING.md`):
+- `ci.yml`: static analysis, Android `check` and release build on ubuntu, iOS tests and framework on `macos-26`, plus `verifyCatalog`; it also runs weekly
+- `template.yml`: runs `setup.sh` with test inputs, then builds and tests the generated project
 
 ### Manual Testing Process
 1. **Template Generation**:
