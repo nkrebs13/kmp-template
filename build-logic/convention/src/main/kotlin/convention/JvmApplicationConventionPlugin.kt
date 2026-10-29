@@ -5,6 +5,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.tasks.JavaExec
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.jvm.toolchain.JavaToolchainService
 import org.gradle.jvm.toolchain.JavaToolchainSpec
@@ -57,7 +58,8 @@ class JvmApplicationConventionPlugin : Plugin<Project> {
         // Packaging otherwise uses the Gradle daemon's JVM, whatever vendor that is. A JDK (not a JRE)
         // is needed for jpackage, and it is set on the packaging tasks lazily, so builds that never
         // package (Android, iOS) never resolve or download it.
-        val packagingJdk = extensions.getByType<JavaToolchainService>().compilerFor(jetBrainsRuntime)
+        val javaToolchains = extensions.getByType<JavaToolchainService>()
+        val packagingJdk = javaToolchains.compilerFor(jetBrainsRuntime)
             .map { it.metadata.installationPath.asFile.absolutePath }
         // Compose registers these tasks in afterEvaluate and sets their JDK there; this runs after it.
         afterEvaluate {
@@ -65,6 +67,14 @@ class JvmApplicationConventionPlugin : Plugin<Project> {
             tasks.withType<AbstractProguardTask>().configureEach { javaHome.set(packagingJdk) }
             tasks.withType<AbstractSuggestModulesTask>().configureEach { javaHome.set(packagingJdk) }
             tasks.withType<AbstractCheckNativeDistributionRuntime>().configureEach { jdkHome.set(packagingJdk) }
+            // Compose's run tasks are JavaExec tasks with an explicit executable from the daemon's JVM.
+            // Point both the launcher and (when the task runs) the executable at one JBR launcher;
+            // Gradle rejects the two disagreeing.
+            val runtime = javaToolchains.launcherFor(jetBrainsRuntime)
+            tasks.withType<JavaExec>().named { it == "run" || it == "runRelease" }.configureEach {
+                javaLauncher.set(runtime)
+                doFirst { (this as JavaExec).executable(runtime.get().executablePath.asFile.absolutePath) }
+            }
         }
 
         // The Kotlin plugin applies the java plugin; keep javac on the same bytecode level as kotlinc.
