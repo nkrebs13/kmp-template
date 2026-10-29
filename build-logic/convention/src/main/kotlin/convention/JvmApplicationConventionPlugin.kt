@@ -12,9 +12,14 @@ import org.gradle.jvm.toolchain.JvmVendorSpec
 import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.getByType
+import org.gradle.kotlin.dsl.withType
 import org.jetbrains.compose.ComposeExtension
 import org.jetbrains.compose.desktop.DesktopExtension
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.compose.desktop.application.tasks.AbstractCheckNativeDistributionRuntime
+import org.jetbrains.compose.desktop.application.tasks.AbstractJvmToolOperationTask
+import org.jetbrains.compose.desktop.application.tasks.AbstractProguardTask
+import org.jetbrains.compose.desktop.application.tasks.AbstractSuggestModulesTask
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import java.util.UUID
 
@@ -49,9 +54,18 @@ class JvmApplicationConventionPlugin : Plugin<Project> {
             jvmToolchain(jetBrainsRuntime)
             compilerOptions.jvmTarget.set(KOTLIN_JVM_TARGET)
         }
-        // Packaging otherwise uses the Gradle daemon's JVM, whatever vendor that is.
-        val packagingJdk = extensions.getByType<JavaToolchainService>().launcherFor(jetBrainsRuntime)
+        // Packaging otherwise uses the Gradle daemon's JVM, whatever vendor that is. A JDK (not a JRE)
+        // is needed for jpackage, and it is set on the packaging tasks lazily, so builds that never
+        // package (Android, iOS) never resolve or download it.
+        val packagingJdk = extensions.getByType<JavaToolchainService>().compilerFor(jetBrainsRuntime)
             .map { it.metadata.installationPath.asFile.absolutePath }
+        // Compose registers these tasks in afterEvaluate and sets their JDK there; this runs after it.
+        afterEvaluate {
+            tasks.withType<AbstractJvmToolOperationTask>().configureEach { javaHome.set(packagingJdk) }
+            tasks.withType<AbstractProguardTask>().configureEach { javaHome.set(packagingJdk) }
+            tasks.withType<AbstractSuggestModulesTask>().configureEach { javaHome.set(packagingJdk) }
+            tasks.withType<AbstractCheckNativeDistributionRuntime>().configureEach { jdkHome.set(packagingJdk) }
+        }
 
         // The Kotlin plugin applies the java plugin; keep javac on the same bytecode level as kotlinc.
         extensions.configure<JavaPluginExtension> {
@@ -67,7 +81,6 @@ class JvmApplicationConventionPlugin : Plugin<Project> {
         extensions.configure<ComposeExtension> {
             (this as ExtensionAware).extensions.configure<DesktopExtension>("desktop") {
                 application {
-                    javaHome = packagingJdk.get()
                     nativeDistributions {
                         targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
                         this.packageName = packageName
