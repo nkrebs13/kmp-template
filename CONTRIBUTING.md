@@ -44,18 +44,18 @@ Before contributing, ensure you have:
    ./gradlew detekt
    ```
 
-4. Test template generation:
+4. If you touched `setup.sh` or `.template/`, run the generator checks:
    ```bash
-   # Create a test directory
-   cp -r . ../template-test
-   cd ../template-test
-   ./setup.sh
-   # Test with package name like: com.test.myapp
+   shellcheck setup.sh .template/*.sh tests/setup/*.sh
+   bash tests/setup/run.sh                     # on macOS, also: /bin/bash tests/setup/run.sh
    ```
 
-5. Verify no template references remain:
+5. Generate a project in a copy and build it. `setup.sh` checks for template leftovers itself
+   and exits 5 if it finds any:
    ```bash
-   ./scripts/validate.sh
+   git clone . ../template-test && cd ../template-test
+   ./setup.sh --name WeatherApp --package com.acme.weather --author "Test" --yes
+   ./gradlew check
    ```
 
 ### Testing Guidelines
@@ -110,18 +110,26 @@ Two workflows run on pull requests targeting `main` and on pushes to `main`. `te
 | Job | Runner | Runs |
 |-----|--------|------|
 | Static analysis | ubuntu | `spotlessCheck detekt` |
-| Android | ubuntu | `check` (tests, lint, Kover), Kover HTML report, `:androidApp:assembleRelease`, `:baselineprofile:assemble` |
-| iOS | macos-26 | `:shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64` |
+| Android & Desktop | ubuntu | `check` (tests, lint, Kover), Kover HTML report, `:androidApp:assembleRelease`, `:baselineprofile:assemble`, `:desktopApp:createDistributable` |
+| iOS | macos-26 | `:shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64`, privacy manifest lint, `xcodebuild` of the app |
 | Verify catalog | ubuntu | `verifyCatalog`: every catalog coordinate, including unreferenced optional entries, resolves |
 
 The workflow also runs weekly on a schedule, so toolchain drift shows up without a PR.
 
-**`.github/workflows/template.yml`** is template-only. Its Template Generation job checks that `setup.sh` produces a working project:
+**`.github/workflows/template.yml`** is template-only:
 
-1. Runs `setup.sh` with test inputs (`MyApp` / `com.example.myapp`)
-2. Verifies no `com.template` or `TemplateApp` references remain
-3. Verifies template-only files (`setup.sh`, `CHANGELOG.md`, `docs/TEMPLATE_DEVELOPMENT.md`, `docs/CONFIGURATION.md`, `.github/`, etc.) are removed
-4. Builds and tests the generated project (shared tests, Android build, iOS framework)
+- **Generator lint and tests**: `shellcheck`, then `tests/setup/run.sh` (exit codes, validation,
+  dry run, generation variants, `--derive-from-github` derivation).
+- **Generate**: {ubuntu, macOS} × {default, `--no-desktop`, edge (underscore package, hyphenated
+  bundle ID, display name with a space)}. macOS runs `setup.sh` on `/bin/bash` 3.2. Every
+  combination runs the leftover check and asserts there is no `.claude/`, that `AGENTS.md` and
+  the `@AGENTS.md` `CLAUDE.md` exist, and that `ci.yml` and `dependabot.yml` survive. On ubuntu,
+  default and `--no-desktop` run `./gradlew check` and edge builds Android; on macOS, default runs
+  the iOS tests and `xcodebuild`.
+
+**`.github/workflows/template-cleanup.yml`** is template-only too. In a repository created with
+"Use this template", it runs `setup.sh --derive-from-github` on the first push to `main` and
+commits the result.
 
 All jobs must pass before a PR can be merged. Concurrency groups cancel in-progress runs when new commits are pushed.
 

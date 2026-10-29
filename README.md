@@ -9,17 +9,19 @@ A production-ready Kotlin Multiplatform template for iOS, Android and desktop (J
 
 ## Quick Start
 
+Click **Use this template** on GitHub: a workflow runs `setup.sh` on the new repository's first
+commit, deriving the name and package from it (`io.github.<owner>.<repo>`). Or clone and run it:
+
 ```bash
 git clone https://github.com/nkrebs13/kmp-template.git my-app
 cd my-app
-./setup.sh
+./setup.sh --name WeatherApp --package com.acme.weather --yes
 ```
 
-Follow the prompts to customize your project name and package.
-
-**Available flags:**
-- `--dry-run` - Preview changes without modifying files
-- `--help` - Show help message
+Useful flags: `--bundle-id`, `--display-name`, `--author` (LICENSE holder), `--no-desktop`,
+`--dry-run` (list every change, change nothing) and `--json` (one machine-readable result).
+Without a terminal, `setup.sh` never prompts: a missing value exits with code 2. See
+`./setup.sh --help` for every flag and exit code.
 
 ## Requirements
 
@@ -70,8 +72,8 @@ template/
 │   └── jvmMain/         # Desktop (JVM) implementations
 ├── baselineprofile/     # Android performance optimization
 ├── gradle/              # Build configuration & version catalog
-├── scripts/             # Utility scripts
-│   └── validate.sh      # Template reference validation
+├── .template/           # Generator data: tokens, template-only paths, leftover checks, project docs
+├── tests/setup/         # setup.sh tests
 ├── docs/                # Documentation
 └── setup.sh             # Template generation script
 ```
@@ -115,8 +117,8 @@ This template includes only essential dependencies to keep your project lean. Th
 ./gradlew detekt           # Static analysis
 ./gradlew :shared:koverVerify  # Verify code coverage (60% minimum)
 
-# Validation (for template development)
-./scripts/validate.sh      # Check for template references
+# Generator tests (for template development)
+bash tests/setup/run.sh
 ```
 
 ## Troubleshooting
@@ -133,12 +135,11 @@ This template includes only essential dependencies to keep your project lean. Th
 2. **Framework Missing**: Run `./gradlew :shared:linkDebugFrameworkIosSimulatorArm64`
 3. **Signing Issues**: Copy `iosApp/Configuration/Local.xcconfig.example` to `Local.xcconfig` (gitignored) and set `TEAM_ID`
 
-### Template References Found
+### setup.sh Fails
 
-If validation shows remaining template references:
-1. Run `./scripts/validate.sh` to see specific locations
-2. Manually replace any remaining `com.template` references
-3. Re-run validation to confirm
+`setup.sh` checks its own result before it starts the new git history. If template references
+remain, it lists each `file:line`, exits with code 5 and prints the commands that restore the
+template. Please report it as a bug.
 
 ## Contributing
 
