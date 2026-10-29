@@ -1,50 +1,35 @@
 ---
-name: Bug Report
-about: Report a bug in the template or setup process
-title: '[BUG] '
+name: Bug report
+about: Something does not work as expected
+title: ''
 labels: bug
 assignees: ''
 ---
 
-## Environment
+## What happened
 
-- **OS**: [e.g., macOS 14.2]
-- **JDK Version**: [e.g., 17.0.9]
-- **Android Studio**: [e.g., Meerkat 2024.3.2]
-- **Xcode**: [e.g., 15.2]
+A clear description of the bug.
 
-## Bug Description
+## Steps to reproduce
 
-A clear and concise description of what the bug is.
+1.
+2.
+3.
 
-## Steps to Reproduce
+## Expected behavior
 
-1. Clone the template
-2. Run `./setup.sh`
-3. Enter project name: '...'
-4. Enter package name: '...'
-5. See error
+What you expected to happen instead.
 
-## Expected Behavior
+## Platform
 
-What you expected to happen.
+- [ ] Android (device or emulator, OS version: )
+- [ ] iOS (device or simulator, OS version: )
+- [ ] Desktop (OS: )
 
-## Actual Behavior
+App version or commit:
 
-What actually happened.
-
-## Logs/Output
+## Logs or screenshots
 
 ```
-Paste relevant error messages or logs here
+Paste relevant output here
 ```
-
-## Additional Context
-
-Add any other context about the problem here.
-
-## Checklist
-
-- [ ] I have searched existing issues to ensure this is not a duplicate
-- [ ] I am using the latest version of the template
-- [ ] I have included all relevant environment information
