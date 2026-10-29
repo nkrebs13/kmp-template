@@ -64,8 +64,10 @@ for t in $(git tag --list 'v[0-9]*.[0-9]*.[0-9]*'); do
     [[ $v =~ $SEMVER_RE ]] || continue
     if [ -z "$PREV" ] || version_gt "$v" "$PREV"; then PREV=$v; fi
 done
-[ -n "$PREV" ] || die "no existing vX.Y.Z tag to compare against"
-version_gt "$VERSION" "$PREV" || die "$VERSION is not greater than the latest tag v$PREV"
+# No tag yet: this is the first release, and its link points at the release page.
+if [ -n "$PREV" ]; then
+    version_gt "$VERSION" "$PREV" || die "$VERSION is not greater than the latest tag v$PREV"
+fi
 
 grep -q '^## \[Unreleased\]' "$CHANGELOG" || die "$CHANGELOG has no '## [Unreleased]' heading"
 LINK_LINE=$(grep -m1 '^\[Unreleased\]: ' "$CHANGELOG" || true)
@@ -79,7 +81,7 @@ UNRELEASED=$(awk '
     on && (/^## \[/ || /^\[[^]]+\]: /) { exit }
     on { print }
 ' "$CHANGELOG")
-printf '%s' "$UNRELEASED" | grep -q '[^[:space:]]' || die "[Unreleased] in $CHANGELOG is empty"
+printf '%s\n' "$UNRELEASED" | grep -q '^[-*] ' || die "[Unreleased] in $CHANGELOG has no '- ' or '* ' entry"
 
 # --- rewrite the CHANGELOG -----------------------------------------------------------------------
 NEW=$(mktemp "${TMPDIR:-/tmp}/changelog.XXXXXX")
@@ -91,7 +93,8 @@ awk -v ver="$VERSION" -v prev="$PREV" -v date="$DATE" -v base="$BASE_URL" '
     { skipblank = 0 }
     /^\[Unreleased\]: / {
         print "[Unreleased]: " base "/compare/v" ver "...HEAD"
-        print "[" ver "]: " base "/compare/v" prev "...v" ver
+        if (prev == "") print "[" ver "]: " base "/releases/tag/v" ver
+        else print "[" ver "]: " base "/compare/v" prev "...v" ver
         next
     }
     { print }
@@ -111,6 +114,12 @@ fi
 cat "$NEW" >"$CHANGELOG"
 git add "$CHANGELOG"
 git commit --quiet -m "chore(release): $TAG"
+RELEASE_COMMIT=$(git rev-parse HEAD)
 git tag -a "$TAG" -m "Release $TAG"
-git push --atomic origin main "$TAG"
+if ! git push --atomic origin main "$TAG"; then
+    echo "release.sh: the push failed; undoing the local release commit and tag." >&2
+    git tag -d "$TAG" >/dev/null
+    if [ "$(git rev-parse HEAD)" = "$RELEASE_COMMIT" ]; then git reset --quiet --hard origin/main; fi
+    die "nothing was released and the local state is restored. Fix the cause, then run: scripts/release.sh $VERSION"
+fi
 echo "Released $TAG. The Release workflow publishes the GitHub Release from the CHANGELOG section."

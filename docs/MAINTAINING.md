@@ -42,6 +42,10 @@ gh api -X PUT repos/nkrebs13/kmp-template/branches/main/protection --input - <<'
 JSON
 ```
 
+`Verify catalog` (`verify-catalog` in `ci.yml`) runs on every PR too, but it is deliberately not
+required: it resolves every catalog coordinate over the network, and a registry outage should not
+block merges. It still shows on each PR; look at it before merging catalog changes.
+
 When a job `name:` or a matrix axis changes in `ci.yml` or `template.yml`, update this list and
 re-run the command, or auto-merge will wait for a context that never reports.
 
@@ -68,7 +72,10 @@ empty.
 
 The release commit is pushed straight to `main`. It changes only `CHANGELOG.md`, and
 `enforce_admins=false` lets an administrator push without the required checks. A non-admin
-cannot release.
+cannot release. If the push fails (rejected, offline), the script deletes the local tag and resets
+`main` to `origin/main`, provided `HEAD` is still its release commit, then says so; fix the cause
+and run it again. The very first release (no `vX.Y.Z` tag yet) links `[X.Y.Z]` to
+`releases/tag/vX.Y.Z` instead of a compare range.
 
 ## Dependabot
 
@@ -86,4 +93,8 @@ checks `gradle` and `github-actions` weekly and labels PRs `dependencies`.
 
 `dependabot-automerge.yml` (template-only) runs on Dependabot PRs in this repository and
 queues `gh pr merge --auto --squash` for every update that is not a major one. GitHub then merges
-once the required checks above pass. Majors are reviewed and merged by hand.
+once the required checks above pass. Majors are reviewed and merged by hand. A grouped PR reports the highest update type in the
+group, so one major in a group keeps the whole PR manual.
+
+Merges made with `GITHUB_TOKEN` (auto-merge) do not trigger `push: main` workflows. The PR-time
+checks are therefore the gate, and the weekly `ci.yml` schedule catches drift afterwards.

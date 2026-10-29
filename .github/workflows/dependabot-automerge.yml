@@ -25,8 +25,11 @@ jobs:
         id: metadata
         uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
 
+      # update-type is the HIGHEST semver change in the PR (fetch-metadata README), so a grouped
+      # PR with any major in it reports major and stays manual. An allow-list rather than
+      # `!= major`: an empty or unknown value must not merge.
       - name: Enable auto-merge
-        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+        if: contains(fromJSON('["version-update:semver-minor","version-update:semver-patch"]'), steps.metadata.outputs.update-type)
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ github.token }}

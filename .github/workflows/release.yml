@@ -4,7 +4,9 @@ name: Release
 
 on:
   push:
-    tags: ["v*"]
+    # GitHub glob: [0-9] is a digit and * matches any characters (dots included), so this
+    # matches v4.0.0 and v10.2.31. release.sh only creates plain vX.Y.Z tags.
+    tags: ["v[0-9]*.[0-9]*.[0-9]*"]
 
 permissions:
   contents: write
