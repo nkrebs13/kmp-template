@@ -3,19 +3,20 @@ plugins {
 }
 
 kotlin {
+    // Keep in sync with JDK_TOOLCHAIN_VERSION in ProjectExtensions.kt (this script cannot read it).
     jvmToolchain(21)
 }
 
 dependencies {
     // compileOnly: the root build puts these plugins on the classpath (`apply false`),
     // so the convention plugins only compile against them.
-    compileOnly(libs.android.gradlePlugin)
-    compileOnly(libs.kotlin.gradlePlugin)
-    compileOnly(libs.compose.compiler.gradlePlugin)
-    compileOnly(libs.compose.gradlePlugin)
-    compileOnly(libs.detekt.gradlePlugin)
-    compileOnly(libs.kover.gradlePlugin)
-    compileOnly(libs.spotless.gradlePlugin)
+    compileOnly(libs.android.gradle.plugin)
+    compileOnly(libs.kotlin.gradle.plugin)
+    compileOnly(libs.compose.compiler.gradle.plugin)
+    compileOnly(libs.compose.multiplatform.gradle.plugin)
+    compileOnly(libs.detekt.gradle.plugin)
+    compileOnly(libs.kover.gradle.plugin)
+    compileOnly(libs.spotless.gradle.plugin)
 }
 
 tasks.validatePlugins {

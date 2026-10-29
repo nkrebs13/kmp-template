@@ -3,21 +3,25 @@ package convention
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.VersionCatalog
-import org.gradle.api.artifacts.component.ModuleComponentIdentifier
-import org.gradle.api.artifacts.result.ResolvedArtifactResult
-import org.gradle.api.artifacts.result.UnresolvedArtifactResult
-import org.gradle.api.artifacts.result.UnresolvedComponentResult
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.register
-import org.gradle.maven.MavenModule
-import org.gradle.maven.MavenPomArtifact
+
+/** Repositories `verifyCatalog` looks in, in order: the ones settings.gradle.kts resolves from. */
+private val CATALOG_REPOSITORIES = listOf(
+    "https://repo.maven.apache.org/maven2",
+    "https://dl.google.com/dl/android/maven2",
+    "https://plugins.gradle.org/m2",
+)
 
 /**
  * Root-project wiring.
  *
  * - Applies `base`, so the root has the `check` lifecycle task. `./gradlew check` runs `check`
  *   in every project: Spotless, detekt, tests, Kover verification and lint.
+ * - Formats files that belong to no module: root build scripts, `build-logic/`, docs and config.
+ *   Targets are explicit paths, never a bare `**`, so Spotless never walks `build/` directories
+ *   that other tasks are writing to.
  * - Registers `verifyCatalog`, which proves every coordinate in `libs.versions.toml` exists.
  *   It is not part of `check`, because it needs the network.
  */
@@ -26,57 +30,34 @@ class RootConventionPlugin : Plugin<Project> {
         check(path == ":") { "convention.root must be applied to the root project only" }
         apply<BasePlugin>()
 
-        tasks.register<VerifyCatalogTask>("verifyCatalog") {
-            group = "verification"
-            description = "Resolves the POM of every library and plugin in libs.versions.toml."
-            val catalogCoordinates = libs.coordinates()
-            coordinates.set(catalogCoordinates)
-            failures.set(provider { pomFailures(catalogCoordinates.values) })
-        }
-    }
-
-    /** `libs.<alias>` to `group:name:version`. A plugin is checked through its marker artifact. */
-    private fun VersionCatalog.coordinates(): Map<String, String> = buildMap {
-        libraryAliases.forEach { alias ->
-            val library = findLibrary(alias).get().get()
-            put("libs.$alias", "${library.module}:${library.versionConstraint.requiredVersion}")
-        }
-        pluginAliases.forEach { alias ->
-            val plugin = findPlugin(alias).get().get()
-            val id = plugin.pluginId
-            put("libs.plugins.$alias", "$id:$id.gradle.plugin:${plugin.version.requiredVersion}")
-        }
-    }
-
-    /**
-     * Fetches each module's POM through the project repositories. Asking for the POM directly
-     * (rather than resolving a dependency) skips variant matching, so it works the same for JVM,
-     * Android and iOS-only modules and for plugin markers. Returns coordinate to failure reason.
-     */
-    private fun Project.pomFailures(coordinates: Collection<String>): Map<String, String> {
-        val query = dependencies.createArtifactResolutionQuery()
-        coordinates.forEach { coordinate ->
-            val (group, name, version) = coordinate.split(':')
-            query.forModule(group, name, version)
-        }
-        val result = query.withArtifacts(MavenModule::class.java, MavenPomArtifact::class.java).execute()
-        val failures = mutableMapOf<String, String>()
-        result.components.forEach { component ->
-            val coordinate = (component.id as ModuleComponentIdentifier).displayName
-            when (component) {
-                is UnresolvedComponentResult -> failures[coordinate] = component.failure.message.orEmpty()
-
-                else -> {
-                    val poms = result.resolvedComponents.single { it.id == component.id }
-                        .getArtifacts(MavenPomArtifact::class.java)
-                    if (poms.none { it is ResolvedArtifactResult }) {
-                        failures[coordinate] = poms.filterIsInstance<UnresolvedArtifactResult>()
-                            .joinToString { it.failure.message.orEmpty() }
-                            .ifEmpty { "no POM published" }
-                    }
-                }
+        configureSpotless(
+            kotlinTargets = listOf("build-logic/*/src/**/*.kt"),
+            kotlinGradleTargets = listOf("*.gradle.kts", "build-logic/*.gradle.kts", "build-logic/*/*.gradle.kts"),
+        ) {
+            format("misc") {
+                target("*.md", "docs/**/*.md", ".gitignore", "config/**/*.yml")
+                trimTrailingWhitespace()
+                endWithNewline()
             }
         }
-        return failures
+
+        val catalog = libs
+        tasks.register<VerifyCatalogTask>("verifyCatalog") {
+            group = "verification"
+            description = "Checks that the POM of every library and plugin in libs.versions.toml is published."
+            entries.set(catalog.coordinates())
+            repositories.set(CATALOG_REPOSITORIES)
+        }
     }
+
+    /** `libs.<alias> -> group:name:version`. A plugin is checked through its marker artifact. */
+    private fun VersionCatalog.coordinates(): List<String> = libraryAliases.map { alias ->
+        val library = findLibrary(alias).get().get()
+        "libs.$alias -> ${library.module}:${library.versionConstraint.requiredVersion}"
+    } +
+        pluginAliases.map { alias ->
+            val plugin = findPlugin(alias).get().get()
+            val id = plugin.pluginId
+            "libs.plugins.$alias -> $id:$id.gradle.plugin:${plugin.version.requiredVersion}"
+        }
 }

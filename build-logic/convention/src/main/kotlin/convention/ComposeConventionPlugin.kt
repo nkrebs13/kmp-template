@@ -1,6 +1,5 @@
 package convention
 
-import com.android.build.api.dsl.ApplicationExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.PathSensitivity
@@ -20,7 +19,7 @@ private const val COMPOSE_REPORTS_PROPERTY = "kmp.composeCompilerReports"
  */
 class ComposeConventionPlugin : Plugin<Project> {
     override fun apply(target: Project): Unit = with(target) {
-        pluginManager.apply(libs.pluginId("jetbrainsCompose"))
+        pluginManager.apply(libs.pluginId("compose-multiplatform"))
         pluginManager.apply(libs.pluginId("compose-compiler"))
 
         val stabilityConfig = isolated.rootProject.projectDirectory.file("config/compose/stability.conf")
@@ -39,12 +38,6 @@ class ComposeConventionPlugin : Plugin<Project> {
             inputs.file(stabilityConfig)
                 .withPropertyName("composeStabilityConfiguration")
                 .withPathSensitivity(PathSensitivity.NONE)
-        }
-
-        pluginManager.withPlugin("com.android.application") {
-            extensions.configure<ApplicationExtension> {
-                buildFeatures.compose = true
-            }
         }
     }
 }

@@ -55,7 +55,7 @@ signing.keyAlias=your_key_alias
 signing.keyPassword=your_key_password
 ```
 
-The build signs the release variant automatically once all four values are set; with none set, the release APK is unsigned. Setting only some of them fails the build.
+`signing.storeFile` is absolute, or relative to the repository root. The build signs the release variant once all four values are set in one place; with none set, the release APK is unsigned. Setting only some of them makes release packaging fail with a message naming the missing keys; debug builds keep working.
 
 Generate a new keystore if you don't have one:
 ```bash

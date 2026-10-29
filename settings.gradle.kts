@@ -32,10 +32,6 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
-        // Plugin markers only, so `verifyCatalog` can resolve every [plugins] entry.
-        gradlePluginPortal {
-            content { includeModuleByRegex(".*", ".*\\.gradle\\.plugin") }
-        }
     }
 }
 

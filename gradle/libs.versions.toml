@@ -7,9 +7,9 @@ compose-multiplatform = "1.12.2"
 compose-multiplatform-material3 = "1.9.0"
 
 # Android SDK levels (read by the convention plugins in build-logic/)
-android-compileSdk = "37"
-android-minSdk = "24"
-android-targetSdk = "36"
+android-compile-sdk = "37"
+android-min-sdk = "24"
+android-target-sdk = "36"
 
 # AndroidX
 androidx-appcompat = "1.7.1"
@@ -17,7 +17,8 @@ androidx-splashscreen = "1.2.0"
 androidx-compose-material3 = "1.4.0"
 androidx-activity-compose = "1.13.0"
 # Constraint only: lifts the transitive androidx.lifecycle group past 2.9.x, whose lint checks
-# use an API lint 9.5 removed (ObsoleteLintCustomCheck).
+# use an API lint 9.5 removed (ObsoleteLintCustomCheck). Google's Android-only artifacts; the
+# optional androidx-lifecycle-multiplatform below is JetBrains' KMP fork with its own releases.
 androidx-lifecycle = "2.11.0"
 androidx-benchmark = "1.5.0"
 androidx-profileinstaller = "1.4.1"
@@ -42,6 +43,7 @@ ktlint = "1.8.0"
 
 # ── Optional: not referenced by the build; kept current by Dependabot. Reference as libs.<alias> to use. ──
 androidx-core = "1.19.1"
+# JetBrains (org.jetbrains.androidx.*) KMP builds; versioned independently of Google's androidx.
 androidx-lifecycle-multiplatform = "2.11.0"
 androidx-navigation-multiplatform = "2.10.0"
 androidx-room = "2.8.5"
@@ -96,13 +98,13 @@ kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 compose-rules-detekt = { module = "io.nlopez.compose.rules:detekt", version.ref = "compose-rules" }
 
 # Gradle plugins, compiled against by build-logic/convention
-android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
-kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
-compose-compiler-gradlePlugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
-compose-gradlePlugin = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "compose-multiplatform" }
-detekt-gradlePlugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
-kover-gradlePlugin = { module = "org.jetbrains.kotlinx:kover-gradle-plugin", version.ref = "kover" }
-spotless-gradlePlugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
+android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+compose-compiler-gradle-plugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
+compose-multiplatform-gradle-plugin = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "compose-multiplatform" }
+detekt-gradle-plugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+kover-gradle-plugin = { module = "org.jetbrains.kotlinx:kover-gradle-plugin", version.ref = "kover" }
+spotless-gradle-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
 
 # ── Optional: not referenced by the build; kept current by Dependabot. Reference as libs.<alias> to use. ──
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
@@ -137,14 +139,14 @@ tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "
 
 [plugins]
 # Android & Kotlin
-androidApplication = { id = "com.android.application", version.ref = "agp" }
-androidLibrary = { id = "com.android.library", version.ref = "agp" }
-androidKotlinMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
-kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 
 # Compose
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
 
 # Code quality
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
@@ -155,7 +157,7 @@ spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "androidx-benchmark" }
 
 # ── Optional: not referenced by the build; kept current by Dependabot. Reference as libs.<alias> to use. ──
-kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 androidx-room = { id = "androidx.room", version.ref = "androidx-room" }
 # ── End optional ──

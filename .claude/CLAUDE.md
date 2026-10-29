@@ -36,8 +36,9 @@ kmp-template/
 
 Convention plugins (`build-logic/convention/src/main/kotlin/convention/`):
 `convention.kmp.library`, `convention.compose`, `convention.android.application`,
-`convention.quality` (applied by the others), `convention.root` (root only: `check`, `verifyCatalog`).
-SDK levels come from the catalog `[versions]` (`android-compileSdk` etc.); the app version from
+`convention.quality` (applied by the others), `convention.root` (root only: `check`, root-level
+Spotless, `verifyCatalog`). The root `build.gradle.kts` holds only `apply false` lines.
+SDK levels come from the catalog `[versions]` (`android-compile-sdk` etc.); the app version from
 `gradle.properties` (`app.versionCode`, `app.versionName`); JDK toolchain 21 and Java 17 bytecode
 from the constants in `ProjectExtensions.kt`. ktlint settings live in `.editorconfig`.
 
@@ -88,7 +89,7 @@ cd - && rm -rf /tmp/e2e-test
   (so every Compose rule is listed in detekt.yml), `maxIssues: 0`
 - **Isolated Projects** on (`org.gradle.unsafe.isolated-projects=true`; the name without `unsafe.` is ignored)
 - **Kover**: 60% line coverage on `shared` module
-- **Android lint**: `warningsAsErrors = true`, `abortOnError = true`
+- **Android lint**: `warningsAsErrors = true` (aborting on errors is AGP's default)
 
 ## CI Minutes Status
 

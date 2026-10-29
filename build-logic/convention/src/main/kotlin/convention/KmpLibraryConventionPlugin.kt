@@ -22,8 +22,8 @@ private const val MIN_LINE_COVERAGE_PERCENT = 60
  */
 class KmpLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project): Unit = with(target) {
-        pluginManager.apply(libs.pluginId("kotlinMultiplatform"))
-        pluginManager.apply(libs.pluginId("androidKotlinMultiplatformLibrary"))
+        pluginManager.apply(libs.pluginId("kotlin-multiplatform"))
+        pluginManager.apply(libs.pluginId("android-kotlin-multiplatform-library"))
         apply<QualityConventionPlugin>()
 
         extensions.configure<KotlinMultiplatformExtension> {
@@ -45,8 +45,8 @@ class KmpLibraryConventionPlugin : Plugin<Project> {
 
     private fun KotlinMultiplatformExtension.configureAndroidTarget(project: Project) {
         targets.withType<KotlinMultiplatformAndroidLibraryTarget>().configureEach {
-            compileSdk = project.libs.versionInt("android-compileSdk")
-            minSdk = project.libs.versionInt("android-minSdk")
+            compileSdk = project.libs.versionInt("android-compile-sdk")
+            minSdk = project.libs.versionInt("android-min-sdk")
             compilerOptions.jvmTarget.set(KOTLIN_JVM_TARGET)
             withHostTest {}
         }

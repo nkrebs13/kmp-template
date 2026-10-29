@@ -69,7 +69,7 @@ org.gradle.caching=true
 org.gradle.configuration-cache=true
 org.gradle.unsafe.isolated-projects=true
 
-# iOS targets are skipped (not failed) on hosts that cannot build them
+# Silences the disabled-iOS-targets warning on hosts that cannot build them (Linux)
 kotlin.native.ignoreDisabledTargets=true
 
 # App version, read by the convention.android.application plugin
@@ -287,7 +287,7 @@ Test files (`**/test/**`, `**/commonTest/**`, etc.) are excluded from several ru
 
 ### Spotless Code Formatting
 
-Each module formats its own sources through the `convention.quality` plugin; the root `build.gradle.kts` formats files that belong to no module (root scripts, `build-logic/`, docs):
+Each module formats its own sources through the `convention.quality` plugin; the `convention.root` plugin formats files that belong to no module (root scripts, `build-logic/`, docs, config):
 - **Kotlin/KTS**: Formatted with ktlint 1.8.0, configured in `.editorconfig` (IntelliJ Kotlin style)
 - **XML**: Formatted with Eclipse WTP
 - **Markdown/YAML**: Trailing whitespace trimmed, newline enforced at end of file

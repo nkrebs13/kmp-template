@@ -2,7 +2,7 @@ import convention.JVM_BYTECODE_VERSION
 import convention.KOTLIN_JVM_TARGET
 
 plugins {
-    alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.android.library)
     alias(libs.plugins.androidx.baselineprofile)
     id("convention.quality")
 }
@@ -10,7 +10,7 @@ plugins {
 android {
     namespace = "com.template.baselineprofile"
     compileSdk =
-        libs.versions.android.compileSdk
+        libs.versions.android.compile.sdk
             .get()
             .toInt()
 

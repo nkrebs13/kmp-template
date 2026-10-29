@@ -1,7 +1,5 @@
 package convention
 
-import com.diffplug.gradle.spotless.SpotlessExtension
-import com.diffplug.spotless.LineEnding
 import com.diffplug.spotless.extra.wtp.EclipseWtpFormatterStep
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import kotlinx.kover.gradle.plugin.dsl.KoverProjectExtension
@@ -20,36 +18,17 @@ import org.gradle.kotlin.dsl.dependencies
  */
 class QualityConventionPlugin : Plugin<Project> {
     override fun apply(target: Project): Unit = with(target) {
-        pluginManager.apply(libs.pluginId("spotless"))
         pluginManager.apply(libs.pluginId("detekt"))
         pluginManager.apply(libs.pluginId("kover"))
 
-        configureSpotless()
-        configureDetekt()
-        configureKover()
-    }
-
-    private fun Project.configureSpotless() {
-        val ktlintVersion = libs.versionString("ktlint")
-        val ktlintSettings = ktlintEditorConfigOverride()
-        extensions.configure<SpotlessExtension> {
-            // Explicit LF (what .gitattributes asks for) instead of the default, which reads
-            // .gitattributes through JGit at configuration time and makes the configuration cache
-            // depend on the PATH environment variable.
-            lineEndings = LineEnding.UNIX
-            kotlin {
-                target("src/**/*.kt")
-                ktlint(ktlintVersion).editorConfigOverride(ktlintSettings)
-            }
-            kotlinGradle {
-                target("*.gradle.kts")
-                ktlint(ktlintVersion).editorConfigOverride(ktlintSettings)
-            }
+        configureSpotless(kotlinTargets = listOf("src/**/*.kt"), kotlinGradleTargets = listOf("*.gradle.kts")) {
             format("xml") {
                 target("src/**/*.xml")
                 eclipseWtp(EclipseWtpFormatterStep.XML)
             }
         }
+        configureDetekt()
+        configureKover()
     }
 
     private fun Project.configureDetekt() {

@@ -9,12 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `build-logic/` included build with convention plugins: `convention.kmp.library`, `convention.compose`, `convention.android.application`, `convention.quality` and `convention.root`. Module build files now declare only what is specific to them.
-- `./gradlew verifyCatalog`: fetches the POM of every catalog library and plugin marker (including iOS-only artifacts) and names any alias that does not resolve. Not part of `check`.
+- `./gradlew verifyCatalog`: asks Maven Central, Google Maven and the Gradle Plugin Portal for the POM of every catalog library and plugin marker (including iOS-only artifacts) on every run, and names any alias that is not published. An unreachable repository is reported as a network problem, not a broken entry. Not part of `check`.
 - Compose rules for detekt (`io.nlopez.compose.rules:detekt` 0.4.28).
-- Release signing from `SIGNING_STORE_FILE`/`SIGNING_STORE_PASSWORD`/`SIGNING_KEY_ALIAS`/`SIGNING_KEY_PASSWORD` or `signing.*` in `local.properties`, with no build-file edits. A partial configuration fails the build.
+- Release signing from `SIGNING_STORE_FILE`/`SIGNING_STORE_PASSWORD`/`SIGNING_KEY_ALIAS`/`SIGNING_KEY_PASSWORD` or `signing.*` in `local.properties`, with no build-file edits. The whole set comes from one source; a partial set fails only release packaging (`verifyReleaseSigning`), so debug builds, lint and tests keep working.
 - JDK 21 toolchain, provisioned through the foojay resolver and `gradle/gradle-daemon-jvm.properties`; bytecode stays at Java 17.
 - Isolated Projects (`org.gradle.unsafe.isolated-projects=true`).
-- `kotlin.native.ignoreDisabledTargets=true`, so iOS targets are skipped on non-macOS hosts.
+- `kotlin.native.ignoreDisabledTargets=true`, which silences Kotlin's disabled-iOS-targets warning on non-macOS hosts.
 
 ### Changed
 - Gradle 9.6.1; `actions/checkout` 7.0.1, `actions/setup-java` 6.1.0, `actions/upload-artifact` 7.0.2.
@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `./gradlew check` runs Spotless, detekt, all tests, Kover verification and debug lint in every module. Nothing auto-corrects during `check`; run `spotlessApply`.
 - ktlint settings moved from `build.gradle.kts` into `.editorconfig` (IntelliJ Kotlin style, import ordering enforced, no wildcard imports).
 - Config files moved: `detekt-config.yml` to `config/detekt/detekt.yml`, `compose-stability.conf` to `config/compose/stability.conf`.
+- Catalog aliases are kebab-case throughout (`libs.plugins.android.application`, `libs.plugins.compose.multiplatform`, ...).
 - Optional catalog entries are real, unreferenced entries in marked blocks, with KMP coordinates (JetBrains lifecycle/navigation, KMP Room, DataStore core, Ktor OkHttp/Darwin engines, Koin Compose, Coil 3, KSP).
 - CI uses JDK 21. Dependabot no longer sets the deprecated `reviewers` key (CODEOWNERS covers review).
 
@@ -33,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Compose stability configuration is applied. The old `compose.multiplatform.stabilityConfigPath` property did nothing, and the file used `#` comments the compiler rejects. Editing the file now recompiles.
 - Framework bundle ID is explicit (`-Xbinary=bundleId`, from the Android namespace), removing the "Cannot infer a bundle ID" warning.
 - Lint's `ObsoleteLintCustomCheck`: androidx.lifecycle is aligned to 2.11.0, whose lint checks run on lint 9.5.
-- Spotless tracks `.editorconfig` as an input, and no longer reads `PATH` at configuration time (which invalidated the configuration cache).
+- Spotless picks up `.editorconfig` edits (they are part of its ktlint settings), and no longer reads `PATH` at configuration time (which invalidated the configuration cache).
 
 ### Removed
 - `iosX64` target (Compose Multiplatform 1.11+ no longer supports it).
