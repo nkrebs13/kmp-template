@@ -101,11 +101,11 @@ plugins {
 
 android {
     namespace = "com.example.myapp"
-    defaultConfig {
-        applicationId = "com.example.myapp"
-    }
 }
 ```
+
+The application ID comes from `app.applicationId` in `gradle.properties`, next to the version; the
+desktop installer derives its Windows upgrade UUID from it too.
 
 ## Adding Dependencies
 

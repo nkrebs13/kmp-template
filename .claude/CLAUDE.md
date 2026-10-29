@@ -84,7 +84,9 @@ from the constants in `ProjectExtensions.kt`. ktlint settings live in `.editorco
 - Packaging with a Homebrew JDK fails `checkRuntime` (compose-multiplatform#3107). Use a Temurin/Corretto/JBR
   toolchain, or pass `-Pcompose.desktop.packaging.checkJdkVendor=false` on a machine that has only Homebrew.
 - The installer name comes from `app.packageName` in `gradle.properties` (lowercased for Deb);
-  `app.versionName` must be `major.minor.patch` with major > 0. The window title is a literal in `main.kt`.
+  the installer version is the leading `major.minor.patch` of `app.versionName` (`1.2.0-beta` packages as
+  `1.2.0`), and the Windows upgrade UUID derives from `app.applicationId`. The window title is a literal
+  in `main.kt`.
 
 ## Template Generation Test
 
