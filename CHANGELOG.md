@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The LICENSE copyright holder is `--author` (default: `git config user.name`) with the current year, instead of the project name.
 - Generated projects keep `.github/workflows/ci.yml`, `.github/dependabot.yml` and the issue and PR templates (now written for any app), and `local.properties.template`.
 - `scripts/validate.sh` is replaced by `.template/check-leftovers.sh`, which setup.sh runs itself.
+- `--json` results follow a documented contract (root `AGENTS.md`): dry runs report the full `plan`, `next` is a list of `{"run"}`/`{"read"}` steps led by `./gradlew check`, `verified` is `false`, and errors carry `category`, and where relevant `reason` (`already-initialized`) and `recovery`.
 
 ### Added (generator)
 - `.template/`: the generator's single source of truth (`manifest.env` tokens, `template-only.txt`, leftover patterns, `check-leftovers.sh`, `rewrite.pl`) and the generated project's `README.md`, `AGENTS.md` and `CLAUDE.md` (`@AGENTS.md`).
@@ -20,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--derive-from-github owner/repo` and the template-only `template-cleanup.yml` workflow, which initializes a repository created with "Use this template" on its first push.
 - `tests/setup/run.sh`: a plain-bash harness for exit codes, validation, dry run, generation variants and derivation. `template.yml` runs it with shellcheck, then generates default, `--no-desktop` and edge-case projects on ubuntu and macOS (`/bin/bash` 3.2) and builds them.
 - Template names are now unique tokens: `rootProject.name` is `KmpTemplate` and the Android app label is `KMP Template`.
+- A root `AGENTS.md` for the uninitialized template: how to run `setup.sh` and read its JSON.
+
+### Fixed (generator)
+- The iOS framework's bundle ID replaces `_` from the package with `-`; Apple rejects underscores.
+- `--no-desktop` also removes the desktop build logic (`convention.jvm.application`, the `kotlin-jvm` plugin entries). detekt's test-source excludes use `**/*Test/**` instead of naming each source set.
 
 ### Added
 - Desktop (JVM) target: `shared` gains `jvm()` (`Platform.jvm.kt`, `PlatformJvmTest`), and a new `desktopApp` module built by the new `convention.jvm.application` plugin runs the shared `App()` in a Compose window and packages Dmg/Msi/Deb installers. The installer name comes from `app.packageName` in `gradle.properties` (lowercased for Deb); `app.versionName` is validated as `major.minor.patch` with major > 0, and the Windows upgrade UUID is derived from the package name.

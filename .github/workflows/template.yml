@@ -18,21 +18,32 @@ permissions:
 
 jobs:
   lint:
-    name: Generator lint and tests
+    name: Generator lint and tests (${{ matrix.os }})
     if: github.repository == 'nkrebs13/kmp-template'
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-26]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: shellcheck
+        if: runner.os == 'Linux'
         run: shellcheck setup.sh .template/*.sh tests/setup/*.sh
 
       # Usage errors, invalid values, preconditions, dry run, generation variants and the
-      # --derive-from-github derivation (including weird-Owner/123-my.app).
+      # --derive-from-github derivation (including weird-Owner/123-my.app). On macOS both the
+      # harness and setup.sh run on /bin/bash, the bash 3.2 that macOS users have.
       - name: setup.sh tests
-        run: bash tests/setup/run.sh
+        run: |
+          if [ "$RUNNER_OS" = macOS ]; then
+            SETUP_BASH=/bin/bash /bin/bash tests/setup/run.sh
+          else
+            bash tests/setup/run.sh
+          fi
 
   generate:
     name: Generate (${{ matrix.os }}, ${{ matrix.variant }})
@@ -49,8 +60,8 @@ jobs:
         shell: bash
     env:
       VARIANT: ${{ matrix.variant }}
-      # Gradle runs on ubuntu for every variant, and on macOS for the default one (iOS).
-      BUILDS: ${{ matrix.os == 'ubuntu-latest' || matrix.variant == 'default' }}
+      # Gradle runs on ubuntu for every variant, and on macOS for default (iOS) and edge (framework).
+      BUILDS: ${{ matrix.os == 'ubuntu-latest' || matrix.variant != 'no-desktop' }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -106,6 +117,15 @@ jobs:
       - name: Shared tests and Android build
         if: runner.os == 'Linux' && matrix.variant == 'edge'
         run: ./gradlew :shared:allTests :androidApp:assembleDebug
+
+      # The underscore package must not reach the framework's bundle ID (Apple rejects _).
+      - name: iOS framework bundle ID
+        if: runner.os == 'macOS' && matrix.variant == 'edge'
+        run: |
+          ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
+          id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' shared/build/bin/iosSimulatorArm64/debugFramework/shared.framework/Info.plist)
+          echo "shared.framework bundle ID: $id"
+          case $id in *_*) echo "::error::bundle ID contains _"; exit 1 ;; esac
 
       - name: iOS tests
         if: runner.os == 'macOS' && matrix.variant == 'default'

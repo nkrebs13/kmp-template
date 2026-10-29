@@ -81,10 +81,11 @@ from the constants in `ProjectExtensions.kt`. ktlint settings live in `.editorco
 - `region desktop` / `endregion desktop` comment lines (`//`, `#` or `<!-- -->`) mark desktop-only
   blocks: `include(":desktopApp")`, the `jvm()` target in `KmpLibraryConventionPlugin`, the `jvmTest`
   dependencies in `shared/build.gradle.kts`, `app.packageName` in `gradle.properties`, the CI desktop
-  step and the desktop parts of `.template/project/*.md`. `--no-desktop` deletes those blocks and the
-  `DESKTOP_PATHS` from `manifest.env` (`desktopApp/`, `shared/src/jvmMain`, `shared/src/jvmTest`), and
-  renames the CI job to "Android". The default generation keeps the markers. The `kotlin-jvm` catalog
-  entry and its root `apply false` stay either way: `convention.jvm.application` needs them.
+  step, the `jvmApplication` plugin registration, the `kotlin-jvm` catalog entry and its root
+  `apply false`, and the desktop parts of `.template/project/*.md`. `--no-desktop` deletes those
+  blocks and the `DESKTOP_PATHS` from `manifest.env` (`desktopApp/`, `shared/src/jvmMain`,
+  `shared/src/jvmTest`, `JvmApplicationConventionPlugin.kt`), and renames the CI job to "Android".
+  The default generation strips only the Markdown markers; code and Gradle markers stay.
 - `hotRun` comes from the Compose Multiplatform plugin's bundled Compose Hot Reload (it runs on JetBrains Runtime, which the toolchain resolver provisioned in testing); it attaches to
   `kotlin("jvm")` modules, so no `org.jetbrains.compose.hot-reload` plugin is applied explicitly.
 - CI builds `:desktopApp:createDistributable` (jpackage app image), not installers, which would need
@@ -154,20 +155,33 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug 
   Replacement is one literal pass, longest token first (`rewrite.pl`), so replaced text is never
   re-replaced; Kotlin sources move by a generic `find` over `*/kotlin/com/template/**`.
 - **setup.sh CLI** is flag-driven and agent-safe: it prompts only when stdin is a TTY and a required
-  value is missing, needs `--yes` without a TTY, and `--json` prints exactly one object on stdout.
-  Exit codes: 2 usage, 3 invalid value, 4 precondition (dirty tree, already initialized, no perl/git),
-  5 internal (prints recovery commands). bash 3.2 compatible: CI runs it on macOS `/bin/bash`.
-- **Atomicity**: validate and plan first (`--dry-run` stops there); refuse a dirty tree; back up to
-  `$TMPDIR` when there is no `.git`; run the leftover check before touching git; only then a new
-  history on `main` with one commit (`--keep-git`, `--no-commit` change that).
+  value is missing, needs `--yes` without a TTY, and `--json` prints exactly one object on stdout
+  (the contract is in the root `AGENTS.md`: `plan` for dry runs, `next` steps as `{"run"|"read"}`
+  objects, `verified: false`, error `category`/`reason`/`recovery`). Exit codes: 2 usage, 3 invalid
+  value, 4 precondition (dirty tree, already initialized, no perl/git), 5 internal (prints recovery
+  commands). bash 3.2 compatible: CI runs the harness on macOS `/bin/bash`.
+- **Nothing fails after the first change** except I/O errors or a setup.sh bug: values (including
+  UTF-8 and length limits: name 50, package 150, segment 63, longest moved path 900 bytes), the plan,
+  region markers, the LICENSE line and the `.template/` copy are all checked first. Every path list
+  is NUL-separated, and every deleted path must resolve inside the repository.
+- **`SKIP_DIR_NAMES`** (`manifest.env`) is the one list of build-output and tool directories that
+  setup.sh and check-leftovers.sh skip and setup.sh deletes; a directory under `src/` is never one.
+- **Atomicity**: validate and plan first (`--dry-run` stops there); refuse a dirty tree; copy
+  `.template/` aside and test the copy; back up to `$TMPDIR` when there is no `.git`; run the leftover
+  check (forbidden patterns, plus every `template-only.txt` path as a forbidden path) before touching
+  git; only then a new history on `main` with one commit (`--keep-git`, `--no-commit` change that).
 - **Leftover check masking**: a user value that itself matches a forbidden pattern (author
   `nkrebs13`, repo `kmp-template`) is masked before matching, so it does not count as a leftover.
 - **LICENSE**: MIT, holder from `--author`, else `git config user.name`, else the GitHub owner.
 - **`template-cleanup.yml`** initializes "Use this template" repositories on their first push via
   `--derive-from-github owner/repo` (name: PascalCase repo; package `io.github.<owner>.<repo>`
-  sanitized; bundle ID sanitized separately since it allows `-` but not `_`). If `GITHUB_TOKEN` may
-  not push the workflow-file deletions, it restores them, pushes the rest and opens an issue listing
-  them. Every template-only workflow is guarded on the repository name, so leftovers stay inert.
+  sanitized; bundle ID sanitized separately since it allows `-` but not `_`). `GITHUB_TOKEN` has no
+  `workflows` permission, so when the push is refused over workflow files it keeps them, pushes the
+  rest and opens an issue with the one `git rm` command; a non-fast-forward against an
+  already-initialized `main` exits quietly. Every template-only workflow is guarded on the repository
+  name, so leftovers stay inert.
+- **iOS framework bundle ID** is the shared namespace with `_` replaced by `-`
+  (`KmpLibraryConventionPlugin`), since Apple rejects `_`.
 - **iOS renaming touches only `iosApp/Configuration/Config.xcconfig`** (bundle ID, display name); setup.sh
   never edits Swift files or the pbxproj
 - **The committed baseline profile** is renamed with the rest, but its Compose lambda hashes depend on

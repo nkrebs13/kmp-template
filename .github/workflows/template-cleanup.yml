@@ -30,24 +30,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # Uninitialized only if both this commit and the current main still have .template/: a
+      # later push (or another run of this workflow) may already have initialized main.
       - name: Check that the project is uninitialized
         id: state
         run: |
-          if [ -f .template/manifest.env ] && [ -f setup.sh ]; then
+          git fetch -q --depth=1 origin main
+          if [ -f .template/manifest.env ] && [ -f setup.sh ] &&
+            git cat-file -e origin/main:.template/manifest.env 2>/dev/null; then
             echo "initialized=false" >> "$GITHUB_OUTPUT"
+            . .template/manifest.env
+            echo "TEMPLATE_SLUG=$TEMPLATE_SLUG" >> "$GITHUB_ENV"
           else
             echo "initialized=true" >> "$GITHUB_OUTPUT"
-            echo "No .template/ here: the project is already initialized, nothing to do."
+            echo "No .template/ here or on main: the project is already initialized, nothing to do."
           fi
 
       - name: Generate the project
         if: steps.state.outputs.initialized == 'false'
         run: ./setup.sh --derive-from-github "$GITHUB_REPOSITORY" --keep-git --yes --json | tee "$RUNNER_TEMP/setup.json"
 
-      # GITHUB_TOKEN cannot always push changes under .github/workflows (that needs the
-      # `workflows` permission, which it may not get). If the push is refused, restore those
-      # files, push everything else, and open an issue listing what to delete by hand. The
-      # restored template-only workflows are guarded, so they stay inert until then.
+      # GITHUB_TOKEN has no `workflows` permission, so GitHub refuses a push that changes files
+      # under .github/workflows, and setup.sh deletes the template-only workflows. When the push
+      # is refused for that reason, the commit keeps those files (they are guarded, so inert), the
+      # rest is pushed, and an issue gives the one command that deletes them.
       - name: Commit and push
         if: steps.state.outputs.initialized == 'false'
         env:
@@ -57,27 +63,39 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -q -m "Initialize project from kmp-template"
-          if git push origin HEAD:main; then
+          git commit -q -m "Initialize project from $TEMPLATE_SLUG"
+          if git push origin HEAD:main 2> "$RUNNER_TEMP/push.err"; then
             exit 0
           fi
-          workflows=$(git diff --name-only HEAD~ HEAD -- .github/workflows)
-          if [ -z "$workflows" ]; then
-            echo "::error::The push was refused, and not because of workflow files."
-            exit 1
+          cat "$RUNNER_TEMP/push.err" >&2
+
+          if grep -qi 'workflow' "$RUNNER_TEMP/push.err"; then
+            workflows=$(git diff --name-only HEAD~ HEAD -- .github/workflows)
+            if [ -z "$workflows" ]; then
+              echo "::error::The push was refused over workflow files, but this commit changes none."
+              exit 1
+            fi
+            echo "::warning::GITHUB_TOKEN may not change workflow files; pushing without these changes: $workflows"
+            # shellcheck disable=SC2086 # one path per word; workflow file names have no spaces
+            git checkout HEAD~ -- $workflows
+            git commit -q --amend --no-edit
+            git push origin HEAD:main
+            # shellcheck disable=SC2086
+            command="git pull && git rm -q $(echo $workflows) && git commit -m 'Remove template workflows' && git push"
+            gh issue create --title "Delete the leftover template workflows" --body "$(printf '%s\n' \
+              "The first-push cleanup initialized this project. GitHub does not let the workflow token change files under \`.github/workflows\`, so these template-only workflows are still here. They do nothing in this repository." \
+              "" "Delete them from a clone, with your own credentials:" "" '```bash' "$command" '```')"
+            exit 0
           fi
-          echo "::warning::Push refused; retrying without the workflow changes: $workflows"
-          # shellcheck disable=SC2086 # one path per word, none contain spaces
-          git checkout HEAD~ -- $workflows
-          git commit -q --amend --no-edit
-          git push origin HEAD:main
-          paths=$(printf '%s\n' "$workflows" | sed 's/^/- `/; s/$/`/')
-          body=$(printf '%s\n' \
-            "The first-push cleanup initialized this project, but the workflow token may not change files under \`.github/workflows\`, so these template-only workflows are still here:" \
-            "" "$paths" "" \
-            "They do nothing in this repository. Delete them with your own credentials:" \
-            "" '```bash' "git pull && git rm $(printf '%s ' $workflows)&& git commit -m 'Remove template workflows' && git push" '```')
-          gh issue create --title "Delete the leftover template workflows" --body "$body"
+
+          # Rejected because main moved on: fine if main is already initialized.
+          git fetch -q --depth=1 origin main
+          if ! git cat-file -e origin/main:.template/manifest.env 2>/dev/null; then
+            echo "main was initialized by another push; nothing to do."
+            exit 0
+          fi
+          echo "::error::The push was refused; see the message above."
+          exit 1
 
       - name: Report a failed setup
         if: failure() && steps.state.outputs.initialized == 'false'

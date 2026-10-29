@@ -119,7 +119,8 @@ The workflow also runs weekly on a schedule, so toolchain drift shows up without
 **`.github/workflows/template.yml`** is template-only:
 
 - **Generator lint and tests**: `shellcheck`, then `tests/setup/run.sh` (exit codes, validation,
-  dry run, generation variants, `--derive-from-github` derivation).
+  dry run, generation variants, `--derive-from-github` derivation), on ubuntu and on macOS
+  `/bin/bash` 3.2.
 - **Generate**: {ubuntu, macOS} × {default, `--no-desktop`, edge (underscore package, hyphenated
   bundle ID, display name with a space)}. macOS runs `setup.sh` on `/bin/bash` 3.2. Every
   combination runs the leftover check and asserts there is no `.claude/`, that `AGENTS.md` and
