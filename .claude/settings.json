@@ -4,7 +4,6 @@
       "Bash(./gradlew *)",
       "Bash(bash setup.sh*)",
       "Bash(bash scripts/*)",
-      "Bash(node --check *)",
       "Bash(git status)",
       "Bash(git log *)",
       "Bash(git diff *)",
