@@ -338,15 +338,19 @@ The iOS project (`iosApp/`) uses:
   a Swift file or resource never touches `project.pbxproj`
 - A shared `iosApp` scheme (`xcshareddata/xcschemes/iosApp.xcscheme`), so `xcodebuild -scheme iosApp` works on a fresh clone
 - A privacy manifest, `iosApp/iosApp/PrivacyInfo.xcprivacy`, that declares no tracking, no collected data
-  and no required-reason APIs. Declare each one you add, or App Store Connect rejects the upload.
+  and no required-reason APIs. Declare each one you or a dependency uses, or App Store Connect rejects
+  the upload; archive and validate once before the first submission to see what Apple reports.
+- A single 1024×1024 app icon (`Assets.xcassets/AppIcon.appiconset/AppIcon.png`, matching the Android
+  launcher placeholder); Xcode derives every other size from it. Replace it with your own, without alpha.
 
-**Settings live in xcconfig files, not in the Xcode project.**
+**These settings live in xcconfig files, not in the Xcode project.** Structural settings (Swift version,
+device family, framework search paths, linker flags) stay in `project.pbxproj`.
 
 | File | Holds |
 |---|---|
 | `iosApp/Configuration/Config.xcconfig` | `APP_DISPLAY_NAME`, `PRODUCT_BUNDLE_IDENTIFIER`, `MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`, `IPHONEOS_DEPLOYMENT_TARGET` (16.0), `TEAM_ID`/`DEVELOPMENT_TEAM`, simulator `EXCLUDED_ARCHS`, `ENABLE_USER_SCRIPT_SANDBOXING = NO` |
 | `iosApp/Configuration/Debug.xcconfig`, `Release.xcconfig` | Include `Config.xcconfig`, then the optional `Local.xcconfig`. Attached to the app target's Debug and Release configurations. |
-| `iosApp/Configuration/Local.xcconfig` | Gitignored, per developer. Copy `Local.xcconfig.example` and set `TEAM_ID` to sign for a device. |
+| `iosApp/Configuration/Local.xcconfig` | Gitignored, per developer. Copy `Local.xcconfig.example` and set `TEAM_ID` to sign for a device. Don't pick a team in Xcode's Signing & Capabilities tab: that writes `DEVELOPMENT_TEAM` into `project.pbxproj`, overriding `TEAM_ID` and committing your team ID. |
 
 `Info.plist` reads `$(APP_DISPLAY_NAME)`, `$(MARKETING_VERSION)` and `$(CURRENT_PROJECT_VERSION)`. To change one of
 these settings, edit the xcconfig. Xcode's build settings editor writes to `project.pbxproj`, and a value set

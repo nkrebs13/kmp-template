@@ -46,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The static `shared` framework is linked through its search path only; the broken `shared.framework` file reference and the Embed Frameworks phase (static frameworks are never embedded) are gone.
 
 ### Fixed
+- The iOS app had no icon (an empty multi-size icon set), which App Store upload rejects. It now ships a single 1024×1024 placeholder matching the Android launcher icon.
 - Repeated `clean` builds in one Gradle daemon no longer exhaust metaspace or fail ktlint with `NoClassDefFoundError`. Spotless's `clean` hook closed every formatter classloader mid-build ([spotless#3067](https://github.com/diffplug/spotless/issues/3067)) and leaked the Eclipse XML formatter; build-logic removes that hook.
 - The launcher activity started on `Theme.App` instead of `Theme.App.Starting`, so `installSplashScreen()` never saw the splash theme.
 - Release dates for 2.0.0 through 3.0.0 now match the tagged commits.

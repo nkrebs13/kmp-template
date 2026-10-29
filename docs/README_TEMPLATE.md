@@ -35,7 +35,7 @@ App settings (display name, bundle ID, version, build number, deployment target)
 To run on a device, set your Apple Developer team once (the file is gitignored):
 ```bash
 cp iosApp/Configuration/Local.xcconfig.example iosApp/Configuration/Local.xcconfig
-# then edit TEAM_ID in Local.xcconfig
+# then edit TEAM_ID in Local.xcconfig (not in Xcode's Signing & Capabilities tab, which writes it into the project file)
 ```
 
 In Xcode: open `iosApp/iosApp.xcodeproj`, pick a simulator or device, and run.
