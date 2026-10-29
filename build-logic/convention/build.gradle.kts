@@ -38,6 +38,10 @@ gradlePlugin {
             id = "convention.android.application"
             implementationClass = "convention.AndroidApplicationConventionPlugin"
         }
+        register("jvmApplication") {
+            id = "convention.jvm.application"
+            implementationClass = "convention.JvmApplicationConventionPlugin"
+        }
         register("androidTest") {
             id = "convention.android.test"
             implementationClass = "convention.AndroidTestConventionPlugin"

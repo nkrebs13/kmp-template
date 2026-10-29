@@ -15,7 +15,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 private const val MIN_LINE_COVERAGE_PERCENT = 60
 
 /**
- * A Kotlin Multiplatform library for Android and iOS (device + Apple-silicon simulator).
+ * A Kotlin Multiplatform library for Android, iOS (device + Apple-silicon simulator) and desktop (JVM).
  *
  * Each iOS target exports a static framework named after the module, with an explicit bundle ID
  * taken from the Android `namespace`. The module sets `kotlin { android { namespace = "…" } }`.
@@ -30,6 +30,9 @@ class KmpLibraryConventionPlugin : Plugin<Project> {
             jvmToolchain(JDK_TOOLCHAIN_VERSION)
             configureAndroidTarget(this@with)
             configureIosTargets(this@with)
+            // region desktop
+            jvm()
+            // endregion desktop
         }
 
         extensions.configure<KoverProjectExtension> {
