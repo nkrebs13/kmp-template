@@ -67,7 +67,7 @@ For CI/CD, set the environment variables `SIGNING_STORE_FILE`, `SIGNING_STORE_PA
 
 ## ⚡ Baseline Profiles
 
-This template includes a `baselineprofile` module for [Android Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/overview) — a performance optimization that pre-compiles critical code paths, reducing app startup by up to 40%.
+This template includes a `baselineprofile` module for [Android Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/overview), which pre-compile the startup path so the app starts faster after install.
 
 A starting profile for the template's startup path is committed in `androidApp/src/release/generated/baselineProfiles/`, and `assembleRelease` packs it into the APK. Regenerate it after changing startup behaviour:
 
@@ -75,7 +75,7 @@ A starting profile for the template's startup path is committed in `androidApp/s
 ./gradlew :androidApp:generateBaselineProfile
 ```
 
-This boots a Gradle Managed Device (`pixel6Api34`, downloaded on first use), runs `BaselineProfileGenerator` and rewrites the committed files. Most projects can ignore this until they have stable user flows worth optimizing.
+This runs `BaselineProfileGenerator` on a Gradle Managed Device and rewrites the committed files; see `docs/CONFIGURATION.md` for details.
 
 ## 📦 Tech Stack
 

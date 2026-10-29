@@ -6,12 +6,11 @@ import org.gradle.kotlin.dsl.configure
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 
 /**
- * What every Android module with a `com.android.*` plugin shares: SDK levels from
- * `libs.versions.toml`, Java/Kotlin bytecode level, the JDK toolchain and lint warnings as errors.
- * Used by `convention.android.application` and `convention.android.test`.
+ * Applies the settings every Android Gradle module shares: SDK levels from `libs.versions.toml`,
+ * Java/Kotlin bytecode level, the JDK toolchain, and lint warnings as errors.
  */
-internal fun Project.configureAndroidCommon(android: CommonExtension) {
-    android.apply {
+internal fun Project.configureAndroidCommon(extension: CommonExtension) {
+    extension.apply {
         compileSdk = libs.versionInt("android-compile-sdk")
         defaultConfig.minSdk = libs.versionInt("android-min-sdk")
         compileOptions.sourceCompatibility = JVM_BYTECODE_VERSION

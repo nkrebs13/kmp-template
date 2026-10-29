@@ -45,6 +45,7 @@ class KmpLibraryConventionPlugin : Plugin<Project> {
 
     private fun KotlinMultiplatformExtension.configureAndroidTarget(project: Project) {
         targets.withType<KotlinMultiplatformAndroidLibraryTarget>().configureEach {
+            // Same values as configureAndroidCommon(); the KMP Android target has its own DSL type.
             compileSdk = project.libs.versionInt("android-compile-sdk")
             minSdk = project.libs.versionInt("android-min-sdk")
             compilerOptions.jvmTarget.set(KOTLIN_JVM_TARGET)

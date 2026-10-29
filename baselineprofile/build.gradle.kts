@@ -14,7 +14,8 @@ android {
 
     targetProjectPath = ":androidApp"
 
-    // The producer runs as its own instrumentation, which the baseline profile plugin needs.
+    // The test APK instruments itself instead of the app, so the generator can kill and
+    // cold-start the app between runs (as in Google's baseline profile module template).
     experimentalProperties["android.experimental.self-instrumenting"] = true
 
     // Gradle Managed Device: `./gradlew :androidApp:generateBaselineProfile` boots it by itself.
@@ -33,6 +34,5 @@ baselineProfile {
 dependencies {
     implementation(libs.androidx.benchmark.macro)
     implementation(libs.androidx.test.ext.junit)
-    implementation(libs.androidx.test.espresso.core)
     implementation(libs.androidx.test.uiautomator)
 }

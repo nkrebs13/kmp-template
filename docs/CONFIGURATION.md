@@ -308,7 +308,7 @@ The Android app module (`androidApp/`) uses:
 - Predictive back gesture (`android:enableOnBackInvokedCallback="true"`)
 - Per-app language preferences (`@xml/locales_config`, App Bundle language splits disabled)
 - Compose Activity
-- ProGuard rules for release
+- R8 for release, with only source-file attributes kept in `proguard-rules.pro`; libraries such as kotlinx-serialization ship their own consumer rules
 - Baseline profile integration with DEX layout optimization
 
 **Adding a new locale:** edit `androidApp/src/main/res/xml/locales_config.xml` and add a
