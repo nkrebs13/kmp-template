@@ -6,10 +6,10 @@ This document provides detailed configuration information for the Kotlin Multipl
 
 | Component | Version |
 |-----------|---------|
-| Kotlin | 2.4.0 |
+| Kotlin | 2.4.10 |
 | Compose Multiplatform | 1.10.3 |
 | Android Gradle Plugin | 9.1.0 |
-| Gradle | 9.5.0 |
+| Gradle | 9.6.1 |
 | JDK Requirement | 17+ |
 
 ## Version Catalog System
@@ -20,7 +20,7 @@ All dependencies are managed through `gradle/libs.versions.toml` for centralized
 
 | Dependency | Version | Purpose |
 |------------|---------|---------|
-| kotlin | 2.4.0 | Kotlin compiler and stdlib |
+| kotlin | 2.4.10 | Kotlin compiler and stdlib |
 | compose | 1.10.3 | Compose Multiplatform UI framework |
 | agp | 9.1.0 | Android Gradle Plugin |
 | kotlinx-coroutines | 1.11.0 | Async/concurrency |
@@ -39,7 +39,7 @@ All dependencies are managed through `gradle/libs.versions.toml` for centralized
 | Tool | Version | Purpose |
 |------|---------|---------|
 | detekt | 1.23.8 | Static analysis |
-| spotless | 8.8.0 | Code formatting |
+| spotless | 8.9.0 | Code formatting |
 | ktlint | 1.8.0 | Kotlin linter |
 
 ### Optional Dependencies (commented out in `gradle/libs.versions.toml`)
