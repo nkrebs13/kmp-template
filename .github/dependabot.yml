@@ -1,14 +1,66 @@
+# Weekly dependency updates. Minor and patch updates are grouped per area; major updates open
+# one PR each. A dependency that matches several groups goes to the FIRST one listed, so the
+# narrow groups come before the broad prefixes (kover is org.jetbrains.kotlinx.*, Room is
+# androidx.*).
+# Dependabot only proposes a pre-release when the current version already is one, and the
+# config has no switch for it, so none is configured.
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    labels:
-      - "dependencies"
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "weekly"
     labels:
       - "dependencies"
+    ignore:
+      # compose-rules 0.5+ is built against detekt 2.x, which has a different plugin id and
+      # is still pre-release. Stay on detekt 1.23.x (and compose-rules 0.4.x) until 2.x is stable.
+      - dependency-name: "io.nlopez.compose.rules:detekt"
+        versions: [">= 0.5"]
+    groups:
+      build-tooling:
+        update-types: ["minor", "patch"]
+        patterns:
+          - "com.diffplug.spotless*"
+          - "io.gitlab.arturbosch.detekt*"
+          - "org.jetbrains.kotlinx.kover*"
+          - "org.jetbrains.kotlinx:kover*"
+          - "org.gradle*"
+          - "com.gradle*"
+          - "io.nlopez.compose.rules*"
+      optional-catalog:
+        update-types: ["minor", "patch"]
+        patterns:
+          - "io.ktor*"
+          - "io.insert-koin*"
+          - "io.coil-kt*"
+          - "androidx.room*"
+          - "androidx.sqlite*"
+          - "androidx.datastore*"
+          - "androidx.work*"
+          - "com.google.crypto.tink*"
+          - "co.touchlab*"
+      kotlin-compose:
+        update-types: ["minor", "patch"]
+        patterns:
+          - "org.jetbrains.kotlin*"
+          - "org.jetbrains.compose*"
+          - "org.jetbrains.kotlinx*"
+          - "com.google.devtools.ksp*"
+          - "org.jetbrains.androidx*"
+      android:
+        update-types: ["minor", "patch"]
+        patterns:
+          - "com.android*"
+          - "androidx*"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+    groups:
+      actions:
+        update-types: ["minor", "patch"]
+        patterns:
+          - "*"
