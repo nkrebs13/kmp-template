@@ -34,11 +34,11 @@ RC=0         # setup.sh exit code
 OUT=$TMP/out # setup.sh stdout
 ERR=$TMP/err # setup.sh stderr
 
+# Records a failure and returns 0, so one failing case never stops the run under set -e.
 fail() {
     printf '  FAIL %s: %s\n' "$CASE" "$*"
     if [ -s "$ERR" ]; then sed 's/^/    stderr: /' "$ERR" | tail -15; fi
     FAILED=$((FAILED + 1))
-    return 1
 }
 
 begin() {
@@ -403,6 +403,56 @@ if generated_ok; then
     fi
 fi
 
+# A bad entry in template-only.txt is a template bug: exit 5 before anything changes.
+bad_listed_entry() { # <case name> <entry; VICTIM is replaced with a directory outside the repo>
+    local victim
+    begin "template-only.txt entry: $1"
+    victim=$TMP/victim-$CASES
+    mkdir -p "$victim" && touch "$victim/keep"
+    printf '%s\n' "${2//VICTIM/$victim}" >>"$DIR/.template/template-only.txt"
+    (cd "$DIR" && git commit -qam "bad entry")
+    setup --name WeatherApp --package com.acme.weather --yes --json
+    if [ "$RC" = 5 ] && [ "$(json category)" = internal ] && clean_tree && [ -f "$DIR/setup.sh" ] &&
+        [ -f "$victim/keep" ]; then
+        pass
+    else
+        fail "exit $RC, expected 5 with nothing changed and the victim intact"
+    fi
+}
+bad_listed_entry "absolute path" VICTIM
+# One component under /: its parent is "", which once resolved to the repository. The path does
+# not exist, so even a regression cannot delete anything; it must still be rejected.
+bad_listed_entry "absolute path of one component" /kmp-template-setup-test-missing
+bad_listed_entry "parent directory" "../victim-$((CASES + 1))"
+bad_listed_entry "the repository itself" .
+bad_listed_entry "empty line" ""
+
+begin "path length is measured in bytes, not characters (dry run)"
+deep=$TMP/multibyte
+# Each segment is 25 two-byte characters: half as many characters as bytes.
+while [ "$(printf '%s' "$deep" | wc -c)" -lt 840 ]; do deep=$deep/ééééééééééééééééééééééééé; done
+mkdir -p "$deep"
+cp -R "$FIXTURE" "$deep/repo"
+DIR=$deep/repo
+setup --name WeatherApp --package com.acme.weather --dry-run --json
+if [ "$RC" = 3 ] && grep -q "longest source path" "$ERR" && clean_tree; then pass; else fail "exit $RC, expected 3"; fi
+rm -rf "$TMP/multibyte"
+
+begin "a file name with a newline is planned once and rewritten"
+odd=$'AGENTS.md\nCLAUDE.md'
+printf 'KmpTemplate\n' >"$DIR/$odd"
+(cd "$DIR" && git add -A && git commit -qm "odd name")
+setup --name WeatherApp --package com.acme.weather --dry-run --json
+count=$(jget 'scalar grep { $_ eq "AGENTS.md\nCLAUDE.md" } @{$j->{plan}{edit}}')
+setup --name WeatherApp --package com.acme.weather --yes --json
+if [ "$count" != 1 ]; then
+    fail "plan.edit lists it $count times"
+elif generated_ok && [ "$(cat "$DIR/$odd")" = WeatherApp ]; then
+    pass
+elif [ "$RC" = 0 ]; then
+    fail "it was not rewritten: $(cat "$DIR/$odd")"
+fi
+
 begin "TMPDIR containing a colon"
 mkdir -p "$TMP/with:colon"
 TMPDIR=$TMP/with:colon setup --name WeatherApp --package com.acme.weather --yes --json
@@ -422,6 +472,122 @@ if [ "$RC" = 0 ] && [ "$(json name)/$(json package)/$(json author)" = "Custom/io
     pass
 else
     fail "exit $RC: $(cat "$OUT")"
+fi
+
+# --- template-cleanup.yml, against a local remote whose hook plays GitHub -----------------------
+# workflow_step <file> <step name>: the step's `run: |` script, unindented.
+workflow_step() {
+    perl -e '
+        my ($file, $name) = @ARGV;
+        open my $fh, "<", $file or die "cannot read $file\n";
+        my @lines = <$fh>;
+        my $i = 0;
+        $i++ while $i <= $#lines && $lines[$i] !~ /^\s*- name: \Q$name\E\s*$/;
+        $i++ while $i <= $#lines && $lines[$i] !~ /^\s*run: \|\s*$/;
+        die "no run: | in step $name\n" if $i > $#lines;
+        my ($indent) = $lines[$i++] =~ /^(\s*)/;
+        my @body;
+        while ($i <= $#lines) {
+            my $line = $lines[$i];
+            last if $line =~ /\S/ && $line !~ /^\Q$indent\E\s/;
+            push @body, $line;
+            $i++;
+        }
+        my ($min) = sort { $a <=> $b } map { /^( *)\S/ ? length $1 : () } @body;
+        s/^ {0,$min}// for @body;
+        print @body;
+    ' "$1" "$2"
+}
+WORKFLOW=$FIXTURE/.github/workflows/template-cleanup.yml
+workflow_step "$WORKFLOW" "Check that the project is uninitialized" >"$TMP/state-step.sh"
+workflow_step "$WORKFLOW" "Commit and push" >"$TMP/push-step.sh"
+mkdir -p "$TMP/bin"
+printf '#!/bin/sh\nprintf "%%s\\n" "$@" >"$GH_LOG"\n' >"$TMP/bin/gh"
+chmod +x "$TMP/bin/gh"
+
+# cleanup_case <name> <hook: none|workflow|workflow-race|other> <race before the first push: 0|1>
+# Leaves SIM (the simulation directory) and RC (the push step's exit code).
+cleanup_case() {
+    local hook=$2
+    begin "cleanup workflow: $1"
+    SIM=$TMP/sim-$CASES
+    mkdir -p "$SIM/tmp"
+    git clone -q --bare "$FIXTURE" "$SIM/origin.git"
+    # A commit in which someone else already initialized main, for the races.
+    git clone -q "$SIM/origin.git" "$SIM/other"
+    (cd "$SIM/other" && git rm -rq .template setup.sh && git commit -qm "initialized elsewhere" &&
+        git push -q origin HEAD:refs/heads/initialized)
+    case $hook in
+        workflow | workflow-race)
+            {
+                printf '#!/bin/sh\nwhile read old new ref; do\n'
+                printf '  if git diff --name-only "$old" "$new" -- .github/workflows | grep -q .; then\n'
+                printf '    echo "refusing to allow a GitHub App to create or update workflow \\`.github/workflows/template.yml\\` without \\`workflows\\` permission" >&2\n'
+                if [ "$hook" = workflow-race ]; then
+                    printf '    env -u GIT_QUARANTINE_PATH git update-ref refs/heads/main refs/heads/initialized\n'
+                fi
+                printf '    exit 1\n  fi\ndone\n'
+            } >"$SIM/origin.git/hooks/pre-receive"
+            ;;
+        other)
+            printf '#!/bin/sh\necho "protected branch hook declined for https://github.com/acme/workflow-tools" >&2\nexit 1\n' \
+                >"$SIM/origin.git/hooks/pre-receive"
+            ;;
+    esac
+    if [ -f "$SIM/origin.git/hooks/pre-receive" ]; then chmod +x "$SIM/origin.git/hooks/pre-receive"; fi
+    git clone -q "$SIM/origin.git" "$SIM/work"
+    if [ "$3" = 1 ]; then git -C "$SIM/origin.git" update-ref refs/heads/main refs/heads/initialized; fi
+    (cd "$SIM/work" && "$SETUP_BASH" ./setup.sh --derive-from-github acme/workflow-tools --keep-git --yes --json \
+        >/dev/null 2>&1)
+    RC=0
+    (cd "$SIM/work" && TEMPLATE_SLUG=kmp-template RUNNER_TEMP=$SIM/tmp GH_LOG=$SIM/gh.log PATH="$TMP/bin:$PATH" \
+        bash -eo pipefail "$TMP/push-step.sh" >"$SIM/push.log" 2>&1) || RC=$?
+}
+origin_head() { git -C "$SIM/origin.git" log -1 --format=%s main; }
+origin_has() { git -C "$SIM/origin.git" cat-file -e "main:$1" 2>/dev/null; }
+
+cleanup_case "push allowed" none 0
+if [ "$RC" = 0 ] && [ "$(origin_head)" = "Initialize project from kmp-template" ] &&
+    ! origin_has .github/workflows/template.yml && [ ! -e "$SIM/gh.log" ]; then
+    pass
+else
+    fail "exit $RC, origin: $(origin_head)"
+fi
+
+cleanup_case "workflow files refused" workflow 0
+if [ "$RC" = 0 ] && [ "$(origin_head)" = "Initialize project from kmp-template" ] &&
+    origin_has .github/workflows/template.yml && ! origin_has setup.sh &&
+    grep -q "^Delete the leftover template workflows$" "$SIM/gh.log" 2>/dev/null &&
+    grep -q "git rm -q .github/workflows/template-cleanup.yml .github/workflows/template.yml" "$SIM/gh.log"; then
+    pass
+else
+    fail "exit $RC, origin: $(origin_head), issue: $(cat "$SIM/gh.log" 2>/dev/null)"
+fi
+
+cleanup_case "main initialized before the push" none 1
+GITHUB_OUTPUT=$SIM/out
+: >"$GITHUB_OUTPUT"
+(cd "$SIM/work" && GITHUB_OUTPUT=$GITHUB_OUTPUT GITHUB_ENV=$SIM/env bash -eo pipefail "$TMP/state-step.sh" >/dev/null)
+if [ "$RC" = 0 ] && [ "$(origin_head)" = "initialized elsewhere" ] && [ ! -e "$SIM/gh.log" ] &&
+    grep -qx "initialized=true" "$GITHUB_OUTPUT"; then
+    pass
+else
+    fail "exit $RC, origin: $(origin_head), state: $(cat "$GITHUB_OUTPUT")"
+fi
+
+cleanup_case "workflow files refused, then main initialized before the retry" workflow-race 0
+if [ "$RC" = 0 ] && [ "$(origin_head)" = "initialized elsewhere" ] && [ ! -e "$SIM/gh.log" ]; then
+    pass
+else
+    fail "exit $RC, origin: $(origin_head), issue: $(cat "$SIM/gh.log" 2>/dev/null)"
+fi
+
+cleanup_case "refused for another reason (repo named like workflow)" other 0
+if [ "$RC" = 1 ] && origin_has .template/manifest.env && [ ! -e "$SIM/gh.log" ] &&
+    grep -q "::error::The push was refused" "$SIM/push.log"; then
+    pass
+else
+    fail "exit $RC: $(tail -3 "$SIM/push.log")"
 fi
 
 # --- the template-only workflows are guarded to the template repository ------------------------

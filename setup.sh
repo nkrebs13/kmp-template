@@ -499,15 +499,27 @@ rewrite() { # tokens|regions report|apply; prints the changed files, NUL-separat
 
 # Fills DELETE, BUILD_OUTPUT, WRITE, EDIT, MOVE_FROM and MOVE_TO. Every path is read
 # NUL-separated, so no file name can split into two paths.
+# check_listed_path <source> <path>: a path listed in .template/ is relative, non-empty and has
+# no empty, "." or ".." segment. Anything else is a template bug, caught before any change.
+check_listed_path() {
+    case /$2/ in
+        *//* | */./* | */../*)
+            die "$EX_INTERNAL" "$1 lists '$2': listed paths must be relative, non-empty and without . or .. segments"
+            ;;
+    esac
+}
+
 compute_plan() {
-    local p dir f rel edits='' longest=0 written names=() reports nl=$'\n'
+    local p dir f rel names=() reports longest
     DELETE=() BUILD_OUTPUT=() WRITE=() EDIT=() MOVE_FROM=() MOVE_TO=()
     while IFS= read -r p; do
-        case $p in '' | '#'*) continue ;; esac
+        case $p in '#'*) continue ;; esac
+        check_listed_path .template/template-only.txt "$p"
         if [ -e "$p" ] || [ -L "$p" ]; then DELETE+=("$p"); fi
     done <"$TPL/template-only.txt"
     if [ "$NO_DESKTOP" = 1 ]; then
         for p in $DESKTOP_PATHS; do
+            check_listed_path "DESKTOP_PATHS in .template/manifest.env" "$p"
             if [ -e "$p" ]; then DELETE+=("$p"); fi
         done
     fi
@@ -548,11 +560,9 @@ compute_plan() {
     rewrite tokens report >>"$reports"
     printf '%s\0' LICENSE >>"$reports"
     if [ "$NO_DESKTOP" = 1 ]; then printf '%s\0' .github/workflows/ci.yml >>"$reports"; fi
-    # Newline-delimited sets for de-duplication only; a path is matched as a whole line.
-    written=$(printf '%s\n' "${WRITE[@]}")
+    # Compared element by element: a file name may contain any character, newlines included.
     while IFS= read -r -d '' p; do
-        case "$nl$written$nl$edits" in *"$nl$p$nl"*) continue ;; esac
-        edits="$edits$p$nl"
+        if in_list "$p" "${WRITE[@]}" || in_list "$p" ${EDIT[@]+"${EDIT[@]}"}; then continue; fi
         EDIT+=("$p")
     done <"$reports"
     rm -f "$reports"
@@ -565,25 +575,48 @@ compute_plan() {
     done
     for p in ${MOVE_TO[@]+"${MOVE_TO[@]}"}; do
         if [ -e "$p" ]; then die "$EX_VALIDATION" "$p already exists; setup.sh would overwrite it"; fi
-        if [ "${#p}" -gt "$longest" ]; then longest=${#p}; fi
     done
-    if [ $((${#ROOT} + 1 + longest)) -gt "$MAX_PATH" ]; then
-        die "$EX_VALIDATION" "the longest source path would be $((${#ROOT} + 1 + longest)) bytes (limit $MAX_PATH, so Gradle build outputs stay under PATH_MAX); use a shorter --package or a shallower directory than $ROOT"
+    longest=$(longest_path_bytes ${MOVE_TO[@]+"${MOVE_TO[@]}"})
+    if [ "$longest" -gt "$MAX_PATH" ]; then
+        die "$EX_VALIDATION" "the longest source path would be $longest bytes (limit $MAX_PATH, so Gradle build outputs stay under PATH_MAX); use a shorter --package or a shallower directory than $ROOT"
     fi
     if ! grep -q '^Copyright (c) [0-9]\{4\} ' LICENSE; then
         die "$EX_INTERNAL" "LICENSE has no 'Copyright (c) <year> <holder>' line to update"
     fi
 }
 
-# inside_root <relative path>: its parent resolves (through symlinks) to ROOT or below, and it is
-# not "." or "..". Takes the path through the environment, so any character is safe.
+# inside_root <relative path>: true only if the path is strictly below ROOT once resolved. It must
+# be relative with no empty, "." or ".." segment; its nearest existing ancestor is resolved
+# through symlinks and the rest appended, so the last component (which rm -rf removes, without
+# following it) is never resolved. Takes the path through the environment, so any character is safe.
 inside_root() {
     P=$1 R=$ROOT perl -MCwd=realpath -e '
-        my $p = $ENV{P};
-        exit 1 if $p eq "" || $p =~ m{(?:^|/)\.\.?$};
-        my $parent = $p =~ m{^(.*)/[^/]*$}s ? $1 : ".";
-        my $real = realpath($parent);
-        exit(defined $real && ($real eq $ENV{R} || index("$real/", "$ENV{R}/") == 0) ? 0 : 1)'
+        my ($p, $root) = ($ENV{P}, $ENV{R});
+        my @parts = split m{/}, $p, -1;
+        exit 1 if $p eq "" || grep { $_ eq "" || $_ eq "." || $_ eq ".." } @parts;
+        my $leaf = pop @parts;
+        my @rest;
+        unshift @rest, pop @parts while @parts && !-e join("/", @parts);
+        my $base = realpath(@parts ? join("/", @parts) : ".");
+        exit 1 unless defined $base;
+        exit(index(join("/", $base, @rest, $leaf), "$root/") == 0 ? 0 : 1)'
+}
+
+# in_list <value> <item>...: true if value equals one of the items.
+in_list() {
+    local value=$1 item
+    shift
+    for item in "$@"; do
+        if [ "$item" = "$value" ]; then return 0; fi
+    done
+    return 1
+}
+
+# longest_path_bytes <relative path>...: the byte length of the longest ROOT/<path>. Bytes, not
+# characters: PATH_MAX counts bytes, and a UTF-8 directory name has more bytes than characters.
+longest_path_bytes() {
+    perl -e 'use bytes; my $root = shift; my $max = 0;
+        for (@ARGV) { my $n = length("$root/$_"); $max = $n if $n > $max } print $max' -- "$ROOT" "$@"
 }
 
 list_block() { # <title> <item>...
