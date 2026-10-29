@@ -1,0 +1,11 @@
+# Template leftovers: a generated project must not match any of these Perl regexes, in file
+# contents or in paths. One per line; '#' starts a comment line.
+# A user-supplied value (name, package, bundle ID, display name, author) that itself matches is
+# masked before matching, so author "nkrebs13" or name "KmpTemplateFork" stay possible.
+KMP Template
+KmpTemplate
+com[./]template
+(?i)kmp-template
+nkrebs13
+Nathan Krebs
+\.template/

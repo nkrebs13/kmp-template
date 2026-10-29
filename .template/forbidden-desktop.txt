@@ -1,0 +1,4 @@
+# Desktop leftovers, checked in addition to forbidden.txt after setup.sh --no-desktop.
+desktopApp
+\bjvm\s*[({]
+jvmMain

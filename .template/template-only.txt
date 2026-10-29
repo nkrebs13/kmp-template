@@ -1,0 +1,16 @@
+# Paths setup.sh deletes: they describe or maintain the template, not the generated project.
+# One path per line, relative to the repository root. .template/project/ is copied to the root
+# before these are deleted, so README.md and AGENTS.md are replaced rather than listed here.
+.template
+setup.sh
+docs
+tests
+scripts
+.claude
+CHANGELOG.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+SECURITY.md
+.github/CODEOWNERS
+.github/workflows/template.yml
+.github/workflows/template-cleanup.yml
