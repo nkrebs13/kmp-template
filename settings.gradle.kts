@@ -2,6 +2,8 @@
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
+    // Convention plugins (convention.*) live in this included build.
+    includeBuild("build-logic")
     repositories {
         google {
             mavenContent {
@@ -15,6 +17,11 @@ pluginManagement {
     }
 }
 
+plugins {
+    // Provisions the JDK 21 toolchain (and the daemon JVM) when it is not installed locally.
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
+
 dependencyResolutionManagement {
     repositories {
         google {
@@ -25,6 +32,10 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+        // Plugin markers only, so `verifyCatalog` can resolve every [plugins] entry.
+        gradlePluginPortal {
+            content { includeModuleByRegex(".*", ".*\\.gradle\\.plugin") }
+        }
     }
 }
 

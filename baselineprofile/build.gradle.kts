@@ -1,11 +1,18 @@
+import convention.JVM_BYTECODE_VERSION
+import convention.KOTLIN_JVM_TARGET
+
 plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.androidx.baselineprofile)
+    id("convention.quality")
 }
 
 android {
     namespace = "com.template.baselineprofile"
-    compileSdk = 36
+    compileSdk =
+        libs.versions.android.compileSdk
+            .get()
+            .toInt()
 
     defaultConfig {
         // minSdk 28: required by androidx.benchmark.macro (Macrobenchmark APIs are API 28+).
@@ -14,15 +21,14 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // Java/Kotlin target parity required on AGP 9.x — see androidApp/build.gradle.kts for rationale.
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JVM_BYTECODE_VERSION
+        targetCompatibility = JVM_BYTECODE_VERSION
     }
 
     kotlin {
         compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            jvmTarget.set(KOTLIN_JVM_TARGET)
         }
     }
 }

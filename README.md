@@ -87,7 +87,7 @@ template/
 | **Code Quality** | Spotless | 8.9.0 |
 | **Coverage** | Kover | 0.9.9 |
 
-This template includes only essential dependencies to keep your project lean. The version catalog also includes entries for commonly-needed libraries that are not wired into module builds by default — add them to your module `dependencies {}` as needed. This includes Kotlinx Serialization (1.10.0), Jetpack Compose Navigation (2.9.7), Kotlinx DateTime (0.6.2), and commented-out entries for Room, Ktor, Koin, and more (see [libs.versions.toml](gradle/libs.versions.toml)).
+This template includes only essential dependencies to keep your project lean. The version catalog also includes entries for commonly-needed libraries that are not wired into module builds by default — add them to your module `dependencies {}` as needed. These optional entries (Kotlinx Serialization, Compose Navigation, Kotlinx DateTime, Room, Ktor, Koin and more) sit in clearly marked blocks in [libs.versions.toml](gradle/libs.versions.toml).
 
 ## Build Commands
 
