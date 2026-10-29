@@ -49,7 +49,7 @@ jobs:
           FOUND=$(grep -rI -E "com[./]template[./]|com[./]template[^a-z0-9]|TemplateApp|KmpTemplate|orgName" . \
             --include="*.kt" --include="*.kts" --include="*.xml" \
             --include="*.swift" --include="*.plist" --include="*.pro" \
-            --include="*.pbxproj" --include="*.xcscheme" \
+            --include="*.pbxproj" --include="*.xcscheme" --include="*.xcconfig" \
             --include="*.toml" --include="*.conf" --include="*.sh" \
             --exclude-dir=.git --exclude-dir=build --exclude-dir=.gradle \
             2>/dev/null | wc -l | tr -d ' ')
@@ -58,7 +58,7 @@ jobs:
             grep -rI -E "com[./]template[./]|com[./]template[^a-z0-9]|TemplateApp|KmpTemplate|orgName" . \
               --include="*.kt" --include="*.kts" --include="*.xml" \
               --include="*.swift" --include="*.plist" --include="*.pro" \
-              --include="*.pbxproj" --include="*.xcscheme" \
+              --include="*.pbxproj" --include="*.xcscheme" --include="*.xcconfig" \
               --include="*.toml" --include="*.conf" --include="*.sh" \
               --exclude-dir=.git --exclude-dir=build --exclude-dir=.gradle
             exit 1

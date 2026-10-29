@@ -73,6 +73,7 @@ FILE_TYPES=(
     "*.pro"
     "*.pbxproj"
     "*.xcscheme"
+    "*.xcconfig"
 )
 
 # Build include arguments as an array (proper quoting)
