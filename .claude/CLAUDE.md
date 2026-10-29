@@ -28,7 +28,7 @@ not to undo. Read it before changing `setup.sh`, `.template/`, the build logic o
 - **Never move, delete or re-create the version tags** (`v2.0.0` … `v3.1.0` on the remote). The
   CHANGELOG compare links depend on them. Releases are cut only with `scripts/release.sh`.
 - **Repository docs hold long-lived knowledge only**: no session logs, dated status notes or plan
-  phases. History goes on the homeboard cards, cited as reference links (see MAINTAINING.md).
+  phases. History lives in git and the pull requests.
 
 ## Verify
 
@@ -65,10 +65,10 @@ test ! -e .claude && test "$(cat CLAUDE.md)" = "@AGENTS.md"
 
 - `build-logic/convention/`: convention plugins `convention.kmp.library`, `convention.compose`,
   `convention.android.application`, `convention.android.test`, `convention.jvm.application`,
-  `convention.quality` (applied by the others) and `convention.root` (root `check`, root-level
+  `convention.quality` (Spotless, detekt, Kover, `checkForbiddenCalls`; applied by the others) and `convention.root` (root `check`, root-level
   Spotless, `verifyCatalog`). The root `build.gradle.kts` holds only `apply false` lines.
 - SDK levels: catalog `[versions]` (`android-compile-sdk`, `android-target-sdk`,
-  `android-min-sdk`). App version and desktop installer name: `gradle.properties`. JDK 21
+  `android-min-sdk`). Application ID, app version and desktop installer name: `gradle.properties`. JDK 21
   toolchain and Java 17 bytecode: `ProjectExtensions.kt`. iOS settings:
   `iosApp/Configuration/Config.xcconfig` only, never `project.pbxproj`.
 - `.template/`: generator data. `tests/setup/run.sh`: generator harness. `scripts/release.sh`:

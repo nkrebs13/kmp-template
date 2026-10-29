@@ -33,7 +33,7 @@ which it deletes along with the other template-only files.
 | Token | Becomes | Where it appears |
 |---|---|---|
 | `com.template.ios` | `--bundle-id` | `Config.xcconfig`, docs |
-| `com.template.android`, `com/template/android` | `--package` | `androidApp` namespace, application ID, source path |
+| `com.template.android`, `com/template/android` | `--package` | `androidApp` namespace, `app.applicationId` in `gradle.properties`, source path |
 | `com.template`, `com/template` | `--package` | `<package>.shared`, `.desktop`, `.baselineprofile` and their source paths |
 | `KMP Template` | `--display-name` | Android label, iOS display name, desktop window title |
 | `KmpTemplate` | `--name` | `rootProject.name`, logger tag, desktop installer name |
@@ -135,8 +135,10 @@ Each looks like something to clean up; each is deliberate.
 - **Isolated Projects is `org.gradle.unsafe.isolated-projects=true`.** Gradle silently ignores the
   name without `unsafe.`, so a "cleanup" turns it off with no error. Every build script and
   convention plugin must stay isolated: no `subprojects`/`allprojects`, no cross-project reads.
-- **`desktopApp` packages with JetBrains Runtime** (toolchain vendor pinned, `javaHome` set from
-  it). Compose packaging rejects some JDK builds, Homebrew's among them
+- **`desktopApp` compiles, runs and packages on JetBrains Runtime 21** (toolchain vendor pinned;
+  the `run`/`runRelease` launcher and the Compose packaging tasks' `javaHome` come from it). The
+  packaging JDK is set lazily, so Android- and iOS-only builds never resolve or download it.
+  Compose packaging rejects some JDK builds, Homebrew's among them
   (JetBrains/compose-multiplatform#3107), and Hot Reload works best on JBR.
 - **iOS deployment target 16.0.** Don't raise it to silence the `ld: warning` about Skiko's
   `libicu.icudtl_dat.o` being built for iOS 18.5: that is Skiko's prebuilt, harmless, and raising
@@ -153,7 +155,7 @@ Each looks like something to clean up; each is deliberate.
   restores the template-only workflows, pushes everything else and opens an issue with the one
   `git rm` command. They stay inert because each is guarded on the repository name.
 - **No `docs/adr/`.** Reasoning lives where its reader looks: agent rules in the generated
-  `AGENTS.md`, maintainer facts here, history on the homeboard cards.
+  `AGENTS.md`, maintainer facts here, history in git and the pull requests.
 
 ## One-time repository setup
 

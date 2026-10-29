@@ -83,7 +83,7 @@ Write clear, descriptive commit messages:
 feat: add Room database support to shared module
 fix: correct sed escaping in setup.sh for special characters
 docs: update README with new quick start guide
-chore: update Kotlin to 2.3.0
+chore: update the Kotlin Gradle plugin
 ```
 
 Prefixes:
@@ -112,9 +112,9 @@ Two workflows run on pull requests targeting `main` and on pushes to `main`. `te
 | Static analysis | ubuntu | `spotlessCheck detekt` |
 | Android & Desktop | ubuntu | `check` (tests, lint, Kover), Kover HTML report, `:androidApp:assembleRelease`, `:baselineprofile:assemble`, `:desktopApp:createDistributable` |
 | iOS | macos-26 | `:shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64`, privacy manifest lint, `xcodebuild` of the app |
-| Verify catalog | ubuntu | `verifyCatalog`: every catalog coordinate, including unreferenced optional entries, resolves |
+| Verify catalog | ubuntu | `verifyCatalog` (needs the network): every catalog coordinate, including unreferenced optional entries, resolves |
 
-The workflow also runs weekly on a schedule, so toolchain drift shows up without a PR.
+Every job runs on every event. The workflow also runs weekly on a schedule, so toolchain drift shows up without a PR.
 
 **`.github/workflows/template.yml`** is template-only:
 
@@ -126,13 +126,13 @@ The workflow also runs weekly on a schedule, so toolchain drift shows up without
   combination runs the leftover check and asserts there is no `.claude/`, that `AGENTS.md` and
   the `@AGENTS.md` `CLAUDE.md` exist, and that `ci.yml` and `dependabot.yml` survive. On ubuntu,
   default and `--no-desktop` run `./gradlew check` and edge builds Android; on macOS, default runs
-  the iOS tests and `xcodebuild`.
+  the iOS tests and `xcodebuild`, and edge links the iOS framework and checks its bundle ID.
 
 **`.github/workflows/template-cleanup.yml`** is template-only too. In a repository created with
 "Use this template", it runs `setup.sh --derive-from-github` on the first push to `main` and
 commits the result.
 
-All jobs must pass before a PR can be merged. Concurrency groups cancel in-progress runs when new commits are pushed.
+Every job except Verify catalog must pass before a PR can be merged; Verify catalog needs the network, so it is not a required check. Concurrency groups cancel in-progress runs when new commits are pushed.
 
 ## What to Contribute
 

@@ -9,7 +9,7 @@ command from the repository root.
 - **Java:** any JDK on `PATH` or in `JAVA_HOME` starts Gradle. Gradle downloads the JDK 21
   toolchain the build compiles with.
 <!-- region desktop -->
-  `desktopApp` builds and packages on JetBrains Runtime 21, also downloaded on first use.
+  `desktopApp` compiles, runs and packages on JetBrains Runtime 21, also downloaded on first use.
 <!-- endregion desktop -->
 - **Android SDK:** `ANDROID_HOME`, or `sdk.dir` in `local.properties` (copy
   `local.properties.template`). Missing SDK = `SDK location not found`.
@@ -61,7 +61,7 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug 
 ./gradlew verifyCatalog                          # every catalog coordinate is published (network)
 ```
 
-CI (`.github/workflows/ci.yml`) runs exactly these:
+CI (`.github/workflows/ci.yml`) runs these:
 
 - Linux: `./gradlew spotlessCheck detekt`, then `./gradlew check :androidApp:assembleRelease :baselineprofile:assemble`
 <!-- region desktop -->
@@ -69,6 +69,7 @@ CI (`.github/workflows/ci.yml`) runs exactly these:
 <!-- endregion desktop -->
 - macOS: `./gradlew :shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64`, then
   the `xcodebuild` above.
+- Linux, as its own job on every event (and weekly): `./gradlew verifyCatalog`.
 
 ## Run the app
 
@@ -118,11 +119,12 @@ Each setting has exactly one source. Change it there.
 |---|---|
 | Library and plugin versions | `gradle/libs.versions.toml`. Never write a version in a build file. |
 | Android SDK levels | `gradle/libs.versions.toml` `[versions]`: `android-compile-sdk`, `android-target-sdk`, `android-min-sdk` |
-| Android application ID | `applicationId` in `androidApp/build.gradle.kts` |
+| Android application ID | `app.applicationId` in `gradle.properties` |
 | App version, Android | `app.versionCode`, `app.versionName` in `gradle.properties` |
 <!-- region desktop -->
-| App version, desktop | `app.versionName` in `gradle.properties` (`major.minor.patch`, major > 0) |
+| App version, desktop | `app.versionName` in `gradle.properties`. The installer version is its leading `major.minor.patch` (`1.2.0-beta` packages as `1.2.0`), and major must be at least 1 for the macOS `.dmg`. |
 | Desktop installer name | `app.packageName` in `gradle.properties` |
+| Desktop Windows upgrade UUID | Derived from `app.applicationId`: changing the ID makes Windows treat the new `.msi` as a different app |
 | Desktop window title | `desktopApp/src/main/kotlin/com/template/desktop/main.kt` |
 <!-- endregion desktop -->
 | Android app name | `androidApp/src/main/res/values/strings.xml` |

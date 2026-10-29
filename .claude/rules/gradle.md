@@ -8,7 +8,7 @@
   `subprojects {}`/`allprojects {}`. Isolated Projects is on
   (`org.gradle.unsafe.isolated-projects=true`; the name without `unsafe.` is silently ignored), so
   no script may read or configure another project. Read properties through `providers`.
-- `./gradlew check` = Spotless check, detekt, every host-buildable test target, Kover (60% lines per
+- `./gradlew check` = Spotless check, detekt, `checkForbiddenCalls` (no `print`/`println`), every host-buildable test target, Kover (60% lines per
   KMP library module) and `lintDebug`, in every module. Nothing auto-corrects; run `spotlessApply`.
 - Zero tolerance: detekt `maxIssues: 0` and `warningsAsErrors`, lint `warningsAsErrors`, no
   baselines, no suppressions without a comment saying why.

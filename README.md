@@ -46,22 +46,26 @@ graph TB
     subgraph "Platforms"
         A[androidApp]
         I[iosApp]
+        D[desktopApp]
     end
     subgraph "Shared Module"
         S[shared/commonMain]
         SA[androidMain]
         SI[iosMain]
+        SJ[jvmMain]
     end
     A --> S
     A --> SA
     I --> S
     I --> SI
+    D --> S
+    D --> SJ
 ```
 
 ## Project Structure
 
 ```
-template/
+kmp-template/
 ├── androidApp/          # Android application module
 ├── iosApp/              # iOS Xcode project
 ├── desktopApp/          # Desktop (JVM) application module
@@ -71,9 +75,12 @@ template/
 │   ├── iosMain/         # iOS-specific implementations
 │   └── jvmMain/         # Desktop (JVM) implementations
 ├── baselineprofile/     # Android performance optimization
+├── build-logic/         # Convention plugins that hold all shared build configuration
+├── config/              # detekt rules, Compose stability configuration
 ├── gradle/              # Build configuration & version catalog
 ├── .template/           # Generator data: tokens, template-only paths, leftover checks, project docs
 ├── tests/setup/         # setup.sh tests
+├── scripts/             # Release script
 ├── docs/                # Documentation
 └── setup.sh             # Template generation script
 ```
@@ -126,7 +133,7 @@ bash tests/setup/run.sh
 ### Android Build Fails
 
 1. **Missing SDK**: Create `local.properties` with `sdk.dir=/path/to/android/sdk`
-2. **JDK Version**: Ensure JDK 21 is installed and `JAVA_HOME` is set
+2. **JDK**: Ensure a JDK is on `PATH` or in `JAVA_HOME`; Gradle downloads the JDK 21 toolchain it needs
 3. **Gradle Issues**: Try `./gradlew clean` then rebuild
 
 ### iOS Build Fails
@@ -148,7 +155,3 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-**Template Version:** 3.1.0 | **Kotlin:** 2.4.21 | **Compose:** 1.12.2 | **AGP:** 9.5.0 | **Gradle:** 9.6.1

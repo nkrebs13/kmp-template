@@ -57,7 +57,7 @@ Applied:
 - `committed` is `false` with `--keep-git`, with `--no-commit`, or when git has no identity; `next`
   then ends with the commit command to run.
 
-Dry run (`--dry-run`): no `removed` or `committed`; instead `plan` lists
+Dry run (`--dry-run`): no `removed`, `committed` or `verified`; instead `plan` lists
 `{"delete": [...], "write": [...], "edit": [...], "move": [{"from": "...", "to": "..."}]}`, and
 `next` holds only the apply command.
 
