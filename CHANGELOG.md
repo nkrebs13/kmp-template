@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JDK 21 toolchain, provisioned through the foojay resolver and `gradle/gradle-daemon-jvm.properties`; bytecode stays at Java 17.
 - Isolated Projects (`org.gradle.unsafe.isolated-projects=true`).
 - `kotlin.native.ignoreDisabledTargets=true`, which silences Kotlin's disabled-iOS-targets warning on non-macOS hosts.
+- iOS settings in xcconfig files: `iosApp/Configuration/Config.xcconfig` holds the display name, bundle ID, marketing and build version, deployment target, `TEAM_ID` and script sandboxing; `Debug.xcconfig`/`Release.xcconfig` include it plus a gitignored `Local.xcconfig` for a developer's team ID (`Local.xcconfig.example` shows the format). `Info.plist` reads the display name and versions from them.
+- Shared `iosApp` Xcode scheme, so `xcodebuild -scheme iosApp` works on a fresh clone.
+- `iosApp/iosApp/PrivacyInfo.xcprivacy` privacy manifest (no tracking, no collected data, no required-reason APIs).
+- CI: the iOS job lints the privacy manifest and builds the app with `xcodebuild` for the simulator, uploading the log on failure.
 
 ### Changed
 - `baselineprofile` is a real `com.android.test` producer (new `convention.android.test` plugin) that generates the profile on a Gradle Managed Device; the profile is committed and packed into release APKs.
@@ -36,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Catalog aliases are kebab-case throughout (`libs.plugins.android.application`, `libs.plugins.compose.multiplatform`, ...).
 - Optional catalog entries are real, unreferenced entries in marked blocks, with KMP coordinates (JetBrains lifecycle/navigation, KMP Room, DataStore core, Ktor OkHttp/Darwin engines, Koin Compose, Coil 3, KSP).
 - CI uses JDK 21. Dependabot no longer sets the deprecated `reviewers` key (CODEOWNERS covers review).
+- iOS minimum is 16.0 (was 15.0), and the Xcode minimum is 16.0. The Xcode project uses synchronized folders (objectVersion 77), so new files under `iosApp/iosApp/` join the app target without editing `project.pbxproj`.
+- `TemplateApp.swift` is now `iOSApp.swift` (`struct iOSApp`); setup.sh renames the iOS app only through `Config.xcconfig` and no longer edits Swift files or the pbxproj.
+- The Xcode build phase is "Compile Kotlin Framework": it runs under `set -euo pipefail`, skips when `OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED=YES`, and always runs (`alwaysOutOfDate`), leaving up-to-date checks to Gradle.
+- The static `shared` framework is linked through its search path only; the broken `shared.framework` file reference and the Embed Frameworks phase (static frameworks are never embedded) are gone.
 
 ### Fixed
 - Repeated `clean` builds in one Gradle daemon no longer exhaust metaspace or fail ktlint with `NoClassDefFoundError`. Spotless's `clean` hook closed every formatter classloader mid-build ([spotless#3067](https://github.com/diffplug/spotless/issues/3067)) and leaked the Eclipse XML formatter; build-logic removes that hook.
@@ -45,6 +53,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Framework bundle ID is explicit (`-Xbinary=bundleId`, from the Android namespace), removing the "Cannot infer a bundle ID" warning.
 - Lint's `ObsoleteLintCustomCheck`: androidx.lifecycle is aligned to 2.11.0, whose lint checks run on lint 9.5.
 - Spotless picks up `.editorconfig` edits (they are part of its ktlint settings), and no longer reads `PATH` at configuration time (which invalidated the configuration cache).
+- The iOS app no longer aborts at launch: `Info.plist` sets `CADisableMinimumFrameDurationOnPhone`, which Compose Multiplatform's plist check requires.
+- Generic iOS Simulator builds no longer fail in Gradle's architecture check: `Config.xcconfig` excludes x86_64 for the simulator, since `shared` has no `iosX64` target.
+- The `.gitignore` no longer ignores `iosApp/Configuration/` and every `iosApp/*.xcconfig`; only `iosApp/Configuration/Local.xcconfig` is ignored.
 
 ### Removed
 - `iosX64` target (Compose Multiplatform 1.11+ no longer supports it).

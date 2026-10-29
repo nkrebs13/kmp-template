@@ -148,8 +148,11 @@ dependencies {
 ./gradlew :desktopApp:hotRun --auto
 ./gradlew :desktopApp:packageDistributionForCurrentOS
 
-# iOS Simulator (Apple Silicon)
+# iOS Simulator (Apple Silicon): the shared framework only, or the whole app
 ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
+xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug \
+  -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+  -derivedDataPath build/xcode CODE_SIGNING_ALLOWED=NO build
 
 ```
 
@@ -237,7 +240,7 @@ The iOS app hosts the shared Compose UI through a three-layer bridge:
 2. **Swift side** (`iosApp/iosApp/ContentView.swift`):
    A `UIViewControllerRepresentable` wraps `MainViewController()` so it can be used in SwiftUI.
 
-3. **SwiftUI entry** (`iosApp/iosApp/TemplateApp.swift`):
+3. **SwiftUI entry** (`iosApp/iosApp/iOSApp.swift`):
    The `@main` `App` struct renders `ContentView`, completing the chain: SwiftUI -> UIViewControllerRepresentable -> ComposeUIViewController -> Compose `App()`.
 
 ### Baseline Profile Module
@@ -327,9 +330,27 @@ The Android app module (`androidApp/`) uses:
 ### iOS
 
 The iOS project (`iosApp/`) uses:
-- SwiftUI App lifecycle
-- Kotlin framework embedding via `ComposeUIViewController`
-- Xcode project configuration
+- SwiftUI App lifecycle, hosting the shared Compose UI through `ComposeUIViewController`
+- A "Compile Kotlin Framework" build phase that runs `./gradlew :shared:embedAndSignAppleFrameworkForXcode`.
+  It always runs (`alwaysOutOfDate`) because Gradle does its own up-to-date checking.
+  Setting `OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED=YES` skips it when an IDE builds the framework itself.
+- Xcode 16 synchronized folders: every file under `iosApp/iosApp/` belongs to the app target, so adding
+  a Swift file or resource never touches `project.pbxproj`
+- A shared `iosApp` scheme (`xcshareddata/xcschemes/iosApp.xcscheme`), so `xcodebuild -scheme iosApp` works on a fresh clone
+- A privacy manifest, `iosApp/iosApp/PrivacyInfo.xcprivacy`, that declares no tracking, no collected data
+  and no required-reason APIs. Declare each one you add, or App Store Connect rejects the upload.
+
+**Settings live in xcconfig files, not in the Xcode project.**
+
+| File | Holds |
+|---|---|
+| `iosApp/Configuration/Config.xcconfig` | `APP_DISPLAY_NAME`, `PRODUCT_BUNDLE_IDENTIFIER`, `MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`, `IPHONEOS_DEPLOYMENT_TARGET` (16.0), `TEAM_ID`/`DEVELOPMENT_TEAM`, simulator `EXCLUDED_ARCHS`, `ENABLE_USER_SCRIPT_SANDBOXING = NO` |
+| `iosApp/Configuration/Debug.xcconfig`, `Release.xcconfig` | Include `Config.xcconfig`, then the optional `Local.xcconfig`. Attached to the app target's Debug and Release configurations. |
+| `iosApp/Configuration/Local.xcconfig` | Gitignored, per developer. Copy `Local.xcconfig.example` and set `TEAM_ID` to sign for a device. |
+
+`Info.plist` reads `$(APP_DISPLAY_NAME)`, `$(MARKETING_VERSION)` and `$(CURRENT_PROJECT_VERSION)`. To change one of
+these settings, edit the xcconfig. Xcode's build settings editor writes to `project.pbxproj`, and a value set
+there silently overrides the xcconfig.
 
 ## Troubleshooting
 
@@ -348,7 +369,11 @@ The iOS project (`iosApp/`) uses:
 
 ### iOS Build Errors
 
-1. Ensure Xcode 15.0+ is installed
+1. Ensure Xcode 16.0+ is installed
 2. Run `./gradlew :shared:linkDebugFrameworkIosSimulatorArm64`
 3. Clean Xcode derived data
 4. Check framework search paths in Xcode
+5. "Xcode Requested Architecture Not Configured in Gradle": the build asked for an architecture `shared`
+   does not declare (it has no Intel `iosX64` target). `Config.xcconfig` excludes x86_64 for simulator builds;
+   keep that line if you edit the file.
+6. Signing errors on a device: set `TEAM_ID` in `iosApp/Configuration/Local.xcconfig`

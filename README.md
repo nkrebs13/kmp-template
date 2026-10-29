@@ -27,14 +27,14 @@ Follow the prompts to customize your project name and package.
 |------|---------|-------|
 | JDK | 21 | Gradle toolchain; auto-provisioned via foojay if missing |
 | Android Studio | Latest | With KMP plugin |
-| Xcode | 15.0+ | macOS only, for iOS builds |
+| Xcode | 16.0+ | macOS only, for iOS builds |
 | macOS | 14.0+ (Sonoma) | Required for iOS development |
 
 ### iOS Development Requirements
 
 iOS builds require macOS with Xcode. The template targets:
-- iOS 15.0+ deployment target
-- Xcode 15.0+ (required for Swift 5.9+)
+- iOS 16.0+ deployment target
+- Xcode 16.0+ (the project uses synchronized folders)
 - Apple Silicon Mac for simulator builds (the Intel `iosX64` target is not declared)
 
 ## Architecture
@@ -131,13 +131,13 @@ This template includes only essential dependencies to keep your project lean. Th
 
 1. **Xcode Not Found**: Install Xcode from the App Store
 2. **Framework Missing**: Run `./gradlew :shared:linkDebugFrameworkIosSimulatorArm64`
-3. **Signing Issues**: Open in Xcode and configure your development team
+3. **Signing Issues**: Copy `iosApp/Configuration/Local.xcconfig.example` to `Local.xcconfig` (gitignored) and set `TEAM_ID`
 
 ### Template References Found
 
 If validation shows remaining template references:
 1. Run `./scripts/validate.sh` to see specific locations
-2. Manually replace any remaining `com.template` or `TemplateApp` references
+2. Manually replace any remaining `com.template` references
 3. Re-run validation to confirm
 
 ## Contributing

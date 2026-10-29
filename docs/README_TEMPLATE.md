@@ -9,7 +9,7 @@ A Kotlin Multiplatform application for iOS, Android and desktop (JVM).
 - **JDK 21** - the build toolchain. The Gradle wrapper needs some Java runtime on `PATH` or
   `JAVA_HOME` to start; installing JDK 21 directly is simplest, otherwise Gradle downloads it
 - **Android Studio Meerkat (2024.3.2) or newer** - Latest stable IDE with KMP support
-- **Xcode 15.0 or newer** - For iOS development and latest iOS SDK support
+- **Xcode 16.0 or newer** - For iOS development (the project uses Xcode 16 synchronized folders); the app targets iOS 16+
 - **macOS** - Required for iOS development and Xcode
 
 ### Building the Project
@@ -29,9 +29,31 @@ A Kotlin Multiplatform application for iOS, Android and desktop (JVM).
 Packaging needs a non-Homebrew JDK 21 (Temurin, Corretto or JetBrains Runtime).
 
 #### iOS
-1. Open `iosApp/iosApp.xcodeproj` in Xcode
-2. Select your target device/simulator
-3. Build and run
+App settings (display name, bundle ID, version, build number, deployment target) live in
+`iosApp/Configuration/Config.xcconfig`. Change them there, not in Xcode's build settings editor.
+
+To run on a device, set your Apple Developer team once (the file is gitignored):
+```bash
+cp iosApp/Configuration/Local.xcconfig.example iosApp/Configuration/Local.xcconfig
+# then edit TEAM_ID in Local.xcconfig
+```
+
+In Xcode: open `iosApp/iosApp.xcodeproj`, pick a simulator or device, and run.
+
+From the command line, on a simulator:
+```bash
+# Build for the simulator (also runs the Gradle phase that builds the shared framework)
+xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug \
+  -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+  -derivedDataPath build/xcode CODE_SIGNING_ALLOWED=NO build
+
+# Boot a simulator, install, launch
+xcrun simctl list devices available            # pick an iPhone
+xcrun simctl boot "<device name or UDID>"
+open -a Simulator
+xcrun simctl install booted build/xcode/Build/Products/Debug-iphonesimulator/iosApp.app
+xcrun simctl launch booted __BUNDLE_ID__
+```
 
 ## 📱 Features
 
