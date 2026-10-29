@@ -10,12 +10,21 @@ strict build and an `AGENTS.md` that lets a coding agent generate, verify and ex
 [![Compose Multiplatform](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fnkrebs13%2Fkmp-template%2Fmain%2Fgradle%2Flibs.versions.toml&query=%24.versions%5B%27compose-multiplatform%27%5D&label=Compose%20Multiplatform&color=4285F4)](gradle/libs.versions.toml)
 [![AGP](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fnkrebs13%2Fkmp-template%2Fmain%2Fgradle%2Flibs.versions.toml&query=%24.versions.agp&label=AGP&logo=android&color=3DDC84)](gradle/libs.versions.toml)
 
-![The template app running on Android, iOS and desktop](docs/images/platforms.png)
+
+![Android emulator, iOS simulator and desktop window, each showing the template app's greeting](docs/images/platforms.png)
+
+<sub>Android emulator and iOS simulator screenshots in drawn device frames; the desktop window
+content is the real `App()` rendered off-screen, in a drawn window frame.</sub>
 
 It is a skeleton, not a sample app: no DI, networking, navigation or architecture to delete. What
 it gives you is the build, the checks, the CI, the generator and the agent guide.
 
+**Not for:** native-UI iOS apps (SwiftUI first), or web/Wasm and server targets.
+
 ## Quick start
+
+Prerequisites: any JDK to start Gradle (it provisions JDK 21 itself), plus git and perl for
+`setup.sh`. iOS needs macOS on Apple Silicon with Xcode 16 or newer.
 
 ### With a coding agent
 
@@ -23,7 +32,8 @@ Give your agent a prompt like this:
 
 ```text
 Create a new Kotlin Multiplatform app called WeatherApp (package com.acme.weather) from
-https://github.com/nkrebs13/kmp-template: clone it, read AGENTS.md, and follow it.
+https://github.com/nkrebs13/kmp-template: clone it into ./weather-app (not inside another
+checkout), read AGENTS.md, and follow it.
 ```
 
 The root [AGENTS.md](AGENTS.md) tells the agent how to pick the values, preview the change with
@@ -32,12 +42,12 @@ The root [AGENTS.md](AGENTS.md) tells the agent how to pick the values, preview 
 
 ### By hand
 
-**Option A: "Use this template" on GitHub.** Create your repository from the template. Its first
-push runs `template-cleanup.yml`, which initializes the project with values derived from the
-repository (`acme/weather-app` becomes `WeatherApp`, package `io.github.acme.weather_app`) and
-commits the result. GitHub's workflow token cannot delete files in `.github/workflows`, so the
-template-only workflows stay behind, inert, and the workflow opens an issue with the `git rm`
-command that removes them. Details: [docs/MAINTAINING.md](docs/MAINTAINING.md#how-the-generator-works).
+**Option A: "Use this template" on GitHub.** The first push to `main` of your new repository
+generates the project; pushes to other branches don't. `template-cleanup.yml` derives the values
+from the repository (`acme/weather-app` becomes `WeatherApp`, package
+`io.github.acme.weather_app`) and commits the result. It then opens an issue with one `git rm` for
+the template workflows GitHub won't let it delete. Details:
+[docs/MAINTAINING.md](docs/MAINTAINING.md#use-this-template).
 
 **Option B: clone and run `setup.sh`.**
 
@@ -59,51 +69,50 @@ template name is left before it starts the new git history.
 |---|---|
 | Platforms | Android, iOS and desktop (JVM) apps hosting one shared Compose Multiplatform `App()` |
 | Build logic | `build-logic/` convention plugins; module build files hold only what is specific to them |
-| Gradle | Configuration cache and Isolated Projects on; JDK 21 toolchain provisioned automatically |
-| Quality gate | `./gradlew check`: Kotlin compiler warnings as errors, Spotless/ktlint, detekt with Compose rules, Android lint with warnings as errors, Kover (60% line coverage), and `checkForbiddenCalls` (no `println` in production code) |
+| Gradle | Configuration cache, and Isolated Projects (still incubating in Gradle) |
+| Quality gate | `./gradlew check`: Kotlin compiler warnings as errors, Spotless/ktlint, detekt with Compose rules, Android lint with warnings as errors, Kover line coverage (minimum in [`KmpLibraryConventionPlugin.kt`](build-logic/convention/src/main/kotlin/convention/KmpLibraryConventionPlugin.kt)), and `checkForbiddenCalls` (no `println` in production code) |
 | Tests | Compose UI tests of `App()` on the JVM and the iOS simulator, sharing one body; a test per platform `actual` |
 | Android | A real baseline profile, generated on a Gradle Managed Device and packed into release builds; release signing from environment variables or `local.properties` |
-| iOS | Settings in xcconfig files (never the pbxproj), synchronized folders, a privacy manifest, iOS 16+ |
+| iOS | Settings in xcconfig files, never the pbxproj (deployment target in [`Config.xcconfig`](iosApp/Configuration/Config.xcconfig)); synchronized folders; a privacy manifest |
 | Desktop | Compose Hot Reload, and Dmg/Msi/Deb packaging on JetBrains Runtime |
 | CI | Linux for static analysis, Android and desktop; macOS for iOS tests and an `xcodebuild` of the app. Runs on PRs, on `main` and weekly; a separate job checks that every catalog coordinate still resolves |
-| Generator | `setup.sh` with `--dry-run` and `--json`, tested by a plain-bash harness and a 6-way generation matrix (Linux and macOS × default, `--no-desktop`, edge-case names) |
+| Generator | `setup.sh` with `--dry-run` and `--json`, tested by a plain-bash harness; every variant is generated and built in CI on Linux and macOS |
 | Maintenance | Grouped Dependabot updates in every generated project; in this repository, auto-merge for non-major updates and one-command releases |
-| Agent guide | A complete `AGENTS.md` in every generated project, imported by its `CLAUDE.md` |
 
 ## Compared with the JetBrains wizard
 
-The [Kotlin Multiplatform wizard](https://kmp.jetbrains.com) is the right place to start if you
-want a web or server target, native iOS UI, or Amper. This template starts from the same module
-layout and adds the tooling around it.
+The [Kotlin Multiplatform wizard](https://kmp.jetbrains.com) is the right place to start for web
+or server targets, native iOS UI, or a non-Gradle build. This template uses the same module layout
+and adds the tooling around it.
 
 | | KMP wizard | This template |
 |---|---|---|
 | Targets | Android, iOS, desktop, web, server | Android, iOS, desktop |
-| Module layout | `shared` plus an app module per platform | The same |
 | iOS UI | Compose Multiplatform or native | Compose Multiplatform |
+| Module layout | `shared` plus an app module per platform | The same |
 | Build configuration | A build script per module | Convention plugins in `build-logic/` |
-| Tests | Optional ("Include tests") | UI and platform tests, Kover minimum |
-| Formatting and static analysis | Not included\* | Spotless/ktlint, detekt, lint as errors, all in `check` |
-| CI and dependency updates | Not included\* | GitHub Actions on Linux and macOS, Dependabot |
-| Android startup | Not included\* | Baseline profile on a managed device |
+| Tests | With "Include tests": one placeholder test (`assertEquals(3, 1 + 2)`) per platform source set | A Compose UI test of `App()` on the JVM and iOS, a test per platform `actual`, and a coverage minimum in `check` |
+| iOS settings | `Config.xcconfig`: team, bundle ID, versions | The same, plus Debug/Release/Local xcconfigs, a privacy manifest and an `xcodebuild` in CI |
+| Formatting and static analysis | Not generated | Spotless/ktlint, detekt, lint and compiler warnings as errors, all in `check` |
+| CI and dependency updates | Not generated | GitHub Actions on Linux and macOS, Dependabot |
+| Android startup | Not generated | Baseline profile on a managed device |
 | Naming the project | A web or IDE form | `setup.sh` flags with JSON output, or automatic on "Use this template" |
-| Agent guidance | Not included\* | `AGENTS.md` written for agents |
+| Agent guidance | Not generated | `AGENTS.md` written for agents |
 
-\* Not mentioned in JetBrains' [first-app tutorial](https://kotlinlang.org/docs/multiplatform/compose-multiplatform-new-project.html)
-as of October 2026; not checked against a freshly generated project.
+Wizard column: the generated projects JetBrains publishes in
+[Kotlin/kmp-wizard](https://github.com/Kotlin/kmp-wizard) (one branch per option set, updated
+2026-10-27), checked October 2026.
 
 ## Why it's built this way
 
 | Decision | Reason |
 |---|---|
-| A skeleton, not a sample app | Every library and screen a user has to delete is friction; optional libraries sit unreferenced in the catalog instead. |
-| Convention plugins | Shared configuration lives once in `build-logic/`, so a module's build file holds only what is specific to it. |
-| `shared` plus per-platform app modules | It matches JetBrains' 2026 default and AGP 9, which no longer allows the Android application plugin in a KMP module. |
-| A static framework through `embedAndSignAppleFrameworkForXcode` | Xcode builds it through Gradle with no CocoaPods or SPM setup, and Swift Export is still alpha. |
+| A skeleton, not a sample app | Every library and screen a user has to delete is friction. |
+| `shared` plus per-platform app modules | It is the current JetBrains wizard layout, and AGP 9 no longer allows the Android application plugin in a KMP module. |
+| A static framework through `embedAndSignAppleFrameworkForXcode` | Xcode builds it through Gradle with no CocoaPods or SPM setup; [Swift export](https://kotlinlang.org/docs/native-swift-export.html) is still Alpha. |
 | JDK 21 toolchain, Java 17 bytecode | Builds run on a current LTS JDK that Gradle downloads itself, while the output still runs on Java 17. |
-| iOS 16 minimum | It keeps devices on iOS 16 and 17 supported; raise it in one line of `Config.xcconfig` if the app needs newer APIs. |
-| Live optional catalog entries | Optional libraries are real entries, and `verifyCatalog` checks that every one still resolves, so enabling one is a one-line change that works. |
-| `AGENTS.md` instead of tool-specific files | One tool-neutral guide; `CLAUDE.md` only imports it. |
+| Live optional catalog entries | Optional libraries are real, unreferenced entries that `verifyCatalog` checks still resolve, so enabling one is a one-line change that works. |
+| `AGENTS.md` in every generated project, not tool-specific files | One tool-neutral guide for every agent; `CLAUDE.md` only imports it. |
 
 ## Module graph
 
