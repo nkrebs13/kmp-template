@@ -609,7 +609,7 @@ Compose:
     active: true
   LambdaParameterInRestartableEffect:
     active: true
-  # The template uses Material 3; this flags accidental Material 2 imports.
+  # The app uses Material 3; this flags accidental Material 2 imports.
   Material2:
     active: true
   ModifierClickableOrder:

@@ -8,3 +8,4 @@ com[./]template
 (?i)kmp-template
 nkrebs13
 \.template/
+\bsetup\.sh\b
