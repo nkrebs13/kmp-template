@@ -342,16 +342,11 @@ fi
 # Desktop window title (human-readable name)
 replace_in_directory "KMP Template" "$PROJECT_NAME" "desktopApp/src"
 
-# 4. Update iOS bundle identifier and project references
+# 4. Update iOS bundle identifier and display name. Config.xcconfig is the only file that holds
+# them; the Xcode project and Swift sources carry no project-specific names.
 echo "• Updating iOS configuration..."
-if [ -f "iosApp/iosApp.xcodeproj/project.pbxproj" ]; then
-    # Update bundle identifier (all occurrences) - use replace_in_file for proper escaping
-    replace_in_file "com.template.ios" "$IOS_BUNDLE_ID" "iosApp/iosApp.xcodeproj/project.pbxproj"
-    # Update Swift file references in Xcode project
-    replace_in_file "TemplateApp.swift" "${PROJECT_NAME}App.swift" "iosApp/iosApp.xcodeproj/project.pbxproj"
-    # Update ORGANIZATIONNAME placeholder
-    replace_in_file "orgName" "$PROJECT_NAME" "iosApp/iosApp.xcodeproj/project.pbxproj"
-fi
+replace_in_file "PRODUCT_BUNDLE_IDENTIFIER = com.template.ios" "PRODUCT_BUNDLE_IDENTIFIER = $IOS_BUNDLE_ID" "iosApp/Configuration/Config.xcconfig"
+replace_in_file "APP_DISPLAY_NAME = KMP Template" "APP_DISPLAY_NAME = $PROJECT_NAME" "iosApp/Configuration/Config.xcconfig"
 
 # 5. Update app names
 echo "• Updating app names..."
@@ -359,10 +354,6 @@ if [ -f "androidApp/src/main/res/values/strings.xml" ]; then
     replace_in_file ">Template<" ">$PROJECT_NAME<" "androidApp/src/main/res/values/strings.xml"
 fi
 # Theme uses generic name "Theme.App" which doesn't need project-specific renaming
-# Update Swift app name
-if [ -f "iosApp/iosApp/TemplateApp.swift" ]; then
-    replace_in_file "TemplateApp" "${PROJECT_NAME}App" "iosApp/iosApp/TemplateApp.swift"
-fi
 
 # 6. Rename directories to match new package structure
 echo "• Restructuring directories..."
@@ -428,23 +419,7 @@ else
     rm -rf baselineprofile/src/*/kotlin/com/template 2>/dev/null || true
 fi
 
-# 7. Rename Swift files if needed
-if [ -f "iosApp/iosApp/TemplateApp.swift" ]; then
-    if [ "$DRY_RUN" = true ]; then
-        echo "[DRY-RUN] Would: Rename TemplateApp.swift to ${PROJECT_NAME}App.swift"
-    else
-        mv "iosApp/iosApp/TemplateApp.swift" "iosApp/iosApp/${PROJECT_NAME}App.swift"
-        # Verify the rename succeeded
-        if [ ! -f "iosApp/iosApp/${PROJECT_NAME}App.swift" ]; then
-            echo "ERROR: Swift file rename failed"
-            echo "  Expected: iosApp/iosApp/${PROJECT_NAME}App.swift"
-            echo "  Please manually rename iosApp/iosApp/TemplateApp.swift"
-            exit 1
-        fi
-    fi
-fi
-
-# 8. Process README files
+# 7. Process README files
 echo "• Setting up documentation..."
 if [ -f "docs/README_TEMPLATE.md" ]; then
     if [ "$DRY_RUN" = true ]; then
@@ -452,13 +427,14 @@ if [ -f "docs/README_TEMPLATE.md" ]; then
     else
         cp docs/README_TEMPLATE.md README.md
         replace_in_file "__PROJECT_NAME__" "$PROJECT_NAME" "README.md" || true
+        replace_in_file "__BUNDLE_ID__" "$IOS_BUNDLE_ID" "README.md" || true
         replace_in_file "com.template" "$PACKAGE_NAME" "README.md" || true
     fi
 else
     echo "  Note: docs/README_TEMPLATE.md not found, keeping existing README.md"
 fi
 
-# 9. Remove template-specific files and directories
+# 8. Remove template-specific files and directories
 echo "• Cleaning up template files..."
 if [ "$DRY_RUN" = true ]; then
     echo "[DRY-RUN] Would: Remove template files (README_TEMPLATE.md, docs/, scripts/, setup.sh)"
@@ -480,7 +456,7 @@ else
     rm -rf .github 2>/dev/null || true
 fi
 
-# 10. Clean up development-specific directories and files
+# 9. Clean up development-specific directories and files
 echo "• Cleaning up development artifacts..."
 if [ "$DRY_RUN" = true ]; then
     echo "[DRY-RUN] Would: Remove development directories (.gradle, .idea, .kotlin, build, .claude, .vscode, .fleet, .cursor)"
@@ -495,7 +471,7 @@ else
     rm -rf .cursor 2>/dev/null || true
 fi
 
-# 11. Verify template replacement
+# 10. Verify template replacement
 if [ "$DRY_RUN" = true ]; then
     echo "• Skipping verification in dry-run mode"
 else
@@ -506,7 +482,7 @@ else
     REMAINING=$(grep -ri -E "com[./]template[./]|com[./]template[^a-z0-9]|com[./]template$|TemplateApp|KmpTemplate|orgName" . \
         --include="*.kt" --include="*.kts" --include="*.xml" --include="*.swift" \
         --include="*.plist" --include="*.pro" --include="*.pbxproj" \
-        --include="*.xcscheme" --include="*.toml" --include="*.conf" --include="*.sh" \
+        --include="*.xcscheme" --include="*.xcconfig" --include="*.toml" --include="*.conf" --include="*.sh" \
         --exclude-dir=.git --exclude-dir=build --exclude-dir=.gradle 2>/dev/null | wc -l | tr -d ' ')
     if [ "$REMAINING" -gt 0 ]; then
         echo ""
@@ -514,7 +490,7 @@ else
         grep -ri -E "com[./]template[./]|com[./]template[^a-z0-9]|com[./]template$|TemplateApp|KmpTemplate|orgName" . \
             --include="*.kt" --include="*.kts" --include="*.xml" --include="*.swift" \
             --include="*.plist" --include="*.pro" --include="*.pbxproj" \
-            --include="*.xcscheme" --include="*.toml" --include="*.conf" --include="*.sh" \
+            --include="*.xcscheme" --include="*.xcconfig" --include="*.toml" --include="*.conf" --include="*.sh" \
             --exclude-dir=.git --exclude-dir=build --exclude-dir=.gradle -l 2>/dev/null
         echo ""
     else
@@ -531,7 +507,7 @@ else
     fi
 fi
 
-# 12. Reinitialize git repository (clean start — removes template commit history)
+# 11. Reinitialize git repository (clean start — removes template commit history)
 echo "• Reinitializing Git repository..."
 if [ "$DRY_RUN" = true ]; then
     echo "[DRY-RUN] Would: Reinitialize git repository with a fresh initial commit"
@@ -572,8 +548,9 @@ else
     echo "  3. Run:  ./gradlew :androidApp:assembleDebug"
     echo ""
     echo "  iOS:"
-    echo "  4. Open iosApp/iosApp.xcodeproj in Xcode"
-    echo "  5. Set your Development Team: Signing & Capabilities → Team"
+    echo "  4. Set your team: cp iosApp/Configuration/Local.xcconfig.example iosApp/Configuration/Local.xcconfig"
+    echo "     and put your team ID in it (gitignored). App settings live in iosApp/Configuration/Config.xcconfig."
+    echo "  5. Open iosApp/iosApp.xcodeproj in Xcode"
     echo "  6. Build (⌘B) — the Kotlin framework builds automatically via the pre-build script"
     echo ""
     echo "  Desktop:"
