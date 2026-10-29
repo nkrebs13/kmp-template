@@ -19,6 +19,7 @@ internal fun assertGreetingIsDisplayed() = runComposeUiTest {
 
     val greeting = "Hello, ${getPlatformName()}!"
     // Resources load asynchronously, so wait for the text instead of asserting immediately.
-    waitUntilExactlyOneExists(hasText(greeting))
+    // Resources load asynchronously; allow for a cold simulator or a busy CI runner.
+    waitUntilExactlyOneExists(hasText(greeting), timeoutMillis = 5_000)
     onNodeWithText(greeting).assertIsDisplayed()
 }

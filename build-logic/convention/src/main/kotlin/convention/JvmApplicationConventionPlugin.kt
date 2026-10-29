@@ -1,11 +1,17 @@
 package convention
 
+import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.jvm.toolchain.JavaToolchainService
+import org.gradle.jvm.toolchain.JavaToolchainSpec
+import org.gradle.jvm.toolchain.JvmVendorSpec
 import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.getByType
 import org.jetbrains.compose.ComposeExtension
 import org.jetbrains.compose.desktop.DesktopExtension
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
@@ -33,10 +39,19 @@ class JvmApplicationConventionPlugin : Plugin<Project> {
         apply<ComposeConventionPlugin>()
         apply<QualityConventionPlugin>()
 
+        // JetBrains Runtime for compiling, running and packaging: Compose packaging rejects some JDK
+        // builds (Homebrew's, among others) and Hot Reload works best on it. Downloaded on first use.
+        val jetBrainsRuntime: Action<JavaToolchainSpec> = Action {
+            languageVersion.set(JavaLanguageVersion.of(JDK_TOOLCHAIN_VERSION))
+            vendor.set(JvmVendorSpec.JETBRAINS)
+        }
         extensions.configure<KotlinJvmProjectExtension> {
-            jvmToolchain(JDK_TOOLCHAIN_VERSION)
+            jvmToolchain(jetBrainsRuntime)
             compilerOptions.jvmTarget.set(KOTLIN_JVM_TARGET)
         }
+        // Packaging otherwise uses the Gradle daemon's JVM, whatever vendor that is.
+        val packagingJdk = extensions.getByType<JavaToolchainService>().launcherFor(jetBrainsRuntime)
+            .map { it.metadata.installationPath.asFile.absolutePath }
 
         // The Kotlin plugin applies the java plugin; keep javac on the same bytecode level as kotlinc.
         extensions.configure<JavaPluginExtension> {
@@ -52,6 +67,7 @@ class JvmApplicationConventionPlugin : Plugin<Project> {
         extensions.configure<ComposeExtension> {
             (this as ExtensionAware).extensions.configure<DesktopExtension>("desktop") {
                 application {
+                    javaHome = packagingJdk.get()
                     nativeDistributions {
                         targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
                         this.packageName = packageName

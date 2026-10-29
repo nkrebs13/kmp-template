@@ -221,7 +221,7 @@ run Compose UI tests without Robolectric. After changing a UI test, break the st
 confirm the test fails, then revert.
 
 Coverage: `./gradlew :shared:koverLog` prints the line coverage Kover enforces at 60%. It excludes
-`ComposableSingletons*`, `MainViewController*` and the generated resources package. Screenshot tests
+`ComposableSingletons*` and the generated resources package. Screenshot tests
 (Roborazzi) are not in the default gate because font rendering differs between macOS and Linux.
 
 ## Architecture Details

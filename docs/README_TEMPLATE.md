@@ -26,7 +26,7 @@ A Kotlin Multiplatform application for iOS, Android and desktop (JVM).
 ./gradlew :desktopApp:packageDistributionForCurrentOS   # .dmg on macOS, .msi on Windows, .deb on Linux
 ```
 
-Packaging needs a non-Homebrew JDK 21 (Temurin, Corretto or JetBrains Runtime).
+The desktop app builds and packages with JetBrains Runtime 21, which Gradle downloads on first use.
 
 #### iOS
 App settings (display name, bundle ID, version, build number, deployment target) live in

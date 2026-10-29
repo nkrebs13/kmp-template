@@ -82,8 +82,9 @@ from the constants in `ProjectExtensions.kt`. ktlint settings live in `.editorco
   `kotlin("jvm")` modules, so no `org.jetbrains.compose.hot-reload` plugin is applied explicitly.
 - CI builds `:desktopApp:createDistributable` (jpackage app image), not installers, which would need
   dpkg/fakeroot on the runner and add nothing to the check.
-- Packaging with a Homebrew JDK fails `checkRuntime` (compose-multiplatform#3107). Use a Temurin/Corretto/JBR
-  toolchain, or pass `-Pcompose.desktop.packaging.checkJdkVendor=false` on a machine that has only Homebrew.
+- `desktopApp`'s toolchain is JetBrains Runtime 21 (`convention.jvm.application`), downloaded by the
+  foojay resolver on first use. Compose packaging rejects Homebrew's JDK (compose-multiplatform#3107)
+  and Hot Reload works best on JBR, so pinning the vendor makes both behave the same on every machine.
 - The installer name comes from `app.packageName` in `gradle.properties` (lowercased for Deb);
   the installer version is the leading `major.minor.patch` of `app.versionName` (`1.2.0-beta` packages as
   `1.2.0`, so ship pre-release installers under a lower patch: Windows won't upgrade between equal

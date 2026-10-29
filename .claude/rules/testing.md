@@ -14,7 +14,7 @@
   (`libs.compose.ui.test`). The test class is `AppUiTest` in `jvmTest/` and `iosTest/`, and each
   calls `assertGreetingIsDisplayed()` from `commonTest/AppUiTestBody.kt`.
 - The body is a plain function with no `@Test` in `commonTest/`. A `@Test` there would also run in
-  `androidHostTest`, which has no Compose UI test runtime without Robolectric, and would fail.
+  `androidHostTest`, which has no Compose UI test runtime without Robolectric.
 - jvmTest runs headless, so it works on Linux CI. `jvmTest` needs `compose.desktop.currentOs` for Skiko.
 - Resources load asynchronously: wait with `waitUntilExactlyOneExists` before asserting.
 - **Mutation-check habit:** after writing or changing a UI test, change the string it asserts in
@@ -27,6 +27,6 @@
 - Kover enforces 60% line coverage on `shared` (`./gradlew :shared:koverVerify`, part of `check`).
   Read the number with `./gradlew :shared:koverLog`.
 - It measures the jvm and android host tests. Kover does not measure Kotlin/Native.
-- Excludes live in `QualityConventionPlugin`: `ComposableSingletons*`, `MainViewController*`
+- Excludes live in `QualityConventionPlugin`: `ComposableSingletons*`
   (iOS entry point), the generated `*.generated.resources.*` package, `@Preview` functions and
   Android generated classes.
