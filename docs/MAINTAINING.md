@@ -42,8 +42,9 @@ Kotlin sources move by a generic `find` over `*/kotlin/com/template/**`. iOS ren
 `Config.xcconfig`; `setup.sh` never edits Swift files or `project.pbxproj`.
 
 **Desktop regions.** A line `// region desktop`, `# region desktop` or `<!-- region desktop -->`
-opens a block and the matching `endregion desktop` line closes it. Markers are whole lines; text
-after a marker on the same line is not a marker. `--no-desktop` deletes every block, markers
+opens a block and the matching `endregion desktop` line closes it. A marker must start its line
+(after indentation); anything after `region desktop` on that line is ignored and removed with it,
+and a `region desktop` elsewhere in a line is not a marker. `--no-desktop` deletes every block, markers
 included, plus `DESKTOP_PATHS`, and renames the CI job to "Android". The default generation deletes
 only the Markdown markers and keeps code and Gradle markers.
 
@@ -107,7 +108,8 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug 
 `template.yml` runs the matrix {ubuntu-latest, macos-26} × {`default`, `no-desktop`,
 `edge`}; `edge` is `--name MyApp2 --package io.my_company.app_core --bundle-id
 io.my-company.app-core --display-name "My App"`. For `--no-desktop`, pass `--no-desktop` to both
-`setup.sh` and `check-leftovers.sh`.
+`setup.sh` and `check-leftovers.sh`, and replace the Gradle line with `./gradlew check` (the desktop
+module no longer exists).
 
 ## Updating dependencies by hand
 

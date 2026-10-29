@@ -37,8 +37,13 @@ class QualityConventionPlugin : Plugin<Project> {
         val checkForbiddenCalls = tasks.register<CheckForbiddenCallsTask>("checkForbiddenCalls") {
             group = "verification"
             description = "Fails on print/println in production Kotlin sources (use AppLogger)."
-            // Production source sets only: src/main, src/commonMain, src/androidMain, ...
-            sources.from(fileTree("src") { include("main/**/*.kt", "*Main/**/*.kt") })
+            // Every non-test source set: main, commonMain, androidMain, debug, release, flavors, ...
+            sources.from(
+                fileTree("src") {
+                    include("*/kotlin/**/*.kt", "*/java/**/*.kt")
+                    exclude("test*/**", "*Test*/**")
+                },
+            )
             marker.set(layout.buildDirectory.file("checkForbiddenCalls/ok"))
         }
         pluginManager.withPlugin("base") { tasks.named("check") { dependsOn(checkForbiddenCalls) } }
