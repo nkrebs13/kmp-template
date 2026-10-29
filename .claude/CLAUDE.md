@@ -22,6 +22,7 @@ kmp-template/
 ├── shared/              # KMP shared module (commonMain/androidMain/iosMain)
 ├── androidApp/          # Android application
 ├── iosApp/              # iOS Xcode project (Swift + Compose bridge)
+├── desktopApp/          # Desktop (JVM) application (convention.jvm.application)
 ├── baselineprofile/     # Baseline Profile producer (com.android.test, Gradle Managed Device)
 ├── build-logic/         # Included build: convention plugins (convention.*) + verifyCatalog
 ├── config/
@@ -49,6 +50,11 @@ from the constants in `ProjectExtensions.kt`. ktlint settings live in `.editorco
 # spotlessCheck, detekt, :shared:allTests, :shared:koverVerify, :androidApp:lintDebug
 ./gradlew check :androidApp:assembleDebug :shared:linkDebugFrameworkIosSimulatorArm64
 
+# Desktop app
+./gradlew :desktopApp:run                    # needs a GUI session (HeadlessException over plain SSH)
+./gradlew :desktopApp:hotRun --auto          # Compose Hot Reload (bundled with the CMP plugin)
+./gradlew :desktopApp:packageDistributionForCurrentOS   # .dmg / .msi / .deb
+
 # Auto-fix formatting (nothing auto-corrects during check)
 ./gradlew spotlessApply
 
@@ -64,6 +70,19 @@ from the constants in `ProjectExtensions.kt`. ktlint settings live in `.editorco
 # Compose compiler reports/metrics -> <module>/build/compose-reports, compose-metrics
 ./gradlew -Pkmp.composeCompilerReports=true :shared:compileAndroidMain
 ```
+
+## Desktop Notes
+
+- Desktop lines are wrapped in `// region desktop` / `// endregion desktop` (`settings.gradle.kts`,
+  the `jvm()` target in `KmpLibraryConventionPlugin`) so a generator flag can strip them. Keep each
+  region on whole lines.
+- `hotRun` comes from the Compose Multiplatform plugin's bundled Compose Hot Reload; it attaches to
+  `kotlin("jvm")` modules, so no `org.jetbrains.compose.hot-reload` plugin is applied explicitly.
+- CI builds `:desktopApp:createDistributable` (jpackage app image), not installers, which would need
+  dpkg/fakeroot on the runner and add nothing to the check.
+- Packaging with a Homebrew JDK fails `checkRuntime` (compose-multiplatform#3107). Use a Temurin/Corretto/JBR
+  toolchain, or pass `-Pcompose.desktop.packaging.checkJdkVendor=false` on a machine that has only Homebrew.
+- The window title and installer name come from `app.displayName` / `app.packageName` in `gradle.properties`.
 
 ## Template Generation Test
 

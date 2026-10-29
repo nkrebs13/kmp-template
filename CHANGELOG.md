@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Desktop (JVM) target: `shared` gains `jvm()` (`Platform.jvm.kt`, `PlatformJvmTest`), and a new `desktopApp` module built by the new `convention.jvm.application` plugin runs the shared `App()` in a Compose window and packages Dmg/Msi/Deb installers. The window title and package name come from `app.displayName` and `app.packageName` in `gradle.properties`.
+- Compose Hot Reload: `./gradlew :desktopApp:hotRun --auto` (bundled with the Compose Multiplatform plugin; no extra plugin needed).
+- `// region desktop` markers around every desktop line in `settings.gradle.kts` and the `jvm()` target, for removing the desktop target.
 - `build-logic/` included build with convention plugins: `convention.kmp.library`, `convention.compose`, `convention.android.application`, `convention.quality` and `convention.root`. Module build files now declare only what is specific to them.
 - `./gradlew verifyCatalog`: asks Maven Central, Google Maven and the Gradle Plugin Portal for the POM of every catalog library and plugin marker (including iOS-only artifacts) on every run, and names any alias that is not published. An unreachable repository is reported as a network problem, not a broken entry. Not part of `check`.
 - Compose rules for detekt (`io.nlopez.compose.rules:detekt` 0.4.28).
@@ -20,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `baselineprofile` is a real `com.android.test` producer (new `convention.android.test` plugin) that generates the profile on a Gradle Managed Device; the profile is committed and packed into release APKs.
 - `Theme.App` extends the platform `Theme.Material.*.NoActionBar` instead of AppCompat, with a night variant.
 - `proguard-rules.pro` keeps only the source-file attributes; libraries ship their own consumer rules.
+- CI: the Android job is now "Android & Desktop" and also builds the desktop distributable. `ci.yml` is split into Static analysis and Android jobs on ubuntu plus an iOS job on `macos-26`. It runs on PRs, pushes to `main` and weekly, and a scheduled `verifyCatalog` job checks every catalog coordinate. Template generation testing moved to the template-only `template.yml`.
 - CI: `ci.yml` is split into Static analysis and Android jobs on ubuntu plus an iOS job on `macos-26`. It runs on PRs, pushes to `main` and weekly, and a `verifyCatalog` job checks every catalog coordinate. Template generation testing moved to the template-only `template.yml`.
 - Gradle 9.6.1; `actions/checkout` 7.0.1, `actions/setup-java` 6.1.0, `actions/upload-artifact` 7.0.2.
 - Kotlin 2.4.21, Compose Multiplatform 1.12.2 (Material 3 1.9.0), AGP 9.5.0, Spotless 8.10.4, Kover 0.9.11, Kermit 2.2.0, androidx benchmark/baselineprofile 1.5.0. detekt stays on 1.23.8 because 2.x has no stable release yet.
