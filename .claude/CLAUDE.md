@@ -85,7 +85,8 @@ from the constants in `ProjectExtensions.kt`. ktlint settings live in `.editorco
   toolchain, or pass `-Pcompose.desktop.packaging.checkJdkVendor=false` on a machine that has only Homebrew.
 - The installer name comes from `app.packageName` in `gradle.properties` (lowercased for Deb);
   the installer version is the leading `major.minor.patch` of `app.versionName` (`1.2.0-beta` packages as
-  `1.2.0`), and the Windows upgrade UUID derives from `app.applicationId`. The window title is a literal
+  `1.2.0`, so ship pre-release installers under a lower patch: Windows won't upgrade between equal
+  versions), and the Windows upgrade UUID derives from `app.applicationId`. The window title is a literal
   in `main.kt`.
 
 ## Template Generation Test

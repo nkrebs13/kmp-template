@@ -15,6 +15,8 @@ import java.util.UUID
 /**
  * The installer version is the leading `major.minor.patch` of `app.versionName`, so `1.2.0-beta`
  * packages as `1.2.0`. Compose validates it for each format (Msi: major and minor at most 255).
+ * A pre-release and its final release therefore share an installer version, and Windows will not
+ * upgrade one to the other: ship pre-release installers under a lower patch number.
  */
 private val PACKAGE_VERSION_PREFIX = Regex("""^\d+\.\d+\.\d+""")
 
