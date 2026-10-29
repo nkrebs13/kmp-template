@@ -15,3 +15,4 @@
 - After editing the catalog: `./gradlew verifyCatalog`.
 - The detekt 1.23.8 `ReportingExtension.file` deprecation ("Deprecated Gradle features were used")
   is accepted until detekt 2.x is stable; see `docs/MAINTAINING.md`.
+- Kotlin compiler warnings are errors in every module and target (`allWarningsAsErrors`, set in `convention.quality`).

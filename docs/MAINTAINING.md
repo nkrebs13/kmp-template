@@ -61,11 +61,29 @@ resolve inside the repository. A user value that itself matches a forbidden patt
 `AGENTS.md`. `tests/setup/run.sh` pins it; change both together. `setup.sh` must stay bash 3.2
 compatible: macOS CI runs it on `/bin/bash`.
 
-**"Use this template".** `template-cleanup.yml` runs on the new repository's first push to `main`:
-`setup.sh --derive-from-github owner/repo` (name: PascalCase repo; package
-`io.github.<owner>.<repo>`, sanitized; bundle ID sanitized separately, since it allows `-` but not
-`_`), then commits and pushes. Every template-only workflow is guarded on the repository name, so
-leftovers stay inert.
+### Use this template
+
+A repository created with GitHub's "Use this template" is initialized by `template-cleanup.yml`
+on its first push to `main`. Pushes to other branches do nothing, and so does a push once the
+project is initialized.
+
+- **Guards.** The job runs only outside `nkrebs13/kmp-template`, and not in a fork or in a
+  repository that is itself a template. It runs only while both the pushed commit and `origin/main`
+  still contain `.template/manifest.env`, so a second push or a concurrent run is a no-op.
+- **Values.** `setup.sh --derive-from-github owner/repo --keep-git --yes --json`: the name is the
+  repository name in PascalCase, the package is `io.github.<owner>.<repo>` (sanitized, so
+  `acme/weather-app` gives `io.github.acme.weather_app`), the bundle ID is sanitized separately
+  (it allows `-` but not `_`), and the LICENSE holder falls back to the owner. `--keep-git`
+  keeps the repository's history; the job commits "Initialize project from kmp-template" on top
+  and pushes it to `main`.
+- **Leftover workflows.** `GITHUB_TOKEN` has no `workflows` permission, so GitHub refuses a push
+  that changes `.github/workflows`. The job then restores the template-only workflows, pushes
+  everything else, and opens an issue, "Delete the leftover template workflows", with the
+  `git rm` command to run from a clone. Until then they stay inert: every template-only workflow is
+  guarded on the repository name.
+- **Failure.** If `setup.sh` or the push fails before the project is initialized, the job opens an
+  issue, "Project initialization failed", with the run URL and the `setup.sh` JSON result. Clone
+  the repository and run `./setup.sh` by hand.
 
 ### Changing the generator
 

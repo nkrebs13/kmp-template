@@ -8,6 +8,8 @@ import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.register
+import org.gradle.kotlin.dsl.withType
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 
 /**
  * Formatting (Spotless: ktlint for Kotlin, Eclipse WTP for XML), static analysis (detekt + Compose
@@ -31,6 +33,10 @@ class QualityConventionPlugin : Plugin<Project> {
         configureDetekt()
         configureKover()
         configureForbiddenCalls()
+        // Zero-warning policy: every Kotlin compilation (JVM, Android, Native) fails on a warning.
+        tasks.withType<KotlinCompilationTask<*>>().configureEach {
+            compilerOptions.allWarningsAsErrors.set(true)
+        }
     }
 
     private fun Project.configureForbiddenCalls() {
