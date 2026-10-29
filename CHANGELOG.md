@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `kotlin.native.ignoreDisabledTargets=true`, which silences Kotlin's disabled-iOS-targets warning on non-macOS hosts.
 
 ### Changed
+- CI: `ci.yml` is split into Static analysis and Android jobs on ubuntu plus an iOS job on `macos-26`. It runs on PRs, pushes to `main` and weekly, and a scheduled `verifyCatalog` job checks every catalog coordinate. Template generation testing moved to the template-only `template.yml`.
 - Gradle 9.6.1; `actions/checkout` 7.0.1, `actions/setup-java` 6.1.0, `actions/upload-artifact` 7.0.2.
 - Kotlin 2.4.21, Compose Multiplatform 1.12.2 (Material 3 1.9.0), AGP 9.5.0, Spotless 8.10.4, Kover 0.9.11, Kermit 2.2.0, androidx benchmark/baselineprofile 1.5.0. detekt stays on 1.23.8 because 2.x has no stable release yet.
 - compileSdk 37 (required by Compose 1.12); targetSdk stays 36. SDK levels live in `libs.versions.toml`, the app version in `gradle.properties` (`app.versionCode`, `app.versionName`).

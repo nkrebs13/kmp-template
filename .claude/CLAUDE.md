@@ -31,7 +31,7 @@ kmp-template/
 ├── docs/                # Documentation
 ├── gradle/              # Version catalog (libs.versions.toml), gradle-daemon-jvm.properties
 ├── setup.sh             # Template generation script
-└── .github/workflows/ci.yml
+└── .github/workflows/     # ci.yml (ships to generated projects), template.yml (template-only)
 ```
 
 Convention plugins (`build-logic/convention/src/main/kotlin/convention/`):
@@ -93,9 +93,10 @@ cd - && rm -rf /tmp/e2e-test
 
 ## CI Minutes Status
 
-CI_MINUTES: AVAILABLE. PR-open CI runs the full Build & Lint + Template Generation
-matrix on `macos-14` runners. Local verification still preferred during iteration;
-push to open a PR for the authoritative run.
+CI_MINUTES: AVAILABLE (public repo). `ci.yml` runs Static analysis + Android on ubuntu and iOS on
+`macos-26`; `template.yml` runs Template Generation on `macos-26`. Both run on PRs and pushes to
+`main`; `ci.yml` also runs weekly with `verifyCatalog`. Local verification is still preferred during
+iteration; the PR run is authoritative.
 
 ## Version Tags
 
