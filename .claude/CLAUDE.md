@@ -89,6 +89,30 @@ from the constants in `ProjectExtensions.kt`. ktlint settings live in `.editorco
   versions), and the Windows upgrade UUID derives from `app.applicationId`. The window title is a literal
   in `main.kt`.
 
+## iOS Notes
+
+- **`iosApp/Configuration/Config.xcconfig` is the source of truth** for the display name, bundle ID,
+  marketing/build version, deployment target (16.0), `TEAM_ID`/`DEVELOPMENT_TEAM`, simulator
+  `EXCLUDED_ARCHS` and `ENABLE_USER_SCRIPT_SANDBOXING = NO`. `Debug.xcconfig`/`Release.xcconfig` include it
+  plus the gitignored `Local.xcconfig` (per-developer team ID). **Never edit `project.pbxproj` for
+  settings**: a pbxproj target setting silently overrides the xcconfig. Each setting has exactly one source.
+- The app group is an Xcode 16 synchronized folder (objectVersion 77): files under `iosApp/iosApp/` join the
+  target automatically, so adding Swift files or resources needs no pbxproj edit. `Info.plist` is the one
+  membership exception. The entry point is `iOSApp.swift` (`struct iOSApp`), a fixed name the generator
+  never renames.
+- `Info.plist` must keep `CADisableMinimumFrameDurationOnPhone = true`; Compose aborts at launch without it.
+- The "Compile Kotlin Framework" phase runs `embedAndSignAppleFrameworkForXcode` with `alwaysOutOfDate = 1`
+  (Gradle checks up-to-dateness), so it declares no inputs/outputs. Xcode prints a `note:` about it running
+  every build; that is expected.
+- Build (CI runs this in the `ios` job, with the shared `iosApp` scheme):
+  ```bash
+  xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug -sdk iphonesimulator \
+    -destination 'generic/platform=iOS Simulator' -derivedDataPath build/xcode CODE_SIGNING_ALLOWED=NO build
+  ```
+- Known remaining build output (third-party, not ours): an `ld: warning` that skiko's `libicu.icudtl_dat.o`
+  was built for iOS 18.5 (newer than our 16.0 target), and `appintentsmetadataprocessor` "Metadata
+  extraction skipped", which Xcode prints for every app without App Intents.
+
 ## Template Generation Test
 
 ```bash
@@ -96,6 +120,8 @@ from the constants in `ProjectExtensions.kt`. ktlint settings live in `.editorco
 cp -r . /tmp/e2e-test && cd /tmp/e2e-test
 printf 'WeatherApp\ncom.example.weather\ncom.example.weather\ny\n' | bash setup.sh
 grep -ri "com.template\|TemplateApp\|KmpTemplate\|orgName" . --exclude-dir=.git | wc -l  # Must be 0
+xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -sdk iphonesimulator \
+  -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 test ! -d ".claude" && echo "PASS" || echo "FAIL"
 ./gradlew :shared:allTests :androidApp:assembleDebug
 cd - && rm -rf /tmp/e2e-test
@@ -105,6 +131,8 @@ cd - && rm -rf /tmp/e2e-test
 
 - **`replace_in_directory`** excludes `.git/`, `build/`, `.gradle/`, `node_modules/` and handles
   `.kt`, `.kts`, `.xml`, `.gradle`, `.toml`, `.conf`, `.sh`, `.md`, `.swift`, `.plist`, `.pbxproj`
+- **iOS renaming touches only `iosApp/Configuration/Config.xcconfig`** (bundle ID, display name); setup.sh
+  never edits Swift files or the pbxproj
 - **Git reinit**: setup.sh always runs `rm -rf .git && git init` for a clean history
 - **`__PROJECT_NAME__`** placeholder in `docs/README_TEMPLATE.md` — avoids overbroad "Template" replacement
 - **`config/compose/stability.conf`** lists only read-only collection interfaces and `kotlin.time.*`,

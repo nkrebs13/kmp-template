@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  App privacy manifest. App Store Connect rejects uploads that use a required-reason API
+  (UserDefaults, file timestamps, system boot time, disk space, active keyboards) without
+  declaring it in NSPrivacyAccessedAPITypes. Declare each one you add, along with any
+  tracking domains and collected data types:
+  https://developer.apple.com/documentation/bundleresources/describing-use-of-required-reason-api
+  https://developer.apple.com/documentation/bundleresources/privacy-manifest-files
+-->
+<plist version="1.0">
+<dict>
+    <key>NSPrivacyTracking</key>
+    <false/>
+    <key>NSPrivacyTrackingDomains</key>
+    <array/>
+    <key>NSPrivacyCollectedDataTypes</key>
+    <array/>
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array/>
+</dict>
+</plist>

@@ -99,6 +99,28 @@ jobs:
       - name: Shared tests and framework
         run: ./gradlew :shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64
 
+      - name: Lint privacy manifest
+        run: plutil -lint iosApp/iosApp/PrivacyInfo.xcprivacy
+
+      # Builds the app the way Xcode does, including the Gradle build phase that embeds the framework.
+      # CODE_SIGNING_ALLOWED=NO: simulator builds need no team. pipefail keeps xcodebuild's exit code.
+      - name: Build iOS app
+        run: |
+          set -o pipefail
+          mkdir -p build
+          xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/xcode CODE_SIGNING_ALLOWED=NO build 2>&1 | tee build/xcodebuild.log
+
+      - name: Upload xcodebuild log
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: xcodebuild-log
+          path: build/xcodebuild.log
+          retention-days: 14
+          if-no-files-found: ignore
+
   verify-catalog:
     name: Verify catalog
     runs-on: ubuntu-latest

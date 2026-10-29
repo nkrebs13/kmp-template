@@ -256,8 +256,8 @@ konan/
 
 # Multiplatform Mobile
 .kotlin-multiplatform-mobile/
-iosApp/Configuration/
-iosApp/*.xcconfig
+# Per-developer Xcode settings (team ID); see iosApp/Configuration/Local.xcconfig.example
+iosApp/Configuration/Local.xcconfig
 
 # CocoaPods (iOS dependencies)
 iosApp/Podfile.lock
