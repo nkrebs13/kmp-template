@@ -1,0 +1,92 @@
+# Template-only. In a repository created with "Use this template", the first push to main runs
+# setup.sh with values derived from the repository (owner/repo), commits the result and pushes it.
+# setup.sh deletes this file; until then the guards keep it inert everywhere else.
+name: Template cleanup
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  cleanup:
+    name: Initialize project
+    # Not the template itself, not a fork of it, not another template made from it.
+    if: github.repository != 'nkrebs13/kmp-template' && !github.event.repository.fork && !github.event.repository.is_template
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        # Unlike the default shell, this one sets pipefail, so `setup.sh | tee` fails when setup.sh does.
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check that the project is uninitialized
+        id: state
+        run: |
+          if [ -f .template/manifest.env ] && [ -f setup.sh ]; then
+            echo "initialized=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "initialized=true" >> "$GITHUB_OUTPUT"
+            echo "No .template/ here: the project is already initialized, nothing to do."
+          fi
+
+      - name: Generate the project
+        if: steps.state.outputs.initialized == 'false'
+        run: ./setup.sh --derive-from-github "$GITHUB_REPOSITORY" --keep-git --yes --json | tee "$RUNNER_TEMP/setup.json"
+
+      # GITHUB_TOKEN cannot always push changes under .github/workflows (that needs the
+      # `workflows` permission, which it may not get). If the push is refused, restore those
+      # files, push everything else, and open an issue listing what to delete by hand. The
+      # restored template-only workflows are guarded, so they stay inert until then.
+      - name: Commit and push
+        if: steps.state.outputs.initialized == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -q -m "Initialize project from kmp-template"
+          if git push origin HEAD:main; then
+            exit 0
+          fi
+          workflows=$(git diff --name-only HEAD~ HEAD -- .github/workflows)
+          if [ -z "$workflows" ]; then
+            echo "::error::The push was refused, and not because of workflow files."
+            exit 1
+          fi
+          echo "::warning::Push refused; retrying without the workflow changes: $workflows"
+          # shellcheck disable=SC2086 # one path per word, none contain spaces
+          git checkout HEAD~ -- $workflows
+          git commit -q --amend --no-edit
+          git push origin HEAD:main
+          paths=$(printf '%s\n' "$workflows" | sed 's/^/- `/; s/$/`/')
+          body=$(printf '%s\n' \
+            "The first-push cleanup initialized this project, but the workflow token may not change files under \`.github/workflows\`, so these template-only workflows are still here:" \
+            "" "$paths" "" \
+            "They do nothing in this repository. Delete them with your own credentials:" \
+            "" '```bash' "git pull && git rm $(printf '%s ' $workflows)&& git commit -m 'Remove template workflows' && git push" '```')
+          gh issue create --title "Delete the leftover template workflows" --body "$body"
+
+      - name: Report a failed setup
+        if: failure() && steps.state.outputs.initialized == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          result=$(cat "$RUNNER_TEMP/setup.json" 2>/dev/null || echo 'no output')
+          gh issue create --title "Project initialization failed" --body "$(printf '%s\n' \
+            "The first-push cleanup could not initialize this project: $RUN_URL" "" \
+            "setup.sh result:" '```json' "$result" '```' "" \
+            "Clone the repository and run \`./setup.sh --help\` to initialize it by hand.")"
