@@ -122,11 +122,16 @@ if ! git push --atomic origin main "$TAG"; then
     if ! REMOTE=$(git ls-remote origin refs/heads/main "refs/tags/$TAG" 2>/dev/null); then
         die "the push failed and the remote could not be read, so nothing was rolled back. Check 'git ls-remote origin refs/heads/main refs/tags/$TAG'. If the remote has neither, run: git tag -d $TAG && git reset --hard origin/main, then rerun scripts/release.sh $VERSION"
     fi
+    # The push is atomic, so a remote tag means the release landed, even if main has moved on
+    # since. Roll back only when the remote clearly has neither the tag nor the release commit.
     case $REMOTE in
-        "$RELEASE_COMMIT"*refs/heads/main*refs/tags/$TAG*)
-            echo "release.sh: the push reported an error, but the remote has the release commit and $TAG." >&2
+        *"refs/tags/$TAG"*)
+            echo "release.sh: the push reported an error, but the remote has $TAG." >&2
             echo "Released $TAG. The Release workflow publishes the GitHub Release from the CHANGELOG section."
             exit 0
+            ;;
+        "$RELEASE_COMMIT"*)
+            die "the push reported an error and the remote main is the release commit but has no $TAG tag, so nothing was rolled back. Check the remote, then push the tag with: git push origin $TAG"
             ;;
     esac
     echo "release.sh: the push failed; undoing the local release commit and tag." >&2
