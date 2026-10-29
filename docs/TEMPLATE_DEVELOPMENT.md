@@ -74,7 +74,7 @@ docs/
 **Purpose**: Modern KMP build setup with latest best practices
 
 **Key Features**:
-- Kotlin 2.4.0 with modern compiler options DSL
+- Kotlin 2.4.10 with modern compiler options DSL
 - Compose Multiplatform with stable component access
 - Version catalog references throughout
 - iOS framework configuration for Xcode integration
@@ -216,4 +216,4 @@ This template aims to provide:
 ---
 
 **Last Updated**: 2026-07-06
-**Template Version**: 3.1.0 (Kotlin 2.4.0 | Compose 1.10.3 | AGP 9.1.0 | Gradle 9.5.0)
+**Template Version**: 3.1.0 (Kotlin 2.4.10 | Compose 1.10.3 | AGP 9.1.0 | Gradle 9.6.1)

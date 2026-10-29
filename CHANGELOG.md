@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- MCP server (`mcp/`) and the `setup.sh --with-mcp` flag. Agents run `setup.sh` directly.
+- Unused `scripts/build-ios-framework.sh`; the Xcode project builds the framework through `embedAndSignAppleFrameworkForXcode`.
+- `docs/DEPENDENCY_RISK_REPORT.md` and `docs/DOCUMENTATION_INDEX.md`.
+
+### Changed
+- Kotlin 2.4.10, Gradle 9.6.1, Spotless 8.9.0, Kover 0.9.9; `actions/checkout` 7.0.1, `actions/setup-java` 6.1.0, `actions/upload-artifact` 7.0.2.
+
+### Fixed
+- Release dates for 2.0.0 through 3.0.0 now match the tagged commits.
+
 ## [3.1.0] - 2026-03-21
 
 ### Added
@@ -68,7 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependency risk scan and safe version bumps (#13)
 - Test coverage improvements (#11)
 
-## [3.0.0] - 2026-02-18
+## [3.0.0] - 2026-02-19
 
 ### Added
 - expect/actual `Platform.kt` demonstrating KMP's core pattern (Android/iOS implementations)
@@ -143,7 +154,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - .gitignore AI section uses neutral heading instead of tool-specific
 - Gradle wrapper jar gitignore exclusion ordering (was blocked by `*.jar` pattern)
 
-## [2.2.0] - 2025-12-03
+## [2.2.0] - 2026-02-16
 
 ### Added
 - Kotlin 2.2.21 with K2 compiler
@@ -162,7 +173,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Migrated to modern Kotlin compiler options DSL
 - Restructured project for better KMP organization
 
-## [2.1.0] - 2025-10-15
+## [2.1.0] - 2026-02-16
 
 ### Added
 - Initial Compose Multiplatform support
@@ -174,7 +185,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated to Kotlin 2.1.0
 - Migrated from Gradle Groovy to Kotlin DSL
 
-## [2.0.0] - 2025-08-01
+## [2.0.0] - 2025-12-03
 
 ### Added
 - Kotlin Multiplatform project structure

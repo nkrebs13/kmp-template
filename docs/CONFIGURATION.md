@@ -6,10 +6,10 @@ This document provides detailed configuration information for the Kotlin Multipl
 
 | Component | Version |
 |-----------|---------|
-| Kotlin | 2.4.0 |
+| Kotlin | 2.4.10 |
 | Compose Multiplatform | 1.10.3 |
 | Android Gradle Plugin | 9.1.0 |
-| Gradle | 9.5.0 |
+| Gradle | 9.6.1 |
 | JDK Requirement | 17+ |
 
 ## Version Catalog System
@@ -20,7 +20,7 @@ All dependencies are managed through `gradle/libs.versions.toml` for centralized
 
 | Dependency | Version | Purpose |
 |------------|---------|---------|
-| kotlin | 2.4.0 | Kotlin compiler and stdlib |
+| kotlin | 2.4.10 | Kotlin compiler and stdlib |
 | compose | 1.10.3 | Compose Multiplatform UI framework |
 | agp | 9.1.0 | Android Gradle Plugin |
 | kotlinx-coroutines | 1.11.0 | Async/concurrency |
@@ -39,12 +39,12 @@ All dependencies are managed through `gradle/libs.versions.toml` for centralized
 | Tool | Version | Purpose |
 |------|---------|---------|
 | detekt | 1.23.8 | Static analysis |
-| spotless | 8.8.0 | Code formatting |
+| spotless | 8.9.0 | Code formatting |
 | ktlint | 1.8.0 | Kotlin linter |
 
 ### Optional Dependencies (commented out in `gradle/libs.versions.toml`)
 
-Uncomment the relevant lines in `gradle/libs.versions.toml` to enable. Use the MCP `set_dependency` tool to enable them automatically (e.g., invoke with `key: "ktor"` and your project path).
+Uncomment the relevant lines in `gradle/libs.versions.toml` to enable.
 
 | Dependency | Version | Purpose |
 |------------|---------|---------|
@@ -267,28 +267,6 @@ com.yourapp.model.*
 ```
 
 Without this, Compose may unnecessarily recompose UI when passing instances of types it cannot verify as stable.
-
-## Scripts
-
-### `scripts/build-ios-framework.sh`
-
-A helper script that builds the shared iOS framework for both simulator and device targets, then creates a symlink at `shared/build/xcode-frameworks/shared.framework` pointing to the correct variant.
-
-```bash
-./scripts/build-ios-framework.sh
-```
-
-The script:
-- Detects installed iOS SDK versions automatically
-- Builds both `IosSimulatorArm64` and `IosArm64` debug frameworks via Gradle
-- Creates a symlink based on `$SDK_NAME` (set by Xcode during builds) or defaults to simulator
-
-Use this when Xcode cannot find the framework, or as a build phase script in your Xcode project. For most development, the Gradle tasks called directly are sufficient:
-
-```bash
-./gradlew :shared:linkDebugFrameworkIosSimulatorArm64   # Simulator
-./gradlew :shared:linkReleaseFrameworkIosArm64           # Device
-```
 
 ## Code Quality Configuration
 
