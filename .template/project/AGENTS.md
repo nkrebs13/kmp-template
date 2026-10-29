@@ -13,7 +13,8 @@ command from the repository root.
 <!-- endregion desktop -->
 - **Android SDK:** `ANDROID_HOME`, or `sdk.dir` in `local.properties` (copy
   `local.properties.template`). Missing SDK = `SDK location not found`.
-- **iOS:** macOS with Xcode 16 or newer. On other hosts Gradle skips the iOS targets.
+- **iOS:** macOS with Xcode 16 or newer, on Apple Silicon for simulator builds (there is no `iosX64`
+  target, and x86_64 is excluded for the simulator). On other hosts Gradle skips the iOS targets.
 
 ## Modules
 

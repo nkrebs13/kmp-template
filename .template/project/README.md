@@ -14,7 +14,8 @@ conventions. Coding agents read it automatically; humans will find it useful too
   needs.
 - The Android SDK: set `ANDROID_HOME`, or copy `local.properties.template` to `local.properties`
   and set `sdk.dir`.
-- macOS with Xcode 16 or newer, for iOS. The app targets iOS 16+.
+- macOS with Xcode 16 or newer, for iOS; simulator builds need an Apple Silicon Mac. The app
+  targets iOS 16+.
 
 ## Verify
 
