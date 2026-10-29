@@ -132,7 +132,7 @@ Every job runs on every event. The workflow also runs weekly on a schedule, so t
 "Use this template", it runs `setup.sh --derive-from-github` on the first push to `main` and
 commits the result.
 
-Every job except Verify catalog must pass before a PR can be merged; Verify catalog needs the network, so it is not a required check. Concurrency groups cancel in-progress runs when new commits are pushed.
+Every job, Verify catalog included, must pass before a PR can be merged (the list is in `docs/MAINTAINING.md`). Concurrency groups cancel in-progress runs when new commits are pushed.
 
 ## What to Contribute
 
