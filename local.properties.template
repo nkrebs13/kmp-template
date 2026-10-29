@@ -7,8 +7,12 @@ sdk.dir=/path/to/android/sdk
 # Uncomment and set your NDK path if using NDK
 # ndk.dir=/path/to/android/ndk
 
-# Release signing — uncomment and fill in to enable signed release builds.
+# Release signing. Uncomment and fill in all four to sign release builds, or set all four of
+# SIGNING_STORE_FILE, SIGNING_STORE_PASSWORD, SIGNING_KEY_ALIAS and SIGNING_KEY_PASSWORD
+# (a complete set of environment variables wins; sources are never mixed). Leave all four
+# unset for an unsigned build; a partial set fails release packaging only.
 # Generate a keystore: keytool -genkey -v -keystore release.jks -alias key0 -keyalg RSA -keysize 2048 -validity 10000
+# storeFile is absolute, or relative to the repo root.
 # signing.storeFile=/absolute/path/to/release.jks
 # signing.storePassword=
 # signing.keyAlias=key0

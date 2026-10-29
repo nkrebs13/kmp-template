@@ -4,15 +4,11 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    reviewers:
-      - "nkrebs13"
     labels:
       - "dependencies"
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "weekly"
-    reviewers:
-      - "nkrebs13"
     labels:
       - "dependencies"

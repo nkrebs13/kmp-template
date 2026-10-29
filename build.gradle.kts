@@ -1,101 +1,16 @@
+// All configuration lives in the convention plugins under build-logic/: convention.root wires the
+// root project (check, root-level formatting, verifyCatalog). `apply false` puts every plugin on
+// one shared classpath without applying it here.
 plugins {
-    alias(libs.plugins.androidApplication) apply false
-    alias(libs.plugins.androidLibrary) apply false
-    alias(libs.plugins.androidKotlinMultiplatformLibrary) apply false
-    alias(libs.plugins.kotlinMultiplatform) apply false
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.android.library) apply false
+    alias(libs.plugins.android.kotlin.multiplatform.library) apply false
+    alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.compose.compiler) apply false
-    alias(libs.plugins.jetbrainsCompose) apply false
-    alias(libs.plugins.detekt)
+    alias(libs.plugins.compose.multiplatform) apply false
+    alias(libs.plugins.detekt) apply false
     alias(libs.plugins.kover) apply false
-    alias(libs.plugins.spotless)
+    alias(libs.plugins.spotless) apply false
     alias(libs.plugins.androidx.baselineprofile) apply false
+    id("convention.root")
 }
-
-subprojects {
-    apply(plugin = "com.diffplug.spotless")
-    configure<com.diffplug.gradle.spotless.SpotlessExtension> {
-        kotlin {
-            target("**/*.kt")
-            targetExclude("**/build/**/*.kt", "**/.*")
-            ktlint(libs.versions.ktlint.get())
-                .editorConfigOverride(
-                    mapOf(
-                        // Google & Kotlin style guide settings
-                        "indent_size" to "4",
-                        "continuation_indent_size" to "4",
-                        "max_line_length" to "120",
-
-                        // Trailing commas (Kotlin best practice)
-                        "ij_kotlin_allow_trailing_comma" to "true",
-                        "ij_kotlin_allow_trailing_comma_on_call_site" to "true",
-
-                        // Import organization
-                        "ij_kotlin_packages_to_use_import_on_demand" to "java.util.*,kotlinx.android.synthetic.**",
-                        "ij_kotlin_imports_layout" to "*,java.**,javax.**,kotlin.**,^",
-
-                        // Wrapping
-                        "ij_kotlin_parameter_annotation_wrap" to "off",
-                        "ij_kotlin_variable_annotation_wrap" to "off",
-
-                        // Spacing
-                        "ij_kotlin_space_before_type_colon" to "false",
-                        "ij_kotlin_space_after_type_colon" to "true",
-                        "ij_kotlin_space_before_extend_colon" to "true",
-                        "ij_kotlin_space_after_extend_colon" to "true",
-
-                        // Disable rules that conflict with Android/Google style or common patterns
-                        "ktlint_standard_package-name" to "disabled",
-                        "ktlint_standard_filename" to "disabled",
-                        "ktlint_standard_import-ordering" to "disabled",
-                        "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
-                    )
-                )
-        }
-        
-        kotlinGradle {
-            target("**/*.gradle.kts")
-            targetExclude("**/build/**/*.gradle.kts", "**/.*")
-            ktlint(libs.versions.ktlint.get())
-                .editorConfigOverride(
-                    mapOf(
-                        "indent_size" to "4",
-                        "continuation_indent_size" to "4",
-                        "max_line_length" to "120",
-                        "ij_kotlin_allow_trailing_comma" to "true",
-                        "ij_kotlin_allow_trailing_comma_on_call_site" to "true",
-                        "ktlint_standard_package-name" to "disabled",
-                        "ktlint_standard_filename" to "disabled",
-                        "ktlint_standard_import-ordering" to "disabled",
-                        "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
-                    )
-                )
-        }
-        
-        format("xml") {
-            target("**/*.xml")
-            targetExclude("**/build/**/*.xml", "**/.*")
-            eclipseWtp(com.diffplug.spotless.extra.wtp.EclipseWtpFormatterStep.XML)
-        }
-        
-        format("misc") {
-            target("**/*.md", "**/.gitignore", "**/*.yaml", "**/*.yml")
-            targetExclude("**/build/**", "**/.*/**")
-            trimTrailingWhitespace()
-            endWithNewline()
-        }
-    }
-}
-
-detekt {
-    buildUponDefaultConfig = true
-    config.setFrom("$projectDir/detekt-config.yml")
-    parallel = true
-    // Eager read required — detekt's autoCorrect is a plain Boolean, not a Provider.
-    autoCorrect = !providers.environmentVariable("CI").isPresent
-    source.setFrom(
-        "androidApp/src",
-        "shared/src",
-        "baselineprofile/src",
-    )
-}
-

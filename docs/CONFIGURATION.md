@@ -6,23 +6,27 @@ This document provides detailed configuration information for the Kotlin Multipl
 
 | Component | Version |
 |-----------|---------|
-| Kotlin | 2.4.10 |
-| Compose Multiplatform | 1.10.3 |
-| Android Gradle Plugin | 9.1.0 |
+| Kotlin | 2.4.21 |
+| Compose Multiplatform | 1.12.2 |
+| Android Gradle Plugin | 9.5.0 |
 | Gradle | 9.6.1 |
-| JDK Requirement | 17+ |
+| JDK | 21 (toolchain; Gradle provisions it if missing), emitting Java 17 bytecode |
+| Android SDK | compileSdk 37, targetSdk 36, minSdk 24 |
 
 ## Version Catalog System
 
-All dependencies are managed through `gradle/libs.versions.toml` for centralized version management.
+All dependencies, plugins and Android SDK levels are managed through `gradle/libs.versions.toml`.
+The `[versions]` section is the single source of truth; the convention plugins in `build-logic/`
+read it, and module build files reference `libs.*` aliases.
 
 ### Core Versions
 
 | Dependency | Version | Purpose |
 |------------|---------|---------|
-| kotlin | 2.4.10 | Kotlin compiler and stdlib |
-| compose | 1.10.3 | Compose Multiplatform UI framework |
-| agp | 9.1.0 | Android Gradle Plugin |
+| kotlin | 2.4.21 | Kotlin compiler and stdlib |
+| compose-multiplatform | 1.12.2 | Compose Multiplatform UI framework |
+| compose-multiplatform-material3 | 1.9.0 | Material 3 for Compose Multiplatform |
+| agp | 9.5.0 | Android Gradle Plugin |
 | kotlinx-coroutines | 1.11.0 | Async/concurrency |
 
 ### AndroidX Versions
@@ -30,7 +34,7 @@ All dependencies are managed through `gradle/libs.versions.toml` for centralized
 | Dependency | Version | Purpose |
 |------------|---------|---------|
 | androidx-appcompat | 1.7.1 | AppCompat library |
-| androidx-activity | 1.13.0 | Activity APIs |
+| androidx-activity-compose | 1.13.0 | Activity APIs |
 | androidx-splashscreen | 1.2.0 | Splash screen API |
 | androidx-compose-material3 | 1.4.0 | Material 3 components |
 
@@ -38,26 +42,22 @@ All dependencies are managed through `gradle/libs.versions.toml` for centralized
 
 | Tool | Version | Purpose |
 |------|---------|---------|
-| detekt | 1.23.8 | Static analysis |
-| spotless | 8.9.0 | Code formatting |
-| ktlint | 1.8.0 | Kotlin linter |
+| detekt | 1.23.8 | Static analysis (2.x is still pre-release) |
+| compose-rules | 0.4.28 | Compose rules for detekt (last line built for detekt 1.23) |
+| spotless | 8.10.4 | Code formatting |
+| ktlint | 1.8.0 | Kotlin formatting rules, configured in `.editorconfig` |
+| kover | 0.9.11 | Coverage |
 
-### Optional Dependencies (commented out in `gradle/libs.versions.toml`)
+### Optional Dependencies
 
-Uncomment the relevant lines in `gradle/libs.versions.toml` to enable.
-
-| Dependency | Version | Purpose |
-|------------|---------|---------|
-| kotlinx-serialization | 1.10.0 | JSON serialization |
-| androidx-core | 1.17.0 | Android core KTX |
-| androidx-lifecycle | 2.10.0 | Lifecycle / ViewModel / Flow |
-| androidx-compose-bom | 2026.01.00 | Compose BOM (pin all Compose versions together) |
-| room | 2.7.2 | SQLite ORM with KMP support |
-| datastore | — | Typed key-value + proto storage (version carried by androidx-datastore catalog entry) |
-| ktor | 3.1.3 | Multiplatform HTTP client |
-| koin | 4.1.0 | Dependency injection |
-| coil | 3.3.0 | Image loading |
-| kotlinx-datetime | 0.6.2 | Multiplatform date/time |
+The catalog also carries entries that no module references, inside blocks marked
+`Optional: not referenced by the build`. They are real entries, kept current by Dependabot and
+checked by `./gradlew verifyCatalog`, so using one is a one-line change in a module:
+`implementation(libs.<alias>)` for a library, or `alias(libs.plugins.<alias>)` in the `plugins {}`
+block for a Gradle plugin (KSP, Room, serialization). They cover JetBrains lifecycle and navigation for Compose
+Multiplatform, Room (KMP) with `sqlite-bundled`, DataStore, kotlinx serialization and datetime,
+Koin, Ktor (with the OkHttp and Darwin engines), Coil 3, Tink, WorkManager, and the KSP, Room and
+serialization Gradle plugins.
 
 ## Configuration Files
 
@@ -65,40 +65,42 @@ Uncomment the relevant lines in `gradle/libs.versions.toml` to enable.
 
 ```properties
 # Gradle performance
-org.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8
-org.gradle.daemon=true
 org.gradle.parallel=true
 org.gradle.caching=true
 org.gradle.configuration-cache=true
+org.gradle.unsafe.isolated-projects=true
 
-# Android settings
-android.useAndroidX=true
-android.nonTransitiveRClass=true
-android.nonFinalResIds=true
+# Silences the disabled-iOS-targets warning on hosts that cannot build them (Linux)
+kotlin.native.ignoreDisabledTargets=true
 
-# Kotlin settings
-kotlin.code.style=official
-kotlin.mpp.enableCInteropCommonization=true
-
-# Compose Multiplatform
-compose.multiplatform.stabilityConfigPath=compose-stability.conf
+# App version, read by the convention.android.application plugin
+app.versionCode=1
+app.versionName=1.0.0
 ```
 
-### Module Configuration
+### Convention Plugins (`build-logic/`)
 
-Each module's `build.gradle.kts` can configure:
+Module build files apply convention plugins instead of repeating configuration:
+
+| Plugin | Applies |
+|--------|---------|
+| `convention.kmp.library` | KMP + Android library, `iosArm64` + `iosSimulatorArm64`, static framework, 60% Kover line coverage |
+| `convention.compose` | Compose Multiplatform + compiler, `config/compose/stability.conf`, optional compiler reports |
+| `convention.android.application` | SDK levels, version from `gradle.properties`, lint policy, release signing |
+| `convention.quality` | Spotless, detekt (+ Compose rules), Kover; applied by the plugins above |
+
+A module then only declares what is specific to it:
 
 ```kotlin
+plugins {
+    id("convention.android.application")
+    id("convention.compose")
+}
+
 android {
     namespace = "com.example.myapp"
-    compileSdk = 36
-
     defaultConfig {
         applicationId = "com.example.myapp"
-        minSdk = 24
-        targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
     }
 }
 ```
@@ -142,8 +144,6 @@ dependencies {
 # iOS Simulator (Apple Silicon)
 ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
 
-# iOS Simulator (Intel)
-./gradlew :shared:linkDebugFrameworkIosX64
 ```
 
 ### Release Builds
@@ -165,8 +165,11 @@ dependencies {
 # Static analysis
 ./gradlew detekt
 
-# All checks
+# All checks: Spotless, detekt, all tests, Kover verification and lint (debug) in every module
 ./gradlew check
+
+# Prove every version catalog coordinate exists (needs the network; not part of check)
+./gradlew verifyCatalog
 ```
 
 ### Performance Profiling
@@ -178,7 +181,7 @@ don't run on every build. Enable with:
 ./gradlew -Pkmp.composeCompilerReports=true :shared:compileAndroidMain
 ```
 
-Reports land under `shared/build/compose-reports/`. The `<module>-classes.txt` file lists
+Reports land under `shared/build/compose-reports/` and metrics under `shared/build/compose-metrics/`. The `<module>-classes.txt` file lists
 which classes are skippable / stable; `<module>-composables.csv` shows recomposition
 classification per `@Composable`. Read these to debug unnecessary recomposition.
 
@@ -253,26 +256,22 @@ The `androidApp/build.gradle.kts` enables `dexLayoutOptimization = true` to furt
 
 ### Compose Stability Configuration
 
-The `compose-stability.conf` file at the project root tells the Compose compiler which types are stable, allowing it to skip recomposition for unchanged parameters. This is referenced in `gradle.properties`:
+`config/compose/stability.conf` tells the Compose compiler which types are stable, allowing it to skip recomposition for unchanged parameters. The `convention.compose` plugin passes it to the compiler and tracks it as a compile input, so editing it recompiles.
 
-```properties
-compose.multiplatform.stabilityConfigPath=compose-stability.conf
-```
-
-The default configuration marks the standard library's immutable collection interfaces (`List`, `Set`, `Map`), `java.time.*`, `java.util.UUID`, and `kotlin.time.*` as stable. When you add your own immutable data classes, add them to this file:
+The default configuration marks the standard library's read-only collection interfaces (`List`, `Set`, `Map`) and `kotlin.time.*` as stable. When you add your own immutable data classes, add them to this file (comments use `//`):
 
 ```
-# Mark your package's model classes as stable
+// Mark your package's model classes as stable
 com.yourapp.model.*
 ```
 
-Without this, Compose may unnecessarily recompose UI when passing instances of types it cannot verify as stable.
+Without this, Compose may unnecessarily recompose UI when passing instances of types it cannot verify as stable. The compiler reports (see Performance Profiling) show the effect: a parameter is listed as `stable` when the configuration applies.
 
 ## Code Quality Configuration
 
 ### Detekt Static Analysis
 
-The `detekt-config.yml` file customizes static analysis rules. Key choices in the template:
+`config/detekt/detekt.yml` customizes static analysis rules. detekt runs per module (`./gradlew detekt` covers them all) together with the [Compose rules](https://mrmans0n.github.io/compose-rules/). Key choices in the template:
 
 | Rule | Setting | Rationale |
 |------|---------|-----------|
@@ -281,15 +280,16 @@ The `detekt-config.yml` file customizes static analysis rules. Key choices in th
 | `FunctionNaming` | `ignoreAnnotated: ['Composable']` | Allows PascalCase `@Composable` function names per Compose conventions |
 | `MagicNumber` | Active in production, ignored in tests | Encourages named constants in production code |
 | `ReturnCount` | Max 2 returns per function | Keeps functions easy to follow |
-| `WildcardImport` | Banned (except `java.util.*`) | Prevents import ambiguity |
+| `WildcardImport` | Banned | Prevents import ambiguity |
 | `TooManyFunctions` | 11 per file/class, tests excluded | Keeps files focused |
+| `Compose:*` | All Compose rules except `PreviewNaming` and `UnstableCollections` | Catches missing modifiers, public previews, Material 2 imports and more |
 
 Test files (`**/test/**`, `**/commonTest/**`, etc.) are excluded from several rules to allow more flexibility in test code.
 
 ### Spotless Code Formatting
 
-Spotless is configured in the root `build.gradle.kts`:
-- **Kotlin/KTS**: Formatted with ktlint 1.8.0
+Each module formats its own sources through the `convention.quality` plugin; the `convention.root` plugin formats files that belong to no module (root scripts, `build-logic/`, docs, config):
+- **Kotlin/KTS**: Formatted with ktlint 1.8.0, configured in `.editorconfig` (IntelliJ Kotlin style)
 - **XML**: Formatted with Eclipse WTP
 - **Markdown/YAML**: Trailing whitespace trimmed, newline enforced at end of file
 
@@ -327,7 +327,7 @@ The iOS project (`iosApp/`) uses:
 
 ### Gradle Sync Fails
 
-1. Verify JDK 17+ is installed
+1. Verify JDK 21 is available (Gradle provisions it automatically when it is not)
 2. Check `JAVA_HOME` environment variable
 3. Run `./gradlew --stop` to stop daemon
 4. Invalidate caches and restart IDE

@@ -6,13 +6,24 @@ insert_final_newline = true
 trim_trailing_whitespace = true
 end_of_line = lf
 
+# Kotlin style. ktlint (run by Spotless) and IntelliJ both read this section.
 [*.{kt,kts}]
+# IntelliJ's Kotlin style (= kotlin.code.style=official), so IDE reformatting and ktlint agree.
+ktlint_code_style = intellij_idea
 indent_style = space
 indent_size = 4
-continuation_indent_size = 4
 max_line_length = 120
 ij_kotlin_allow_trailing_comma = true
 ij_kotlin_allow_trailing_comma_on_call_site = true
+# Imports: lexicographic, java/javax/kotlin after the rest, aliases last; no wildcards.
+ij_kotlin_imports_layout = *,java.**,javax.**,kotlin.**,^
+ij_kotlin_packages_to_use_import_on_demand = unset
+# Composables are PascalCase.
+ktlint_function_naming_ignore_when_annotated_with = Composable
+# setup.sh accepts package names with underscores (ktlint's package-name rule rejects them),
+# and expect/actual files are named after the platform (Platform.android.kt), not a class.
+ktlint_standard_package-name = disabled
+ktlint_standard_filename = disabled
 
 [*.java]
 indent_style = space

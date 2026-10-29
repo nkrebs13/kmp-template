@@ -6,9 +6,10 @@ A Kotlin Multiplatform application for iOS and Android.
 
 ### Prerequisites
 
-- **JDK 17 or higher** - **Required** for Gradle 9.0 and build system compatibility
+- **JDK 21** - the build toolchain. The Gradle wrapper needs some Java runtime on `PATH` or
+  `JAVA_HOME` to start; installing JDK 21 directly is simplest, otherwise Gradle downloads it
 - **Android Studio Meerkat (2024.3.2) or newer** - Latest stable IDE with KMP support
-- **Xcode 15.0 or newer** - For iOS development and latest iOS SDK support  
+- **Xcode 15.0 or newer** - For iOS development and latest iOS SDK support
 - **macOS** - Required for iOS development and Xcode
 
 ### Building the Project
@@ -55,14 +56,14 @@ signing.keyAlias=your_key_alias
 signing.keyPassword=your_key_password
 ```
 
-Then uncomment all three sections in `androidApp/build.gradle.kts` (the `releaseKeystore` loader, the `signingConfigs` block, and the `signingConfig =` line in the release build type).
+`signing.storeFile` is absolute, or relative to the repository root. The build signs the release variant once all four values are set in one place; with none set, the release APK is unsigned. Setting only some of them makes release packaging fail with a message naming the missing keys; debug builds keep working.
 
 Generate a new keystore if you don't have one:
 ```bash
 keytool -genkey -v -keystore release.jks -alias key0 -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-For CI/CD, inject signing values as environment variables and read them in `build.gradle.kts` instead of `local.properties`.
+For CI/CD, set the environment variables `SIGNING_STORE_FILE`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS` and `SIGNING_KEY_PASSWORD` instead. If any of them is set, all four must be, and `local.properties` is ignored.
 
 ## ⚡ Baseline Profiles
 

@@ -1,8 +1,8 @@
 # Kotlin Multiplatform Template
 
 [![CI](https://github.com/nkrebs13/kmp-template/actions/workflows/ci.yml/badge.svg)](https://github.com/nkrebs13/kmp-template/actions/workflows/ci.yml)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.10-7F52FF.svg?logo=kotlin)](https://kotlinlang.org)
-[![Compose Multiplatform](https://img.shields.io/badge/Compose_Multiplatform-1.10.3-4285F4.svg)](https://www.jetbrains.com/lp/compose-multiplatform/)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.21-7F52FF.svg?logo=kotlin)](https://kotlinlang.org)
+[![Compose Multiplatform](https://img.shields.io/badge/Compose_Multiplatform-1.12.2-4285F4.svg)](https://www.jetbrains.com/lp/compose-multiplatform/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A production-ready Kotlin Multiplatform template for iOS and Android apps with Compose Multiplatform.
@@ -25,7 +25,7 @@ Follow the prompts to customize your project name and package.
 
 | Tool | Version | Notes |
 |------|---------|-------|
-| JDK | 17+ | Required for Gradle 9.x |
+| JDK | 21 | Gradle toolchain; auto-provisioned via foojay if missing |
 | Android Studio | Latest | With KMP plugin |
 | Xcode | 15.0+ | macOS only, for iOS builds |
 | macOS | 14.0+ (Sonoma) | Required for iOS development |
@@ -35,7 +35,7 @@ Follow the prompts to customize your project name and package.
 iOS builds require macOS with Xcode. The template targets:
 - iOS 15.0+ deployment target
 - Xcode 15.0+ (required for Swift 5.9+)
-- Apple Silicon (arm64) or Intel (x64) simulators
+- Apple Silicon Mac for simulator builds (the Intel `iosX64` target is not declared)
 
 ## Architecture
 
@@ -78,16 +78,16 @@ template/
 
 | Category | Library | Version |
 |----------|---------|---------|
-| **Language** | Kotlin | 2.4.10 |
-| **UI** | Compose Multiplatform | 1.10.3 |
-| **Build** | Android Gradle Plugin | 9.1.0 |
+| **Language** | Kotlin | 2.4.21 |
+| **UI** | Compose Multiplatform | 1.12.2 |
+| **Build** | Android Gradle Plugin | 9.5.0 |
 | **Build** | Gradle | 9.6.1 |
 | **Async** | Kotlinx Coroutines | 1.11.0 |
 | **Code Quality** | Detekt | 1.23.8 |
-| **Code Quality** | Spotless | 8.9.0 |
-| **Coverage** | Kover | 0.9.9 |
+| **Code Quality** | Spotless | 8.10.4 |
+| **Coverage** | Kover | 0.9.11 |
 
-This template includes only essential dependencies to keep your project lean. The version catalog also includes entries for commonly-needed libraries that are not wired into module builds by default — add them to your module `dependencies {}` as needed. This includes Kotlinx Serialization (1.10.0), Jetpack Compose Navigation (2.9.7), Kotlinx DateTime (0.6.2), and commented-out entries for Room, Ktor, Koin, and more (see [libs.versions.toml](gradle/libs.versions.toml)).
+This template includes only essential dependencies to keep your project lean. The version catalog also includes entries for commonly-needed libraries that are not wired into module builds by default — add them to your module `dependencies {}` as needed. These optional entries (Kotlinx Serialization, Compose Navigation, Kotlinx DateTime, Room, Ktor, Koin and more) sit in clearly marked blocks in [libs.versions.toml](gradle/libs.versions.toml).
 
 ## Build Commands
 
@@ -117,7 +117,7 @@ This template includes only essential dependencies to keep your project lean. Th
 ### Android Build Fails
 
 1. **Missing SDK**: Create `local.properties` with `sdk.dir=/path/to/android/sdk`
-2. **JDK Version**: Ensure JDK 17+ is installed and `JAVA_HOME` is set
+2. **JDK Version**: Ensure JDK 21 is installed and `JAVA_HOME` is set
 3. **Gradle Issues**: Try `./gradlew clean` then rebuild
 
 ### iOS Build Fails
@@ -143,4 +143,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Template Version:** 3.1.0 | **Kotlin:** 2.4.10 | **Compose:** 1.10.3 | **AGP:** 9.1.0 | **Gradle:** 9.6.1
+**Template Version:** 3.1.0 | **Kotlin:** 2.4.21 | **Compose:** 1.12.2 | **AGP:** 9.5.0 | **Gradle:** 9.6.1

@@ -7,7 +7,7 @@ First off, thanks for taking the time to contribute! This template helps develop
 Before contributing, ensure you have:
 
 - **macOS** (required for iOS development and testing)
-- **JDK 17+** (required for Gradle 9.x and Kotlin 2.x)
+- **JDK 21** (the build toolchain; Gradle downloads it automatically if it is missing)
 - **Android Studio** (latest stable with KMP plugin)
 - **Xcode 15.0+** (for iOS framework compilation)
 
@@ -107,7 +107,7 @@ The GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and 
 
 ### Build & Lint
 
-Runs on `macos-14` with JDK 17:
+Runs on `macos-14` with JDK 21:
 
 1. `spotlessCheck` - Verifies code formatting
 2. `detekt` - Runs static analysis
