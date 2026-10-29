@@ -842,6 +842,8 @@ main() {
     ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
     cd "$ROOT"
     parse_args "$@"
+    # Without a terminal the apply command could not ask for confirmation, so it says --yes.
+    if [ "$YES" = 0 ] && [ ! -t 0 ]; then APPLY_COMMAND="$APPLY_COMMAND --yes"; fi
     if [ "$HELP" = 1 ]; then
         if [ "$JSON" = 1 ]; then
             usage >&2

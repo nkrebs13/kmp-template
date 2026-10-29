@@ -221,7 +221,7 @@ elif ! jget '$j->{plan}{delete}' | grep -qx setup.sh ||
     fail "plan is incomplete: $(cat "$OUT")"
 elif [ -n "$(jget 'exists $j->{removed} ? "yes" : ""')" ]; then
     fail "a dry run reported removed files"
-elif [ "$(next_runs)" != "./setup.sh --name WeatherApp --package com.acme.weather --json" ]; then
+elif [ "$(next_runs)" != "./setup.sh --name WeatherApp --package com.acme.weather --json --yes" ]; then
     fail "next is not the command without --dry-run: $(next_runs)"
 else
     pass
@@ -403,6 +403,14 @@ if generated_ok; then
     fi
 fi
 
+begin "dry run with --yes: the apply command keeps one --yes"
+setup --name WeatherApp --yes --package com.acme.weather --dry-run --json
+if [ "$RC" = 0 ] && [ "$(next_runs)" = "./setup.sh --name WeatherApp --yes --package com.acme.weather --json" ]; then
+    pass
+else
+    fail "next: $(next_runs)"
+fi
+
 # A bad entry in template-only.txt is a template bug: exit 5 before anything changes.
 bad_listed_entry() { # <case name> <entry; VICTIM is replaced with a directory outside the repo>
     local victim
@@ -502,7 +510,8 @@ WORKFLOW=$FIXTURE/.github/workflows/template-cleanup.yml
 workflow_step "$WORKFLOW" "Check that the project is uninitialized" >"$TMP/state-step.sh"
 workflow_step "$WORKFLOW" "Commit and push" >"$TMP/push-step.sh"
 mkdir -p "$TMP/bin"
-printf '#!/bin/sh\nprintf "%%s\\n" "$@" >"$GH_LOG"\n' >"$TMP/bin/gh"
+# The gh stub records its arguments, and fails when GH_FAIL is set (issues disabled, say).
+printf '#!/bin/sh\nprintf "%%s\\n" "$@" >"$GH_LOG"\n[ -z "$GH_FAIL" ]\n' >"$TMP/bin/gh"
 chmod +x "$TMP/bin/gh"
 
 # cleanup_case <name> <hook: none|workflow|workflow-race|other> <race before the first push: 0|1>
@@ -540,7 +549,9 @@ cleanup_case() {
     (cd "$SIM/work" && "$SETUP_BASH" ./setup.sh --derive-from-github acme/workflow-tools --keep-git --yes --json \
         >/dev/null 2>&1)
     RC=0
+    : >"$SIM/push-out"
     (cd "$SIM/work" && TEMPLATE_SLUG=kmp-template RUNNER_TEMP=$SIM/tmp GH_LOG=$SIM/gh.log PATH="$TMP/bin:$PATH" \
+        GITHUB_OUTPUT=$SIM/push-out \
         bash -eo pipefail "$TMP/push-step.sh" >"$SIM/push.log" 2>&1) || RC=$?
 }
 origin_head() { git -C "$SIM/origin.git" log -1 --format=%s main; }
@@ -562,6 +573,14 @@ if [ "$RC" = 0 ] && [ "$(origin_head)" = "Initialize project from kmp-template" 
     pass
 else
     fail "exit $RC, origin: $(origin_head), issue: $(cat "$SIM/gh.log" 2>/dev/null)"
+fi
+
+GH_FAIL=1 cleanup_case "workflow files refused, then the issue cannot be opened" workflow 0
+if [ "$RC" = 0 ] && origin_has .github/workflows/template.yml && grep -qx "initialized=true" "$SIM/push-out" &&
+    grep -q "::warning::Could not open an issue.*git rm -q .github/workflows/template-cleanup.yml" "$SIM/push.log"; then
+    pass
+else
+    fail "exit $RC, outputs: $(cat "$SIM/push-out"), log: $(tail -2 "$SIM/push.log")"
 fi
 
 cleanup_case "main initialized before the push" none 1

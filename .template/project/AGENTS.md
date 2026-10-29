@@ -9,7 +9,9 @@ platform apps only host it. `CLAUDE.md` imports this file, so every agent reads 
   the build uses.
 - **Android SDK:** `ANDROID_HOME`, or `sdk.dir` in `local.properties` (copy
   `local.properties.template`).
-- **iOS:** macOS with Xcode 16 or newer. Elsewhere `check` skips the iOS targets.
+- **iOS:** macOS with Xcode 16 or newer; simulator builds and `iosSimulatorArm64Test` need an Apple
+  Silicon Mac (no `iosX64` target, x86_64 excluded for the simulator). Elsewhere `check` skips the
+  iOS targets.
 
 ## Definition of done
 

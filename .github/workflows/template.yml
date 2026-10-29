@@ -110,13 +110,11 @@ jobs:
           test "$(git rev-list --count HEAD)" = 1
           echo "Generated tree is clean."
 
+      # Every variant, edge included: the full gate (detekt, lint) is what catches a generated
+      # name or package that the build configuration rejects.
       - name: Gradle check
-        if: runner.os == 'Linux' && matrix.variant != 'edge'
+        if: runner.os == 'Linux'
         run: ./gradlew check
-
-      - name: Shared tests and Android build
-        if: runner.os == 'Linux' && matrix.variant == 'edge'
-        run: ./gradlew :shared:allTests :androidApp:assembleDebug
 
       # The underscore package must not reach the framework's bundle ID (Apple rejects _).
       - name: iOS framework bundle ID

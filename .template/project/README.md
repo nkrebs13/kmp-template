@@ -13,7 +13,8 @@ Working with an AI coding agent? It should read [AGENTS.md](AGENTS.md) first.
   `JAVA_HOME` to start; installing JDK 21 directly is simplest, otherwise Gradle downloads it.
 - **Android SDK**: set `ANDROID_HOME`, or copy `local.properties.template` to `local.properties`
   and set `sdk.dir`.
-- **Xcode 16 or newer** on macOS, for iOS. The app targets iOS 16+.
+- **Xcode 16 or newer** on macOS, for iOS. The app targets iOS 16+. Simulator builds need an Apple
+  Silicon Mac: there is no `iosX64` target, and x86_64 is excluded for the simulator.
 
 ## Verify
 
