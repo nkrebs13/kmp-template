@@ -146,8 +146,7 @@ We welcome contributions in these areas:
 
 ## Questions?
 
-- Open a [GitHub Discussion](../../discussions) for questions
-- Check existing [Issues](../../issues) before creating new ones
+- Ask in an [issue](https://github.com/nkrebs13/kmp-template/issues); check the existing ones first
 - Read the [maintainer guide](docs/MAINTAINING.md) for how the generator works and how releases are cut
 
 Thanks for contributing!
