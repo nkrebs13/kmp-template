@@ -23,8 +23,9 @@ it gives you is the build, the checks, the CI, the generator and the agent guide
 
 ## Quick start
 
-Prerequisites: any JDK to start Gradle (it provisions JDK 21 itself), plus git and perl for
-`setup.sh`. iOS needs macOS on Apple Silicon with Xcode 16 or newer.
+Prerequisites: any JDK to start Gradle (it provisions JDK 21 itself), the Android SDK (via
+`ANDROID_HOME` or `sdk.dir` in `local.properties`), and git and perl for `setup.sh`. iOS needs
+macOS on Apple Silicon with Xcode 16 or newer.
 
 ### With a coding agent
 
@@ -76,7 +77,7 @@ template name is left before it starts the new git history.
 | iOS | Settings in xcconfig files, never the pbxproj (deployment target in [`Config.xcconfig`](iosApp/Configuration/Config.xcconfig)); synchronized folders; a privacy manifest |
 | Desktop | Compose Hot Reload, and Dmg/Msi/Deb packaging on JetBrains Runtime |
 | CI | Linux for static analysis, Android and desktop; macOS for iOS tests and an `xcodebuild` of the app. Runs on PRs, on `main` and weekly; a separate job checks that every catalog coordinate still resolves |
-| Generator | `setup.sh` with `--dry-run` and `--json`, tested by a plain-bash harness; every variant is generated and built in CI on Linux and macOS |
+| Generator | `setup.sh` with `--dry-run` and `--json`, tested by a plain-bash harness; every variant is generated and checked in CI on Linux and macOS, and built where it matters (Android and desktop on Linux, iOS on macOS) |
 | Maintenance | Grouped Dependabot updates in every generated project; in this repository, auto-merge for non-major updates and one-command releases |
 
 ## Compared with the JetBrains wizard

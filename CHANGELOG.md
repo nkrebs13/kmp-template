@@ -37,7 +37,7 @@ and the minimums are iOS 16.0 and Xcode 16. Files moved: `detekt-config.yml` to
 - Generator data in `.template/`, including the generated project's `README.md`, `AGENTS.md` and `CLAUDE.md`.
 - `setup.sh --no-desktop`, which leaves out the desktop app, the `jvm()` target and the desktop build logic.
 - `setup.sh --derive-from-github owner/repo`, and `template-cleanup.yml`, which initializes a "Use this template" repository on its first push to `main`.
-- `tests/setup/run.sh`, a plain-bash generator harness, and `template.yml`, which runs it and generates and builds every variant on Linux and macOS.
+- `tests/setup/run.sh`, a plain-bash generator harness, and `template.yml`, which runs it and generates every variant on Linux and macOS, building each where it applies.
 - Grouped Dependabot updates, and auto-merge of non-major Dependabot PRs in this repository.
 - One-command releases: `scripts/release.sh X.Y.Z` tags, and `release.yml` publishes the GitHub Release from the CHANGELOG.
 - A complete agent guide, `AGENTS.md`, in every generated project, imported by its `CLAUDE.md`; the template's root `AGENTS.md` covers `setup.sh` and its JSON.
