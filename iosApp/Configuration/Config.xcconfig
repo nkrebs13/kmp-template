@@ -1,0 +1,28 @@
+// The single source of truth for the iOS app's identity and versioning.
+// Edit settings here, never in project.pbxproj. Debug.xcconfig and Release.xcconfig include this
+// file, then the optional, gitignored Local.xcconfig for per-developer overrides (e.g. TEAM_ID).
+
+// Home-screen name; Info.plist reads it for CFBundleDisplayName and CFBundleName.
+APP_DISPLAY_NAME = KMP Template
+PRODUCT_BUNDLE_IDENTIFIER = com.template.ios
+
+// CFBundleShortVersionString and CFBundleVersion in Info.plist.
+MARKETING_VERSION = 1.0.0
+CURRENT_PROJECT_VERSION = 1
+
+IPHONEOS_DEPLOYMENT_TARGET = 16.0
+
+// shared declares iosArm64 and iosSimulatorArm64 only (no Intel iosX64), so simulator builds are
+// arm64 only. Without this, generic simulator builds also request x86_64 and Gradle's
+// embedAndSignAppleFrameworkForXcode fails its architecture check.
+EXCLUDED_ARCHS[sdk=iphonesimulator*] = x86_64
+
+// Apple Developer team for signing. Leave it empty here and set it in Local.xcconfig
+// (see Local.xcconfig.example), so a team ID never lands in version control.
+TEAM_ID =
+DEVELOPMENT_TEAM = $(TEAM_ID)
+
+// The "Compile Kotlin Framework" build phase runs Gradle, which reads and writes outside the
+// paths Xcode's script sandbox allows (the Gradle project, ~/.gradle, shared/build), so the
+// sandbox has to be off for it.
+ENABLE_USER_SCRIPT_SANDBOXING = NO

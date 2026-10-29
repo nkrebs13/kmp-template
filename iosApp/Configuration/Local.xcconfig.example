@@ -1,0 +1,5 @@
+// Copy to Local.xcconfig (gitignored) for settings that must stay on this machine.
+// Debug.xcconfig and Release.xcconfig include it after Config.xcconfig, so it overrides it.
+
+// Your Apple Developer team ID (Xcode > Settings > Accounts, or developer.apple.com > Membership).
+TEAM_ID = ABCDE12345
