@@ -208,6 +208,22 @@ classification per `@Composable`. Read these to debug unnecessary recomposition.
 }
 ```
 
+### Compose Resources and UI Tests
+
+User-facing strings live in `shared/src/commonMain/composeResources/values/strings.xml` and are read
+with `stringResource(Res.string.<name>)`. The generated `Res` class is internal to `shared`, in the
+package `<package>.shared.generated.resources` (set by `compose.resources { packageOfResClass = … }`
+in `shared/build.gradle.kts`, so `setup.sh` renames it with the rest).
+
+`App()` is covered by a Compose UI test (`runComposeUiTest`) in `jvmTest` (headless, runs on Linux CI)
+and `iosTest` (simulator). It is not in `commonTest` as a `@Test`, because the android host test cannot
+run Compose UI tests without Robolectric. After changing a UI test, break the string it asserts,
+confirm the test fails, then revert.
+
+Coverage: `./gradlew :shared:koverLog` prints the line coverage Kover enforces at 60%. It excludes
+`ComposableSingletons*`, `MainViewController*` and the generated resources package. Screenshot tests
+(Roborazzi) are not in the default gate because font rendering differs between macOS and Linux.
+
 ## Architecture Details
 
 ### The `expect`/`actual` Pattern

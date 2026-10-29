@@ -64,6 +64,7 @@ from the constants in `ProjectExtensions.kt`. ktlint settings live in `.editorco
 # Individual checks
 ./gradlew detekt                      # per module, config/detekt/detekt.yml
 ./gradlew :shared:allTests
+./gradlew :shared:iosSimulatorArm64Test   # includes the Compose UI test (macOS only)
 ./gradlew :shared:koverVerify         # 60% line coverage minimum
 ./gradlew :androidApp:lintDebug       # Warnings are errors
 
