@@ -12,7 +12,7 @@ android-min-sdk = "24"
 android-target-sdk = "36"
 
 # AndroidX
-androidx-appcompat = "1.7.1"
+androidx-appcompat = "1.8.0"
 androidx-splashscreen = "1.2.0"
 androidx-compose-material3 = "1.4.0"
 androidx-activity-compose = "1.13.0"
