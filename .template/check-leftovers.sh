@@ -3,65 +3,79 @@
 #
 # Usage: check-leftovers.sh [--no-desktop] [--allow <literal>]... <dir>
 #
-# Every text file under <dir> (skipping .git, build, .gradle, .kotlin and .idea directories) and
-# every path is matched against the Perl regexes in forbidden.txt next to this script, plus
-# forbidden-desktop.txt with --no-desktop. Each match prints as "<file>:<line>: <text>" (line 0
-# for a path). An --allow literal that itself matches a pattern is a legitimate user value (an
+# Reports, one per line as "<path>:<line>: <text>" (line 0 for a path):
+# - every path listed in template-only.txt that still exists (with --no-desktop, also every
+#   DESKTOP_PATHS entry from manifest.env);
+# - every path and every line of every text file matching a Perl regex in forbidden.txt (with
+#   --no-desktop, also forbidden-desktop.txt).
+# Directories named in SKIP_DIR_NAMES (manifest.env) are skipped unless they are under a src/
+# directory. An --allow literal that itself matches a pattern is a legitimate user value (an
 # author named nkrebs13, say), so it is masked out of each line before matching.
 #
 # Exit codes: 0 no leftovers, 1 leftovers found, 2 usage error.
 set -euo pipefail
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
-patterns="$here/forbidden.txt"
+no_desktop=0
 dir=''
 allow_file=$(mktemp "${TMPDIR:-/tmp}/check-leftovers.XXXXXX")
 trap 'rm -f "$allow_file"' EXIT
 
 usage() {
-    echo "usage: check-leftovers.sh [--no-desktop] [--allow <literal>]... <dir>" >&2
-    exit 2
+    echo "usage: check-leftovers.sh [--no-desktop] [--allow <literal>]... <dir>"
 }
 
 while [ $# -gt 0 ]; do
     case $1 in
-        --no-desktop) patterns="$patterns:$here/forbidden-desktop.txt" ;;
+        --no-desktop) no_desktop=1 ;;
         --allow)
-            [ $# -ge 2 ] || usage
-            printf '%s\n' "$2" >>"$allow_file"
+            if [ $# -lt 2 ]; then usage >&2 && exit 2; fi
+            printf '%s\0' "$2" >>"$allow_file"
             shift
             ;;
-        -h | --help) usage ;;
-        -*) usage ;;
+        -h | --help) usage && exit 0 ;;
+        -*) usage >&2 && exit 2 ;;
         *)
-            [ -z "$dir" ] || usage
+            if [ -n "$dir" ]; then usage >&2 && exit 2; fi
             dir=$1
             ;;
     esac
     shift
 done
-[ -n "$dir" ] && [ -d "$dir" ] || usage
+if [ -z "$dir" ] || [ ! -d "$dir" ]; then usage >&2 && exit 2; fi
 
-PATTERN_FILES=$patterns ALLOW_FILE=$allow_file perl -e '
+# Paths reach perl as arguments, never joined into one string, so any character is safe in them.
+perl -e '
 use strict;
 use warnings;
 use File::Find;
 
-my @patterns;
-for my $file (split /:/, $ENV{PATTERN_FILES}) {
-    open my $fh, "<", $file or die "cannot read $file: $!\n";
-    while (my $line = <$fh>) {
-        chomp $line;
-        next if $line =~ /^\s*(#|$)/;
-        push @patterns, qr/$line/;
-    }
+my ($root, $here, $no_desktop, $allow_file) = @ARGV;
+
+sub read_lines {
+    my ($file) = @_;
+    open my $fh, "<", $file or die "check-leftovers: cannot read $file: $!\n";
+    return grep { !/^\s*(?:#|$)/ } map { chomp; $_ } <$fh>;
+}
+
+my %manifest;
+for (read_lines("$here/manifest.env")) {
+    $manifest{$1} = $2 if /^([A-Z_]+)="?(.*?)"?$/;
+}
+my %skip = map { $_ => 1 } split " ", ($manifest{SKIP_DIR_NAMES} // die "check-leftovers: no SKIP_DIR_NAMES\n");
+
+my @gone = read_lines("$here/template-only.txt");
+my @patterns = map { qr/$_/ } read_lines("$here/forbidden.txt");
+if ($no_desktop) {
+    push @gone, split " ", ($manifest{DESKTOP_PATHS} // die "check-leftovers: no DESKTOP_PATHS\n");
+    push @patterns, map { qr/$_/ } read_lines("$here/forbidden-desktop.txt");
 }
 
 # Only values that would otherwise be reported need masking; longest first.
-open my $afh, "<", $ENV{ALLOW_FILE} or die "cannot read allow list: $!\n";
+open my $afh, "<", $allow_file or die "check-leftovers: cannot read the allow list: $!\n";
 my @allow = sort { length $b <=> length $a }
     grep { my $v = $_; length $v && grep { $v =~ $_ } @patterns }
-    map { chomp; $_ } <$afh>;
+    do { local $/ = "\0"; map { chomp; $_ } <$afh> };
 
 sub hit {
     my ($text) = @_;
@@ -70,8 +84,10 @@ sub hit {
     return 0;
 }
 
-my $root = shift @ARGV;
 my $found = 0;
+for my $path (@gone) {
+    if (-e "$root/$path" || -l "$root/$path") { print "$path:0: (template-only path)\n"; $found++ }
+}
 find({
     no_chdir => 1,
     preprocess => sub { sort @_ },
@@ -79,18 +95,14 @@ find({
         my $path = $File::Find::name;
         (my $rel = $path) =~ s{^\Q$root\E/?}{};
         return if $rel eq "";
-        # .git is a directory, or a file in a worktree; skip it either way.
-        if ($path =~ m{(?:^|/)\.git$}) {
-            $File::Find::prune = 1;
-            return;
-        }
-        if (-d $path && $path =~ m{(?:^|/)(?:build|\.gradle|\.kotlin|\.idea)$}) {
+        my ($name) = $path =~ m{([^/]+)$};
+        if ($skip{$name} && ($name eq ".git" || -d $path) && "/$rel" !~ m{/src/}) {
             $File::Find::prune = 1;
             return;
         }
         if (hit($rel)) { print "$rel:0: (path)\n"; $found++ }
         return unless -f $path && !-l $path && -T $path;
-        open my $fh, "<", $path or die "cannot read $path: $!\n";
+        open my $fh, "<", $path or die "check-leftovers: cannot read $path: $!\n";
         while (my $line = <$fh>) {
             next unless hit($line);
             chomp $line;
@@ -101,4 +113,4 @@ find({
     },
 }, $root);
 exit($found ? 1 : 0);
-' "${dir%/}"
+' "${dir%/}" "$here" "$no_desktop" "$allow_file"

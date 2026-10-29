@@ -3,6 +3,14 @@
 KMP Template is a Kotlin Multiplatform app. One Compose Multiplatform UI lives in `shared`; the
 platform apps only host it. `CLAUDE.md` imports this file, so every agent reads the same rules.
 
+## Prerequisites
+
+- **Java:** any JDK on `PATH` or in `JAVA_HOME` starts Gradle; Gradle downloads the JDK 21 toolchain
+  the build uses.
+- **Android SDK:** `ANDROID_HOME`, or `sdk.dir` in `local.properties` (copy
+  `local.properties.template`).
+- **iOS:** macOS with Xcode 16 or newer. Elsewhere `check` skips the iOS targets.
+
 ## Definition of done
 
 1. `./gradlew spotlessApply`, then `./gradlew check` passes. `check` runs Spotless, detekt, the
@@ -38,7 +46,6 @@ no lowering the coverage minimum.
 ./gradlew check                              # the verification gate (see above)
 ./gradlew spotlessApply                      # format Kotlin, Gradle and Markdown
 ./gradlew :shared:allTests                   # tests only
-./gradlew :androidApp:installDebug           # install on a running emulator or device
 ./gradlew :shared:iosSimulatorArm64Test      # iOS tests, macOS only
 ./gradlew verifyCatalog                      # every catalog coordinate resolves (network)
 xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug \
@@ -50,9 +57,21 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug 
 Desktop:
 
 ```bash
-./gradlew :desktopApp:run                    # needs a GUI session
-./gradlew :desktopApp:hotRun --auto          # Compose Hot Reload
 ./gradlew :desktopApp:createDistributable    # app image, as CI builds it
+```
+<!-- endregion desktop -->
+
+Running the app needs a device, a simulator or a GUI session, so these are for a human or an agent
+that has one:
+
+```bash
+./gradlew :androidApp:installDebug           # on a running emulator or connected device
+open iosApp/iosApp.xcodeproj                 # then run from Xcode
+```
+<!-- region desktop -->
+```bash
+./gradlew :desktopApp:run                    # desktop window
+./gradlew :desktopApp:hotRun --auto          # desktop window with Compose Hot Reload
 ```
 <!-- endregion desktop -->
 
@@ -87,8 +106,3 @@ Desktop:
   startup code: `./gradlew :androidApp:generateBaselineProfile` (boots a Gradle Managed Device).
 - Screenshot tests are not part of `check`: font rendering differs between macOS and Linux, so
   they would not pass on both.
-<!-- region desktop -->
-- Lines between `region desktop` and `endregion desktop` comments are desktop-only. To drop
-  desktop, delete those blocks together with `desktopApp/`, `shared/src/jvmMain` and
-  `shared/src/jvmTest`.
-<!-- endregion desktop -->

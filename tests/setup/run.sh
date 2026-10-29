@@ -5,6 +5,7 @@
 #
 # Usage: bash tests/setup/run.sh
 #   SETUP_BASH=/bin/bash bash tests/setup/run.sh   runs setup.sh with another bash (macOS 3.2)
+# shellcheck disable=SC2016 # single-quoted $ in jget arguments is Perl, not shell
 set -euo pipefail
 
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)
@@ -55,16 +56,30 @@ setup() {
     (cd "$DIR" && "$SETUP_BASH" ./setup.sh "$@" </dev/null >"$OUT" 2>"$ERR") || RC=$?
 }
 
-# json <key>: one field of the single JSON object on stdout (array items one per line).
-json() {
+# jget <perl expression over $j>: a value from the single JSON object on stdout (array items
+# one per line, booleans as true/false, a missing value as nothing). Fails unless stdout is
+# exactly one line holding one JSON object.
+jget() {
     perl -MJSON::PP -e '
         local $/; my @lines = grep { length } split /\n/, <STDIN>;
         die "stdout has " . scalar(@lines) . " lines, expected exactly one JSON object\n" if @lines != 1;
-        my $v = decode_json($lines[0])->{$ARGV[0]};
+        my $j = decode_json($lines[0]);
+        my $v = eval $ARGV[0];
+        die $@ if $@;
         if (ref $v eq "ARRAY") { print join("\n", @$v) }
-        elsif (ref $v) { print $v ? "true" : "false" }
+        elsif (JSON::PP::is_bool($v)) { print $v ? "true" : "false" }
         elsif (defined $v) { print $v }
     ' "$1" <"$OUT"
+}
+
+# json <key>: a top-level field.
+json() { jget "\$j->{$1}"; }
+
+# next_runs: the "run" (or "read") value of every "next" step, one per line.
+next_runs() { jget 'join("\n", map { $_->{run} // $_->{read} } @{$j->{next}})'; }
+
+category_of() {
+    case $1 in 2) echo usage ;; 3) echo validation ;; 4) echo precondition ;; *) echo internal ;; esac
 }
 
 clean_tree() { [ -z "$(git -C "$DIR" status --porcelain)" ]; }
@@ -78,6 +93,7 @@ expect_error() {
     [ "$RC" = "$code" ] || { fail "exit $RC, expected $code"; return 0; }
     [ "$(json status)" = error ] || { fail "JSON status is not error"; return 0; }
     [ "$(json code)" = "$code" ] || { fail "JSON code $(json code), expected $code"; return 0; }
+    [ "$(json category)" = "$(category_of "$code")" ] || { fail "JSON category $(json category)"; return 0; }
     clean_tree || { fail "the tree changed"; return 0; }
     pass
 }
@@ -113,7 +129,6 @@ generated_ok() {
         { fail "a com/template source directory survived"; return 1; }
 }
 
-# shellcheck disable=SC2016 # $BASH_VERSION must expand in the child bash
 echo "setup.sh tests (bash: $("$SETUP_BASH" -c 'echo $BASH_VERSION'))"
 
 # --- usage errors: exit 2 ----------------------------------------------------------------------
@@ -123,6 +138,15 @@ expect_error 2 "option followed by another option" --name --package com.acme.app
 expect_error 2 "value given to a flag" --name App --package com.acme.app --yes=1 --json
 expect_error 2 "missing --package and no terminal" --name App --yes --json
 expect_error 2 "no --yes and no terminal" --name App --package com.acme.app --json
+if ! grep -q -- "add --yes" "$ERR" || grep -q "^usage:" "$ERR"; then fail "no --yes: expected a one-line hint"; fi
+
+begin "usage errors print the message before the usage"
+setup --name App --package com.acme.app --frobnicate --yes --json
+if [ "$RC" = 2 ] && head -1 "$ERR" | grep -q "^setup.sh: unknown option: --frobnicate" && grep -q "^usage:" "$ERR"; then
+    pass
+else
+    fail "stderr: $(head -2 "$ERR")"
+fi
 
 # --- invalid values: exit 3 --------------------------------------------------------------------
 expect_error 3 "empty name" --name "" --package com.acme.app --yes --json
@@ -141,6 +165,24 @@ expect_error 3 "derive with two slashes" --derive-from-github a/b/c --yes --json
 expect_error 3 "derive with a space" --derive-from-github "own er/repo" --yes --json
 GIT_CONFIG_GLOBAL=$TMP/empty-gitconfig \
     expect_error 3 "no author and no git user.name" --name App --package com.acme.app --yes --json
+expect_error 3 "empty --author" --name App --package com.acme.app --author "" --yes --json
+expect_error 3 "whitespace-only --author" --name App --package com.acme.app --author "   " --yes --json
+expect_error 3 "display name that is not UTF-8" --name App --package com.acme.app --display-name $'My\xffApp' --yes --json
+expect_error 3 "author that is not UTF-8" --name App --package com.acme.app --author $'\xfe\xff' --yes --json
+long=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # 64 characters
+expect_error 3 "package segment over 63 characters" --name App --package "com.$long.app" --yes --json
+expect_error 3 "name over 50 characters" --name "App$long" --package com.acme.app --yes --json
+expect_error 3 "package segment over 63 characters, dry run" --name App --package "com.$long.app" --dry-run --json
+
+begin "source paths too long for the checkout's location (dry run)"
+deep=$TMP/deep
+while [ "${#deep}" -lt 840 ]; do deep=$deep/dddddddddddddddddddddddddddddddddddddddddddddddddd; done
+mkdir -p "$deep"
+cp -R "$FIXTURE" "$deep/repo"
+DIR=$deep/repo
+setup --name WeatherApp --package com.acme.weather --dry-run --json
+if [ "$RC" = 3 ] && grep -q "longest source path" "$ERR" && clean_tree; then pass; else fail "exit $RC, expected 3"; fi
+rm -rf "$TMP/deep"
 
 # --- preconditions: exit 4 ---------------------------------------------------------------------
 begin "dirty tree"
@@ -151,17 +193,39 @@ if [ "$RC" = 4 ] && [ "$(json code)" = 4 ] && [ -d "$DIR/.template" ]; then pass
 begin "already initialized (no .template/)"
 (cd "$DIR" && git rm -rq .template && git commit -qm "drop .template")
 setup --name App --package com.acme.app --yes --json
-if [ "$RC" = 4 ] && [ "$(json code)" = 4 ] && grep -q "already initialized" "$ERR"; then pass; else fail "exit $RC, expected 4"; fi
+if [ "$RC" = 4 ] && [ "$(json reason)" = already-initialized ] && [ "$(json category)" = precondition ] &&
+    grep -q "already initialized" "$ERR"; then pass; else fail "exit $RC, expected 4 already-initialized"; fi
 
 # --- successful runs ---------------------------------------------------------------------------
 begin "--help"
 setup --help
 if [ "$RC" = 0 ] && grep -q -- "--derive-from-github" "$OUT" && grep -q "Exit codes" "$OUT"; then pass; else fail "exit $RC"; fi
 
-begin "dry run changes nothing"
+begin "--help --json: help on stderr, one JSON object on stdout"
+setup --help --json
+if [ "$RC" = 0 ] && [ "$(json help)" = true ] && [ "$(json status)" = ok ] && grep -q "Exit codes" "$ERR"; then
+    pass
+else
+    fail "exit $RC: $(cat "$OUT")"
+fi
+
+begin "dry run changes nothing and reports the plan"
 setup --name WeatherApp --package com.acme.weather --dry-run --json
-if [ "$RC" = 0 ] && [ "$(json dryRun)" = true ] && clean_tree && [ -f "$DIR/setup.sh" ] &&
-    grep -q "com/acme/weather/MainActivity.kt" "$ERR"; then pass; else fail "exit $RC or the tree changed"; fi
+if [ "$RC" != 0 ] || [ "$(json dryRun)" != true ] || ! clean_tree || [ ! -f "$DIR/setup.sh" ]; then
+    fail "exit $RC or the tree changed"
+elif ! jget '$j->{plan}{delete}' | grep -qx setup.sh ||
+    ! jget '$j->{plan}{write}' | grep -qx AGENTS.md ||
+    ! jget '$j->{plan}{edit}' | grep -qx settings.gradle.kts ||
+    [ "$(jget '(grep { $_->{to} eq "androidApp/src/main/kotlin/com/acme/weather/MainActivity.kt" } @{$j->{plan}{move}})[0]{from}')" != \
+        androidApp/src/main/kotlin/com/template/android/MainActivity.kt ]; then
+    fail "plan is incomplete: $(cat "$OUT")"
+elif [ -n "$(jget 'exists $j->{removed} ? "yes" : ""')" ]; then
+    fail "a dry run reported removed files"
+elif [ "$(next_runs)" != "./setup.sh --name WeatherApp --package com.acme.weather --json" ]; then
+    fail "next is not the command without --dry-run: $(next_runs)"
+else
+    pass
+fi
 
 begin "default generation"
 setup --name WeatherApp --package com.acme.weather --yes --json
@@ -183,6 +247,13 @@ if generated_ok; then
     elif ! grep -q 'rootProject.name = "WeatherApp"' "$DIR/settings.gradle.kts" ||
         ! grep -q 'PRODUCT_BUNDLE_IDENTIFIER = com.acme.weather$' "$DIR/iosApp/Configuration/Config.xcconfig"; then
         fail "settings.gradle.kts or Config.xcconfig not renamed"
+    elif [ "$(json verified)/$(json committed)" != false/true ] ||
+        [ "$(jget '$j->{next}[0]{run}')" != "./gradlew check" ] || next_runs | grep -q commit; then
+        fail "JSON verified/committed/next: $(cat "$OUT")"
+    elif grep -rl 'region desktop' "$DIR" --include='*.md' --exclude-dir=.git >"$TMP/hits"; then
+        fail "Markdown region markers survived: $(cat "$TMP/hits")"
+    elif ! grep -q '^// region desktop$' "$DIR/settings.gradle.kts"; then
+        fail "the Gradle region markers should stay"
     else
         pass
     fi
@@ -207,6 +278,9 @@ if generated_ok; then
         fail "ci.yml job is not renamed to Android"
     elif grep -q 'app.packageName' "$DIR/gradle.properties"; then
         fail "app.packageName survived"
+    elif grep -rnE 'JvmApplication|kotlin-jvm|kotlin\.jvm\) apply|jvm(Main|Test)' "$DIR" --exclude-dir=.git \
+        --exclude='*.txt' >"$TMP/hits"; then
+        fail "desktop build logic survived: $(head -3 "$TMP/hits")"
     elif ! (cd "$DIR" && git ls-files -z -co --exclude-standard | perl -0ne '
         chomp; next unless -f && /\.(?:kts?|properties|ya?ml|md)$/;
         open my $f, "<", $_ or die; local $/; my $t = <$f>;
@@ -245,7 +319,7 @@ setup --name WeatherApp --package com.acme.weather --keep-git --yes --json
 if generated_ok; then
     if [ "$(git -C "$DIR" rev-parse HEAD)" != "$head_before" ] || clean_tree; then
         fail "expected the fixture commit with uncommitted changes"
-    elif ! json next | grep -q "git add -A && git commit"; then
+    elif ! next_runs | grep -q "git add -A && git commit"; then
         fail "next steps do not say to commit"
     else
         pass
@@ -259,6 +333,8 @@ if generated_ok; then
         fail "a commit exists"
     elif [ -z "$(git -C "$DIR" diff --cached --name-only)" ]; then
         fail "nothing is staged"
+    elif [ "$(json committed)" != false ] || ! next_runs | grep -q "^git commit"; then
+        fail "JSON does not say to commit: $(cat "$OUT")"
     else
         pass
     fi
@@ -283,6 +359,54 @@ setup --derive-from-github nkrebs13/kmp-template --yes --json
 if generated_ok; then
     if [ "$(json name)/$(json author)" = "KmpTemplate/Harness Author" ]; then pass; else fail "JSON: $(cat "$OUT")"; fi
 fi
+
+begin "unbalanced region markers stop the run before any change"
+printf '// region desktop\n' >>"$DIR/settings.gradle.kts"
+(cd "$DIR" && git commit -qam "stray marker")
+setup --name WeatherApp --package com.acme.weather --yes --json
+if [ "$RC" = 5 ] && [ "$(json category)" = internal ] && clean_tree && [ -f "$DIR/setup.sh" ]; then
+    pass
+else
+    fail "exit $RC, expected 5 with nothing changed"
+fi
+
+begin "a path with newlines cannot point a deletion outside the repository"
+victim=$TMP/victim-$CASES
+mkdir -p "$victim" && touch "$victim/keep"
+# find prints this one build directory as "./cache", "<victim>" and "cache/build" if split on newlines.
+evil="$DIR/cache"$'\n'"$victim"$'\n'"cache/build"
+mkdir -p "$evil" && touch "$evil/output.bin"
+setup --name WeatherApp --package com.acme.weather --yes --json
+if generated_ok; then
+    if [ ! -f "$victim/keep" ]; then
+        fail "a directory outside the repository was deleted"
+    elif [ -e "$evil" ]; then
+        fail "the build directory with newlines in its path survived"
+    else
+        pass
+    fi
+fi
+
+begin "a source package named build is renamed, not skipped"
+mkdir -p "$DIR/androidApp/src/main/kotlin/com/template/android/build"
+printf 'package com.template.android.build\n\nimport com.template.shared.AppLogger\n\ninternal fun tag() = AppLogger.tag\n' \
+    >"$DIR/androidApp/src/main/kotlin/com/template/android/build/Extra.kt"
+(cd "$DIR" && git add -A && git commit -qm "build package")
+setup --name WeatherApp --package com.acme.weather --yes --json
+extra=$DIR/androidApp/src/main/kotlin/com/acme/weather/build/Extra.kt
+if generated_ok; then
+    if [ -f "$extra" ] && grep -q '^package com.acme.weather.build$' "$extra" &&
+        grep -q '^import com.acme.weather.shared.AppLogger$' "$extra"; then
+        pass
+    else
+        fail "build/Extra.kt was not moved and renamed"
+    fi
+fi
+
+begin "TMPDIR containing a colon"
+mkdir -p "$TMP/with:colon"
+TMPDIR=$TMP/with:colon setup --name WeatherApp --package com.acme.weather --yes --json
+if generated_ok; then pass; fi
 
 # --- derivation (dry runs) ---------------------------------------------------------------------
 expect_derived weird-Owner/123-my.app App123MyApp io.github.weird_owner.app_123_my_app io.github.weird-owner.app-123-my-app
