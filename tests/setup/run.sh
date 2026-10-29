@@ -566,11 +566,19 @@ else
     fail "exit $RC, origin: $(origin_head)"
 fi
 
+# True when the git rm line names every template-only workflow.
+lists_all_template_workflows() {
+    local wf
+    for wf in template.yml template-cleanup.yml dependabot-automerge.yml release.yml; do
+        case "$1" in *".github/workflows/$wf"*) ;; *) return 1 ;; esac
+    done
+}
+
 cleanup_case "workflow files refused" workflow 0
 if [ "$RC" = 0 ] && [ "$(origin_head)" = "Initialize project from kmp-template" ] &&
     origin_has .github/workflows/template.yml && ! origin_has setup.sh &&
     grep -q "^Delete the leftover template workflows$" "$SIM/gh.log" 2>/dev/null &&
-    grep -q "git rm -q .github/workflows/template-cleanup.yml .github/workflows/template.yml" "$SIM/gh.log"; then
+    lists_all_template_workflows "$(grep "git rm -q " "$SIM/gh.log" 2>/dev/null)"; then
     pass
 else
     fail "exit $RC, origin: $(origin_head), issue: $(cat "$SIM/gh.log" 2>/dev/null)"
