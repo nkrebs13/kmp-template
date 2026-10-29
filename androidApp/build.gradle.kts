@@ -8,7 +8,6 @@ android {
     namespace = "com.template.android"
 
     defaultConfig {
-        applicationId = "com.template.android"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

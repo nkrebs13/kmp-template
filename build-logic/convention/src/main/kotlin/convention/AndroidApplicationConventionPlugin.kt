@@ -8,7 +8,7 @@ import org.gradle.kotlin.dsl.configure
 
 /**
  * An Android application: SDK levels from `libs.versions.toml`, version from `gradle.properties`
- * (`app.versionCode`, `app.versionName`; override with `-P`), lint warnings as errors, and release
+ * (`app.applicationId`, `app.versionCode`, `app.versionName`; override with `-P`), lint warnings as errors, and release
  * signing when credentials are available (see `ReleaseSigning.kt`).
  */
 class AndroidApplicationConventionPlugin : Plugin<Project> {
@@ -20,6 +20,7 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
             configureAndroidCommon(this)
             defaultConfig {
                 targetSdk = libs.versionInt("android-target-sdk")
+                applicationId = requiredGradleProperty("app.applicationId")
                 versionCode = requiredGradleProperty("app.versionCode").toIntOrNull()
                     ?: error("app.versionCode must be an integer")
                 versionName = requiredGradleProperty("app.versionName")

@@ -71,9 +71,12 @@ org.gradle.unsafe.isolated-projects=true
 # Silences the disabled-iOS-targets warning on hosts that cannot build them (Linux)
 kotlin.native.ignoreDisabledTargets=true
 
-# App version, read by the convention.android.application plugin
+# App version, read by the convention.android.application and convention.jvm.application plugins
 app.versionCode=1
 app.versionName=1.0.0
+
+# Desktop installer package name (lowercased for Linux .deb); version is app.versionName
+app.packageName=KmpTemplate
 ```
 
 ### Convention Plugins (`build-logic/`)
@@ -82,9 +85,10 @@ Module build files apply convention plugins instead of repeating configuration:
 
 | Plugin | Applies |
 |--------|---------|
-| `convention.kmp.library` | KMP + Android library, `iosArm64` + `iosSimulatorArm64`, static framework, 60% Kover line coverage |
+| `convention.kmp.library` | KMP + Android library, `iosArm64` + `iosSimulatorArm64` + `jvm` (desktop), static framework, 60% Kover line coverage |
 | `convention.compose` | Compose Multiplatform + compiler, `config/compose/stability.conf`, optional compiler reports |
 | `convention.android.application` | SDK levels, version from `gradle.properties`, lint policy, release signing |
+| `convention.jvm.application` | Compose Multiplatform desktop app: Kotlin/JVM, `convention.compose`, Dmg/Msi/Deb packaging, name and version from `gradle.properties` |
 | `convention.quality` | Spotless, detekt (+ Compose rules), Kover; applied by the plugins above |
 
 A module then only declares what is specific to it:
@@ -97,11 +101,11 @@ plugins {
 
 android {
     namespace = "com.example.myapp"
-    defaultConfig {
-        applicationId = "com.example.myapp"
-    }
 }
 ```
+
+The application ID comes from `app.applicationId` in `gradle.properties`, next to the version; the
+desktop installer derives its Windows upgrade UUID from it too.
 
 ## Adding Dependencies
 
@@ -138,6 +142,11 @@ dependencies {
 ```bash
 # Android
 ./gradlew :androidApp:assembleDebug
+
+# Desktop (JVM): run, run with Compose Hot Reload, installer for the current OS
+./gradlew :desktopApp:run
+./gradlew :desktopApp:hotRun --auto
+./gradlew :desktopApp:packageDistributionForCurrentOS
 
 # iOS Simulator (Apple Silicon)
 ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64

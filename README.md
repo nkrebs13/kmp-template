@@ -5,7 +5,7 @@
 [![Compose Multiplatform](https://img.shields.io/badge/Compose_Multiplatform-1.12.2-4285F4.svg)](https://www.jetbrains.com/lp/compose-multiplatform/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A production-ready Kotlin Multiplatform template for iOS and Android apps with Compose Multiplatform.
+A production-ready Kotlin Multiplatform template for iOS, Android and desktop (JVM) apps with Compose Multiplatform.
 
 ## Quick Start
 
@@ -62,10 +62,12 @@ graph TB
 template/
 ├── androidApp/          # Android application module
 ├── iosApp/              # iOS Xcode project
+├── desktopApp/          # Desktop (JVM) application module
 ├── shared/              # KMP shared code
 │   ├── commonMain/      # Cross-platform code
 │   ├── androidMain/     # Android-specific implementations
-│   └── iosMain/         # iOS-specific implementations
+│   ├── iosMain/         # iOS-specific implementations
+│   └── jvmMain/         # Desktop (JVM) implementations
 ├── baselineprofile/     # Android performance optimization
 ├── gradle/              # Build configuration & version catalog
 ├── scripts/             # Utility scripts
@@ -95,6 +97,11 @@ This template includes only essential dependencies to keep your project lean. Th
 # Android
 ./gradlew :androidApp:assembleDebug
 ./gradlew :androidApp:assembleRelease
+
+# Desktop
+./gradlew :desktopApp:run
+./gradlew :desktopApp:hotRun --auto   # Compose Hot Reload
+./gradlew :desktopApp:packageDistributionForCurrentOS
 
 # iOS Framework
 ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64

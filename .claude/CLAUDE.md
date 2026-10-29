@@ -22,6 +22,7 @@ kmp-template/
 ├── shared/              # KMP shared module (commonMain/androidMain/iosMain)
 ├── androidApp/          # Android application
 ├── iosApp/              # iOS Xcode project (Swift + Compose bridge)
+├── desktopApp/          # Desktop (JVM) application (convention.jvm.application)
 ├── baselineprofile/     # Baseline Profile producer (com.android.test, Gradle Managed Device)
 ├── build-logic/         # Included build: convention plugins (convention.*) + verifyCatalog
 ├── config/
@@ -49,6 +50,11 @@ from the constants in `ProjectExtensions.kt`. ktlint settings live in `.editorco
 # spotlessCheck, detekt, :shared:allTests, :shared:koverVerify, :androidApp:lintDebug
 ./gradlew check :androidApp:assembleDebug :shared:linkDebugFrameworkIosSimulatorArm64
 
+# Desktop app
+./gradlew :desktopApp:run                    # needs a GUI session (HeadlessException over plain SSH)
+./gradlew :desktopApp:hotRun --auto          # Compose Hot Reload (bundled with the CMP plugin)
+./gradlew :desktopApp:packageDistributionForCurrentOS   # .dmg / .msi / .deb
+
 # Auto-fix formatting (nothing auto-corrects during check)
 ./gradlew spotlessApply
 
@@ -64,6 +70,24 @@ from the constants in `ProjectExtensions.kt`. ktlint settings live in `.editorco
 # Compose compiler reports/metrics -> <module>/build/compose-reports, compose-metrics
 ./gradlew -Pkmp.composeCompilerReports=true :shared:compileAndroidMain
 ```
+
+## Desktop Notes
+
+- The `// region desktop` markers cover exactly two Gradle lines: `include(":desktopApp")` in
+  `settings.gradle.kts` and the `jvm()` target in `KmpLibraryConventionPlugin`. Everything else
+  (`desktopApp/`, `shared/src/jvmMain`, `jvmTest`, the `kotlin-jvm` catalog and root plugin lines, CI,
+  setup.sh, docs) is removed by the generator by path, not by markers.
+- `hotRun` comes from the Compose Multiplatform plugin's bundled Compose Hot Reload (it runs on JetBrains Runtime, which the toolchain resolver provisioned in testing); it attaches to
+  `kotlin("jvm")` modules, so no `org.jetbrains.compose.hot-reload` plugin is applied explicitly.
+- CI builds `:desktopApp:createDistributable` (jpackage app image), not installers, which would need
+  dpkg/fakeroot on the runner and add nothing to the check.
+- Packaging with a Homebrew JDK fails `checkRuntime` (compose-multiplatform#3107). Use a Temurin/Corretto/JBR
+  toolchain, or pass `-Pcompose.desktop.packaging.checkJdkVendor=false` on a machine that has only Homebrew.
+- The installer name comes from `app.packageName` in `gradle.properties` (lowercased for Deb);
+  the installer version is the leading `major.minor.patch` of `app.versionName` (`1.2.0-beta` packages as
+  `1.2.0`, so ship pre-release installers under a lower patch: Windows won't upgrade between equal
+  versions), and the Windows upgrade UUID derives from `app.applicationId`. The window title is a literal
+  in `main.kt`.
 
 ## Template Generation Test
 

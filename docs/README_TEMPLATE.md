@@ -1,6 +1,6 @@
 # __PROJECT_NAME__
 
-A Kotlin Multiplatform application for iOS and Android.
+A Kotlin Multiplatform application for iOS, Android and desktop (JVM).
 
 ## 🚀 Getting Started
 
@@ -19,6 +19,15 @@ A Kotlin Multiplatform application for iOS and Android.
 ./gradlew :androidApp:assembleDebug
 ```
 
+#### Desktop
+```bash
+./gradlew :desktopApp:run                           # run the app
+./gradlew :desktopApp:hotRun --auto                 # run with Compose Hot Reload (edits appear live)
+./gradlew :desktopApp:packageDistributionForCurrentOS   # .dmg on macOS, .msi on Windows, .deb on Linux
+```
+
+Packaging needs a non-Homebrew JDK 21 (Temurin, Corretto or JetBrains Runtime).
+
 #### iOS
 1. Open `iosApp/iosApp.xcodeproj` in Xcode
 2. Select your target device/simulator
@@ -36,6 +45,7 @@ A Kotlin Multiplatform application for iOS and Android.
 This app uses Kotlin Multiplatform with Compose Multiplatform for shared UI:
 - **Shared Module**: Cross-platform UI and business logic
 - **Android App**: Native Android entry point using shared Compose UI
+- **Desktop App**: Compose for Desktop window (`desktopApp`) hosting the shared Compose UI
 - **iOS App**: Native SwiftUI shell hosting shared Compose UI via ComposeUIViewController
 
 ## 🧪 Testing

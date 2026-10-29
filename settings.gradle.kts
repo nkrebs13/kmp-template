@@ -40,3 +40,6 @@ rootProject.name = "Template"
 include(":androidApp")
 include(":shared")
 include(":baselineprofile")
+// region desktop
+include(":desktopApp")
+// endregion desktop
