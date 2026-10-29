@@ -22,8 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shared `iosApp` Xcode scheme, so `xcodebuild -scheme iosApp` works on a fresh clone.
 - `iosApp/iosApp/PrivacyInfo.xcprivacy` privacy manifest (no tracking, no collected data, no required-reason APIs).
 - CI: the iOS job lints the privacy manifest and builds the app with `xcodebuild` for the simulator, uploading the log on failure.
+- Compose resources: `strings.xml` holds the greeting, and `App()` reads it with `stringResource`. The generated `Res` class is internal, in `<package>.shared.generated.resources`.
+- A Compose UI test for `App()` (`runComposeUiTest`) in `jvmTest` and `iosTest`, sharing one body from `commonTest`; `compose-ui-test` joins the version catalog.
 
 ### Changed
+- `desktopApp` builds and packages on JetBrains Runtime 21 (toolchain vendor pinned), so packaging no longer fails on machines whose JDK 21 is Homebrew's.
+- Tests keep only what checks template code: `AppLogger`'s tag, minimum severity and filtering, one `PlatformTest` contract test and one test per platform `actual`. Tests of Kermit's own behavior and `AppIntegrationTest` are gone.
 - `baselineprofile` is a real `com.android.test` producer (new `convention.android.test` plugin) that generates the profile on a Gradle Managed Device; the profile is committed and packed into release APKs.
 - `Theme.App` extends the platform `Theme.Material.*.NoActionBar` instead of AppCompat, with a night variant.
 - `proguard-rules.pro` keeps only the source-file attributes; libraries ship their own consumer rules.

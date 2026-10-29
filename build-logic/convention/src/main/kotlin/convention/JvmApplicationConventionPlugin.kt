@@ -1,14 +1,26 @@
 package convention
 
+import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.tasks.JavaExec
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.jvm.toolchain.JavaToolchainService
+import org.gradle.jvm.toolchain.JavaToolchainSpec
+import org.gradle.jvm.toolchain.JvmVendorSpec
 import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.getByType
+import org.gradle.kotlin.dsl.withType
 import org.jetbrains.compose.ComposeExtension
 import org.jetbrains.compose.desktop.DesktopExtension
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.compose.desktop.application.tasks.AbstractCheckNativeDistributionRuntime
+import org.jetbrains.compose.desktop.application.tasks.AbstractJvmToolOperationTask
+import org.jetbrains.compose.desktop.application.tasks.AbstractProguardTask
+import org.jetbrains.compose.desktop.application.tasks.AbstractSuggestModulesTask
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import java.util.UUID
 
@@ -33,9 +45,36 @@ class JvmApplicationConventionPlugin : Plugin<Project> {
         apply<ComposeConventionPlugin>()
         apply<QualityConventionPlugin>()
 
+        // JetBrains Runtime for compiling, running and packaging: Compose packaging rejects some JDK
+        // builds (Homebrew's, among others) and Hot Reload works best on it. Downloaded on first use.
+        val jetBrainsRuntime: Action<JavaToolchainSpec> = Action {
+            languageVersion.set(JavaLanguageVersion.of(JDK_TOOLCHAIN_VERSION))
+            vendor.set(JvmVendorSpec.JETBRAINS)
+        }
         extensions.configure<KotlinJvmProjectExtension> {
-            jvmToolchain(JDK_TOOLCHAIN_VERSION)
+            jvmToolchain(jetBrainsRuntime)
             compilerOptions.jvmTarget.set(KOTLIN_JVM_TARGET)
+        }
+        // Packaging otherwise uses the Gradle daemon's JVM, whatever vendor that is. A JDK (not a JRE)
+        // is needed for jpackage, and it is set on the packaging tasks lazily, so builds that never
+        // package (Android, iOS) never resolve or download it.
+        val javaToolchains = extensions.getByType<JavaToolchainService>()
+        val packagingJdk = javaToolchains.compilerFor(jetBrainsRuntime)
+            .map { it.metadata.installationPath.asFile.absolutePath }
+        // Compose registers these tasks in afterEvaluate and sets their JDK there; this runs after it.
+        afterEvaluate {
+            tasks.withType<AbstractJvmToolOperationTask>().configureEach { javaHome.set(packagingJdk) }
+            tasks.withType<AbstractProguardTask>().configureEach { javaHome.set(packagingJdk) }
+            tasks.withType<AbstractSuggestModulesTask>().configureEach { javaHome.set(packagingJdk) }
+            tasks.withType<AbstractCheckNativeDistributionRuntime>().configureEach { jdkHome.set(packagingJdk) }
+            // Compose's run tasks are JavaExec tasks with an explicit executable from the daemon's JVM.
+            // Point both the launcher and (when the task runs) the executable at one JBR launcher;
+            // Gradle rejects the two disagreeing.
+            val runtime = javaToolchains.launcherFor(jetBrainsRuntime)
+            tasks.withType<JavaExec>().named { it == "run" || it == "runRelease" }.configureEach {
+                javaLauncher.set(runtime)
+                doFirst { (this as JavaExec).executable(runtime.get().executablePath.asFile.absolutePath) }
+            }
         }
 
         // The Kotlin plugin applies the java plugin; keep javac on the same bytecode level as kotlinc.

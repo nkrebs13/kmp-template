@@ -12,6 +12,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.template.shared.generated.resources.Res
+import com.template.shared.generated.resources.greeting
+import org.jetbrains.compose.resources.stringResource
 
 /** Root Composable — renders a greeting with the current [getPlatformName]. */
 @Composable
@@ -29,7 +32,7 @@ fun App(modifier: Modifier = Modifier) {
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = "Hello, ${getPlatformName()}!",
+                    text = stringResource(Res.string.greeting, getPlatformName()),
                     style = MaterialTheme.typography.headlineMedium,
                 )
             }
