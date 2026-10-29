@@ -94,9 +94,10 @@ cd - && rm -rf /tmp/e2e-test
 ## CI Minutes Status
 
 CI_MINUTES: AVAILABLE (public repo). `ci.yml` runs Static analysis + Android on ubuntu and iOS on
-`macos-26`; `template.yml` runs Template Generation on `macos-26`. Both run on PRs and pushes to
-`main`; `ci.yml` also runs weekly, and its `verifyCatalog` job checks every catalog coordinate. Local verification is still preferred during
-iteration; the PR run is authoritative.
+`macos-26`; `template.yml` runs Template Generation on `macos-26`. Both run on pull requests
+targeting `main` and pushes to `main` (`template.yml` only in `nkrebs13/kmp-template`); `ci.yml` also
+runs weekly, and its `verifyCatalog` job checks every catalog coordinate. Local verification is still
+preferred during iteration; the PR run is authoritative.
 
 ## Version Tags
 

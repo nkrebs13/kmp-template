@@ -103,7 +103,7 @@ Prefixes:
 
 ## CI Pipeline
 
-Two workflows run on every PR and push to `main`.
+Two workflows run on pull requests targeting `main` and on pushes to `main`. `template.yml` runs only in the canonical `nkrebs13/kmp-template` repository, not in forks.
 
 **`.github/workflows/ci.yml`** is the project CI. It contains no project-specific names.
 
