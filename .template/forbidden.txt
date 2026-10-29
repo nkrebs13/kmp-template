@@ -7,5 +7,4 @@ KmpTemplate
 com[./]template
 (?i)kmp-template
 nkrebs13
-Nathan Krebs
 \.template/
