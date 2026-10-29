@@ -33,10 +33,8 @@ read it, and module build files reference `libs.*` aliases.
 
 | Dependency | Version | Purpose |
 |------------|---------|---------|
-| androidx-appcompat | 1.7.1 | AppCompat library |
 | androidx-activity-compose | 1.13.0 | Activity APIs |
 | androidx-splashscreen | 1.2.0 | Splash screen API |
-| androidx-compose-material3 | 1.4.0 | Material 3 components |
 
 ### Code Quality Tools
 
@@ -239,16 +237,17 @@ The `baselineprofile/` module generates [Android Baseline Profiles](https://deve
 
 **How it works:**
 
-- `BaselineProfileGenerator` runs on a connected device or emulator (min SDK 28)
-- It launches the app, waits for idle, and records which code paths are exercised
-- The generated profile is bundled with the APK so ART can AOT-compile critical paths
+- `baselineprofile` is a `com.android.test` module (via `convention.android.test`) targeting `:androidApp`. `BaselineProfileGenerator` launches the app and records which code paths run during startup (min SDK 28).
+- `:androidApp:generateBaselineProfile` builds a non-minified release, runs the generator on the Gradle Managed Device `pixel6Api34` (Pixel 6, API 34, AOSP image; downloaded on first use) and writes the result to `androidApp/src/release/generated/baselineProfiles/`.
+- `baseline-prof.txt` and `startup-prof.txt` are committed, so a normal `assembleRelease` packs the profile as `assets/dexopt/baseline.prof` without running the generator.
 
-**Running baseline profile generation:**
+**Regenerating the profile:**
 
 ```bash
-# Requires a connected device or emulator (API 28+)
-./gradlew :baselineprofile:generateBaselineProfile
+./gradlew :androidApp:generateBaselineProfile
 ```
+
+Regenerate after changing startup behaviour or adding user journeys. To use a physical device or running emulator instead, set `useConnectedDevices = true` (and drop `managedDevices`) in the `baselineProfile {}` block of `baselineprofile/build.gradle.kts`.
 
 The `androidApp/build.gradle.kts` enables `dexLayoutOptimization = true` to further optimize DEX file layout based on the profile.
 
@@ -309,7 +308,7 @@ The Android app module (`androidApp/`) uses:
 - Predictive back gesture (`android:enableOnBackInvokedCallback="true"`)
 - Per-app language preferences (`@xml/locales_config`, App Bundle language splits disabled)
 - Compose Activity
-- ProGuard rules for release
+- R8 for release, with only source-file attributes kept in `proguard-rules.pro`; libraries such as kotlinx-serialization ship their own consumer rules
 - Baseline profile integration with DEX layout optimization
 
 **Adding a new locale:** edit `androidApp/src/main/res/xml/locales_config.xml` and add a

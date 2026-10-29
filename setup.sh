@@ -271,7 +271,7 @@ replace_in_directory() {
             --include="*.properties" --include="*.swift" --include="*.plist" \
             --include="*.yml" --include="*.yaml" --include="*.json" --include="*.md" \
             --include="*.pbxproj" --include="*.pro" --include="*.xcscheme" \
-            --include="*.toml" --include="*.conf" --include="*.sh" \
+            --include="*.toml" --include="*.conf" --include="*.sh" --include="*.txt" \
             2>/dev/null || true)
         if [ -n "$dry_matches" ]; then
             echo "[DRY-RUN] Would replace '$search' → '$replace' in:"
@@ -306,7 +306,7 @@ replace_in_directory() {
         -o -name "*.properties" -o -name "*.swift" -o -name "*.plist" \
         -o -name "*.yml" -o -name "*.yaml" -o -name "*.json" -o -name "*.md" \
         -o -name "*.pbxproj" -o -name "*.pro" -o -name "*.xcscheme" \
-        -o -name "*.toml" -o -name "*.conf" -o -name "*.sh" \
+        -o -name "*.toml" -o -name "*.conf" -o -name "*.sh" -o -name "*.txt" \
         \) -print0 2>/dev/null)
 }
 
@@ -333,8 +333,8 @@ replace_in_file "applicationId = \"com.template.android\"" "applicationId = \"$P
 replace_in_file "namespace = \"com.template.android\"" "namespace = \"$PACKAGE_NAME\"" "androidApp/build.gradle.kts"
 replace_in_file "namespace = \"com.template.shared\"" "namespace = \"${PACKAGE_NAME}.shared\"" "shared/build.gradle.kts"
 replace_in_file "namespace = \"com.template.baselineprofile\"" "namespace = \"${PACKAGE_NAME}.baselineprofile\"" "baselineprofile/build.gradle.kts"
-if [ -f "baselineprofile/src/androidTest/java/com/template/baselineprofile/BaselineProfileGenerator.kt" ]; then
-    replace_in_file "packageName = \"com.template.android\"" "packageName = \"$PACKAGE_NAME\"" "baselineprofile/src/androidTest/java/com/template/baselineprofile/BaselineProfileGenerator.kt"
+if [ -f "baselineprofile/src/main/kotlin/com/template/baselineprofile/BaselineProfileGenerator.kt" ]; then
+    replace_in_file "packageName = \"com.template.android\"" "packageName = \"$PACKAGE_NAME\"" "baselineprofile/src/main/kotlin/com/template/baselineprofile/BaselineProfileGenerator.kt"
 fi
 
 # 4. Update iOS bundle identifier and project references
@@ -346,12 +346,6 @@ if [ -f "iosApp/iosApp.xcodeproj/project.pbxproj" ]; then
     replace_in_file "TemplateApp.swift" "${PROJECT_NAME}App.swift" "iosApp/iosApp.xcodeproj/project.pbxproj"
     # Update ORGANIZATIONNAME placeholder
     replace_in_file "orgName" "$PROJECT_NAME" "iosApp/iosApp.xcodeproj/project.pbxproj"
-fi
-
-# 4b. Update ProGuard rules with new package name
-echo "• Updating ProGuard configuration..."
-if [ -f "androidApp/proguard-rules.pro" ]; then
-    replace_in_file "com.template" "$PACKAGE_NAME" "androidApp/proguard-rules.pro"
 fi
 
 # 5. Update app names
@@ -382,7 +376,7 @@ else
     mkdir -p "shared/src/iosTest/kotlin/$PACKAGE_PATH/shared"
     mkdir -p "androidApp/src/main/kotlin/$PACKAGE_PATH"
     mkdir -p "androidApp/src/androidTest/kotlin/$PACKAGE_PATH"
-    mkdir -p "baselineprofile/src/androidTest/java/$PACKAGE_PATH/baselineprofile"
+    mkdir -p "baselineprofile/src/main/kotlin/$PACKAGE_PATH/baselineprofile"
 
     # Move files to new package structure
     if [ -d "shared/src/commonMain/kotlin/com/template/shared" ]; then
@@ -406,14 +400,14 @@ else
     if [ -d "androidApp/src/main/kotlin/com/template/android" ]; then
         mv androidApp/src/main/kotlin/com/template/android/* "androidApp/src/main/kotlin/$PACKAGE_PATH/" 2>/dev/null || true
     fi
-    if [ -d "baselineprofile/src/androidTest/java/com/template/baselineprofile" ]; then
-        mv baselineprofile/src/androidTest/java/com/template/baselineprofile/* "baselineprofile/src/androidTest/java/$PACKAGE_PATH/baselineprofile/" 2>/dev/null || true
+    if [ -d "baselineprofile/src/main/kotlin/com/template/baselineprofile" ]; then
+        mv baselineprofile/src/main/kotlin/com/template/baselineprofile/* "baselineprofile/src/main/kotlin/$PACKAGE_PATH/baselineprofile/" 2>/dev/null || true
     fi
 
     # Clean up old directories
     rm -rf shared/src/*/kotlin/com/template 2>/dev/null || true
     rm -rf androidApp/src/*/kotlin/com/template 2>/dev/null || true
-    rm -rf baselineprofile/src/*/java/com/template 2>/dev/null || true
+    rm -rf baselineprofile/src/*/kotlin/com/template 2>/dev/null || true
 fi
 
 # 7. Rename Swift files if needed

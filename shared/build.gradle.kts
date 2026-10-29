@@ -20,10 +20,6 @@ kotlin {
             api(libs.kermit)
         }
 
-        androidMain.dependencies {
-            implementation(libs.kotlinx.coroutines.android)
-        }
-
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)

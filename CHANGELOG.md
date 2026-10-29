@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `kotlin.native.ignoreDisabledTargets=true`, which silences Kotlin's disabled-iOS-targets warning on non-macOS hosts.
 
 ### Changed
+- `baselineprofile` is a real `com.android.test` producer (new `convention.android.test` plugin) that generates the profile on a Gradle Managed Device; the profile is committed and packed into release APKs.
+- `Theme.App` extends the platform `Theme.Material.*.NoActionBar` instead of AppCompat, with a night variant.
+- `proguard-rules.pro` keeps only the source-file attributes; libraries ship their own consumer rules.
 - CI: `ci.yml` is split into Static analysis and Android jobs on ubuntu plus an iOS job on `macos-26`. It runs on PRs, pushes to `main` and weekly, and a `verifyCatalog` job checks every catalog coordinate. Template generation testing moved to the template-only `template.yml`.
 - Gradle 9.6.1; `actions/checkout` 7.0.1, `actions/setup-java` 6.1.0, `actions/upload-artifact` 7.0.2.
 - Kotlin 2.4.21, Compose Multiplatform 1.12.2 (Material 3 1.9.0), AGP 9.5.0, Spotless 8.10.4, Kover 0.9.11, Kermit 2.2.0, androidx benchmark/baselineprofile 1.5.0. detekt stays on 1.23.8 because 2.x has no stable release yet.
@@ -31,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI uses JDK 21. Dependabot no longer sets the deprecated `reviewers` key (CODEOWNERS covers review).
 
 ### Fixed
+- Repeated `clean` builds in one Gradle daemon no longer exhaust metaspace or fail ktlint with `NoClassDefFoundError`. Spotless's `clean` hook closed every formatter classloader mid-build ([spotless#3067](https://github.com/diffplug/spotless/issues/3067)) and leaked the Eclipse XML formatter; build-logic removes that hook.
+- The launcher activity started on `Theme.App` instead of `Theme.App.Starting`, so `installSplashScreen()` never saw the splash theme.
 - Release dates for 2.0.0 through 3.0.0 now match the tagged commits.
 - The Compose stability configuration is applied. The old `compose.multiplatform.stabilityConfigPath` property did nothing, and the file used `#` comments the compiler rejects. Editing the file now recompiles.
 - Framework bundle ID is explicit (`-Xbinary=bundleId`, from the Android namespace), removing the "Cannot infer a bundle ID" warning.
@@ -44,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MCP server (`mcp/`) and the `setup.sh --with-mcp` flag. Agents run `setup.sh` directly.
 - Unused `scripts/build-ios-framework.sh`; the Xcode project builds the framework through `embedAndSignAppleFrameworkForXcode`.
 - `docs/DEPENDENCY_RISK_REPORT.md` and `docs/DOCUMENTATION_INDEX.md`.
+- Unused `androidx.compose.material3`, `appcompat` and `kotlinx-coroutines-android` dependencies and catalog entries, and the unused `android-library` plugin alias.
 
 ## [3.1.0] - 2026-03-21
 

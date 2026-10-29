@@ -2,7 +2,10 @@ package convention
 
 import com.diffplug.gradle.spotless.SpotlessExtension
 import com.diffplug.spotless.LineEnding
+import org.gradle.api.Action
 import org.gradle.api.Project
+import org.gradle.api.Task
+import org.gradle.api.plugins.BasePlugin
 import org.gradle.kotlin.dsl.configure
 
 private const val KOTLIN_SECTION = "[*.{kt,kts}]"
@@ -17,7 +20,7 @@ internal fun Project.configureSpotless(
     kotlinGradleTargets: List<String>,
     extra: SpotlessExtension.() -> Unit = {},
 ) {
-    pluginManager.apply(libs.pluginId("spotless"))
+    applySpotlessWithoutCleanHook()
     val ktlintVersion = libs.versionString("ktlint")
     val ktlintSettings = ktlintEditorConfigOverride()
     extensions.configure<SpotlessExtension> {
@@ -34,6 +37,34 @@ internal fun Project.configureSpotless(
             ktlint(ktlintVersion).editorConfigOverride(ktlintSettings)
         }
         extra()
+    }
+}
+
+/**
+ * Applies Spotless, then removes the `doLast` it adds to `clean`.
+ *
+ * That action calls `SpotlessCache.clearOnce`, which closes every formatter classloader in the
+ * daemon. With parallel execution another project's `spotless*` task can be using one at that
+ * moment, and fails with `LINE_UNDEFINED ktlint(NoClassDefFoundError)`. Under Isolated Projects
+ * each project sees a different root-project object, so the "once" key never matches and it
+ * clears on every build that runs `clean`. The Eclipse WTP loader it closes is never collected
+ * (its Eclipse job and EMF threads keep running), so each such build also leaked ~9 MB of
+ * Metaspace until the daemon died. Without the hook the loaders are reused for the daemon's life.
+ * Upstream: https://github.com/diffplug/spotless/issues/3067. Delete this once it is fixed.
+ */
+private fun Project.applySpotlessWithoutCleanHook() {
+    pluginManager.apply(BasePlugin::class.java)
+    val clean = tasks.named(BasePlugin.CLEAN_TASK_NAME)
+    lateinit var before: List<Action<in Task>>
+    clean.configure { before = actions.toList() }
+    pluginManager.apply(libs.pluginId("spotless"))
+    clean.configure {
+        val added = actions.filterNot { it in before }
+        check(added.size == 1) {
+            "Spotless added ${added.size} actions to clean, expected 1. If spotless#3067 is fixed, " +
+                "remove applySpotlessWithoutCleanHook()."
+        }
+        actions.removeAll(added)
     }
 }
 
