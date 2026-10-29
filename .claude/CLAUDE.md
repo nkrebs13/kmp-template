@@ -23,11 +23,10 @@ kmp-template/
 ├── androidApp/          # Android application
 ├── iosApp/              # iOS Xcode project (Swift + Compose bridge)
 ├── baselineprofile/     # Android Baseline Profile generator
-├── mcp/                 # MCP server for AI-assisted generation
-├── scripts/             # Utility scripts (validate.sh, build-ios-framework.sh)
+├── scripts/             # Utility scripts (validate.sh)
 ├── docs/                # Documentation
 ├── gradle/              # Version catalog (libs.versions.toml)
-├── setup.sh             # Template generation script (~560 lines)
+├── setup.sh             # Template generation script
 ├── compose-stability.conf
 ├── detekt-config.yml
 └── .github/workflows/ci.yml
@@ -80,16 +79,6 @@ CI_MINUTES: AVAILABLE. PR-open CI runs the full Build & Lint + Template Generati
 matrix on `macos-14` runners. Local verification still preferred during iteration;
 push to open a PR for the authoritative run.
 
-## MCP Server
-
-```bash
-cd mcp && npm install && node --check index.js  # Verify syntax
-```
-
-The MCP server has three tools: `list_dependencies`, `generate`, `validate`, and `set_dependency`.
-`set_dependency` uncomments optional deps in `libs.versions.toml` by key prefix (e.g., `key: "ktor"`)
-using `path.relative()` for portable symlink guard. The TOML regex `[\w-]+` supports hyphenated keys.
-
 ## Version Tags
 
-Tags v2.0.0, v2.1.0, v2.2.0, v3.0.0 exist on the remote. CHANGELOG comparison links depend on them.
+Tags v2.0.0, v2.1.0, v2.2.0, v3.0.0, v3.1.0 exist on the remote. CHANGELOG comparison links depend on them.

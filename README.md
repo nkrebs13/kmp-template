@@ -9,8 +9,6 @@ A production-ready Kotlin Multiplatform template for iOS and Android apps with C
 
 ## Quick Start
 
-### Option 1: Manual Setup
-
 ```bash
 git clone https://github.com/nkrebs13/kmp-template.git my-app
 cd my-app
@@ -20,46 +18,8 @@ cd my-app
 Follow the prompts to customize your project name and package.
 
 **Available flags:**
-- `--with-mcp` - Keep the MCP server directory for AI-assisted project management
 - `--dry-run` - Preview changes without modifying files
 - `--help` - Show help message
-
-### Option 2: MCP Tool (AI-Assisted)
-
-If you're using an MCP-compatible AI coding assistant, you can generate projects using the MCP tool:
-
-1. Add the server to your AI assistant's MCP configuration:
-
-   **Claude Code** (`.mcp.json`):
-   ```json
-   {
-     "mcpServers": {
-       "kmp-template": {
-         "command": "node",
-         "args": ["/path/to/template/mcp/index.js"]
-       }
-     }
-   }
-   ```
-
-   **Cursor** (`.cursor/mcp.json`):
-   ```json
-   {
-     "mcpServers": {
-       "kmp-template": {
-         "command": "node",
-         "args": ["/path/to/template/mcp/index.js"]
-       }
-     }
-   }
-   ```
-
-2. Ask your AI assistant to generate a project:
-   ```
-   Generate a new KMP project called "WeatherApp" with package "com.example.weather" in ~/Projects/WeatherApp
-   ```
-
-See [`mcp/README.md`](mcp/README.md) for detailed MCP tool documentation.
 
 ## Requirements
 
@@ -69,7 +29,6 @@ See [`mcp/README.md`](mcp/README.md) for detailed MCP tool documentation.
 | Android Studio | Latest | With KMP plugin |
 | Xcode | 15.0+ | macOS only, for iOS builds |
 | macOS | 14.0+ (Sonoma) | Required for iOS development |
-| Node.js | 18.0+ | Only if using MCP server |
 
 ### iOS Development Requirements
 
@@ -77,19 +36,6 @@ iOS builds require macOS with Xcode. The template targets:
 - iOS 15.0+ deployment target
 - Xcode 15.0+ (required for Swift 5.9+)
 - Apple Silicon (arm64) or Intel (x64) simulators
-
-## Generation Methods Comparison
-
-| Feature | setup.sh | MCP Tool |
-|---------|----------|----------|
-| Interactive prompts | Yes | No (parameters) |
-| Dry-run preview | Yes | No |
-| Keep MCP directory | `--with-mcp` flag | Always removed |
-| Post-generation validation | Automatic | Automatic |
-| Git initialization | Automatic | Automatic |
-| IDE integration | N/A | AI assistant |
-| Reserved prefix validation | Yes | Yes |
-| iOS bundle ID customization | Yes | Yes |
 
 ## Architecture
 
@@ -122,7 +68,6 @@ template/
 │   └── iosMain/         # iOS-specific implementations
 ├── baselineprofile/     # Android performance optimization
 ├── gradle/              # Build configuration & version catalog
-├── mcp/                 # MCP server for AI-assisted generation
 ├── scripts/             # Utility scripts
 │   └── validate.sh      # Template reference validation
 ├── docs/                # Documentation
@@ -167,27 +112,6 @@ This template includes only essential dependencies to keep your project lean. Th
 ./scripts/validate.sh      # Check for template references
 ```
 
-## MCP Tool
-
-The template includes an MCP (Model Context Protocol) server that enables AI coding assistants to generate and validate projects programmatically.
-
-### Available Tools
-
-| Tool | Description |
-|------|-------------|
-| `generate` | Create a new KMP project from the template |
-| `validate` | Check a project for remaining template references |
-| `list_dependencies` | List all template dependencies with versions |
-
-### Setup
-
-```bash
-cd mcp
-npm install
-```
-
-See [`mcp/README.md`](mcp/README.md) for complete documentation.
-
 ## Troubleshooting
 
 ### Android Build Fails
@@ -208,12 +132,6 @@ If validation shows remaining template references:
 1. Run `./scripts/validate.sh` to see specific locations
 2. Manually replace any remaining `com.template` or `TemplateApp` references
 3. Re-run validation to confirm
-
-### MCP Tool Issues
-
-1. **Node Version**: Requires Node.js 18+
-2. **Dependencies**: Run `npm install` in the `mcp/` directory
-3. **Permissions**: Ensure `mcp/index.js` is executable
 
 ## Contributing
 

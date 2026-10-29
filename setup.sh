@@ -12,17 +12,14 @@ if [ -z "$BASH_VERSION" ]; then
 fi
 
 # Parse command line arguments
-WITH_MCP=false
 DRY_RUN=false
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        --with-mcp) WITH_MCP=true ;;
         --dry-run) DRY_RUN=true ;;
         --help|-h)
             echo "Usage: ./setup.sh [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  --with-mcp    Keep the MCP server directory for AI-assisted project management"
             echo "  --dry-run     Preview changes without modifying any files"
             echo "  --help, -h    Show this help message"
             exit 0
@@ -199,9 +196,6 @@ echo "  - .github/ directory (workflows, issue templates)"
 echo "  - docs/ directory (template documentation)"
 echo "  - scripts/ directory (template utilities)"
 echo "  - setup.sh (this script)"
-if [ "$WITH_MCP" = false ]; then
-    echo "  - mcp/ directory (use --with-mcp to keep)"
-fi
 echo ""
 read -p "Continue with these settings? (y/n): " CONFIRM
 if [ "$CONFIRM" != "y" ]; then
@@ -460,7 +454,6 @@ if [ "$DRY_RUN" = true ]; then
 else
     rm -f README_TEMPLATE.md 2>/dev/null || true
     rm -f local.properties.template 2>/dev/null || true
-    rm -f DEPENDENCY_RISK_REPORT.md 2>/dev/null || true
     rm -rf docs 2>/dev/null || true
     rm -rf scripts 2>/dev/null || true
     rm -f setup.sh 2>/dev/null || true
@@ -488,17 +481,6 @@ else
     rm -rf .vscode 2>/dev/null || true
     rm -rf .fleet 2>/dev/null || true
     rm -rf .cursor 2>/dev/null || true
-fi
-
-# Remove MCP server unless --with-mcp was specified
-if [ "$WITH_MCP" = false ]; then
-    if [ "$DRY_RUN" = true ]; then
-        echo "[DRY-RUN] Would: Remove mcp/ directory"
-    else
-        rm -rf mcp 2>/dev/null || true
-    fi
-else
-    echo "  Keeping MCP server directory (--with-mcp specified)"
 fi
 
 # 11. Verify template replacement

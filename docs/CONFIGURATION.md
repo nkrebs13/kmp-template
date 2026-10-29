@@ -44,7 +44,7 @@ All dependencies are managed through `gradle/libs.versions.toml` for centralized
 
 ### Optional Dependencies (commented out in `gradle/libs.versions.toml`)
 
-Uncomment the relevant lines in `gradle/libs.versions.toml` to enable. Use the MCP `set_dependency` tool to enable them automatically (e.g., invoke with `key: "ktor"` and your project path).
+Uncomment the relevant lines in `gradle/libs.versions.toml` to enable.
 
 | Dependency | Version | Purpose |
 |------------|---------|---------|
@@ -267,28 +267,6 @@ com.yourapp.model.*
 ```
 
 Without this, Compose may unnecessarily recompose UI when passing instances of types it cannot verify as stable.
-
-## Scripts
-
-### `scripts/build-ios-framework.sh`
-
-A helper script that builds the shared iOS framework for both simulator and device targets, then creates a symlink at `shared/build/xcode-frameworks/shared.framework` pointing to the correct variant.
-
-```bash
-./scripts/build-ios-framework.sh
-```
-
-The script:
-- Detects installed iOS SDK versions automatically
-- Builds both `IosSimulatorArm64` and `IosArm64` debug frameworks via Gradle
-- Creates a symlink based on `$SDK_NAME` (set by Xcode during builds) or defaults to simulator
-
-Use this when Xcode cannot find the framework, or as a build phase script in your Xcode project. For most development, the Gradle tasks called directly are sufficient:
-
-```bash
-./gradlew :shared:linkDebugFrameworkIosSimulatorArm64   # Simulator
-./gradlew :shared:linkReleaseFrameworkIosArm64           # Device
-```
 
 ## Code Quality Configuration
 
