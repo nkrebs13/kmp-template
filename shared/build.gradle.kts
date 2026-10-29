@@ -28,10 +28,12 @@ kotlin {
             implementation(libs.compose.ui.test)
         }
 
+        // region desktop
         // Desktop needs the Skiko runtime to host a headless Compose window in tests.
         jvmTest.dependencies {
             implementation(compose.desktop.currentOs)
         }
+        // endregion desktop
     }
 }
 

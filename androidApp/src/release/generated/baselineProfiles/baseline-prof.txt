@@ -7630,7 +7630,7 @@ HSPLcom/template/shared/AppLogger;-><init>()V
 Lcom/template/shared/ComposableSingletons$AppKt;
 HSPLcom/template/shared/ComposableSingletons$AppKt;-><clinit>()V
 HSPLcom/template/shared/ComposableSingletons$AppKt;-><init>()V
-HSPLcom/template/shared/ComposableSingletons$AppKt;->getLambda$1355873934$Template_shared()Lkotlin/jvm/functions/Function2;
+HSPLcom/template/shared/ComposableSingletons$AppKt;->getLambda$1355873934$KmpTemplate_shared()Lkotlin/jvm/functions/Function2;
 HSPLcom/template/shared/ComposableSingletons$AppKt;->lambda_1355873934$lambda$0(Landroidx/compose/runtime/Composer;I)Lkotlin/Unit;
 Lcom/template/shared/ComposableSingletons$AppKt$$ExternalSyntheticLambda0;
 HSPLcom/template/shared/ComposableSingletons$AppKt$$ExternalSyntheticLambda0;-><init>()V
