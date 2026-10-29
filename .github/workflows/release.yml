@@ -20,6 +20,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # Only commits that are on main may be released, whoever pushed the tag.
+      - name: Verify the tag is on main
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if ! git merge-base --is-ancestor "$TAG^{commit}" origin/main; then
+            echo "::error::$TAG does not point at a commit reachable from main; refusing to release it"
+            exit 1
+          fi
 
       - name: Extract release notes from CHANGELOG.md
         env:

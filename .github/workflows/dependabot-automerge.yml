@@ -6,8 +6,13 @@
 # up first (see docs/MAINTAINING.md). Major updates are never queued and stay manual.
 name: Dependabot auto-merge
 
+# pull_request_target runs the workflow file and the pinned action from the BASE branch, so a
+# Dependabot PR that bumps dependabot/fetch-metadata cannot run its own version with this write
+# token. That is safe here because nothing from the PR is checked out or executed: the job only
+# reads event metadata, queries the GitHub API and queues the merge. Never add a checkout of
+# the PR head to this workflow.
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened]
 
 permissions:
@@ -24,6 +29,8 @@ jobs:
       - name: Fetch Dependabot metadata
         id: metadata
         uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ github.token }}
 
       # update-type is the HIGHEST semver change in the PR (fetch-metadata README), so a grouped
       # PR with any major in it reports major and stays manual. An allow-list rather than

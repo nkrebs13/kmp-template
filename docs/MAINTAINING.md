@@ -25,6 +25,7 @@ gh api -X PUT repos/nkrebs13/kmp-template/branches/main/protection --input - <<'
       "Static analysis",
       "Android & Desktop",
       "iOS",
+      "Verify catalog",
       "Generator lint and tests (ubuntu-latest)",
       "Generator lint and tests (macos-26)",
       "Generate (ubuntu-latest, default)",
@@ -42,9 +43,27 @@ gh api -X PUT repos/nkrebs13/kmp-template/branches/main/protection --input - <<'
 JSON
 ```
 
-`Verify catalog` (`verify-catalog` in `ci.yml`) runs on every PR too, but it is deliberately not
-required: it resolves every catalog coordinate over the network, and a registry outage should not
-block merges. It still shows on each PR; look at it before merging catalog changes.
+`Verify catalog` (`verify-catalog` in `ci.yml`) runs on every PR and is required: without it an
+`optional-catalog` minor or patch PR would auto-merge without its coordinates being resolved. It
+retries and tells a network failure from a missing coordinate, so it should not flake. A real
+registry outage blocks merges, which is acceptable.
+
+Restrict who can create release tags. Only admins may create, move or delete `v*` tags, so a
+tag cannot be pushed to trigger `release.yml` by anyone else (the workflow also refuses tags not
+on `main`). Role id 5 is the built-in repository admin role.
+
+```bash
+gh api -X POST repos/nkrebs13/kmp-template/rulesets --input - <<'JSON'
+{
+  "name": "Release tags",
+  "target": "tag",
+  "enforcement": "active",
+  "conditions": { "ref_name": { "include": ["refs/tags/v*"], "exclude": [] } },
+  "rules": [{ "type": "creation" }, { "type": "update" }, { "type": "deletion" }],
+  "bypass_actors": [{ "actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always" }]
+}
+JSON
+```
 
 When a job `name:` or a matrix axis changes in `ci.yml` or `template.yml`, update this list and
 re-run the command, or auto-merge will wait for a context that never reports.
@@ -74,7 +93,10 @@ The release commit is pushed straight to `main`. It changes only `CHANGELOG.md`,
 `enforce_admins=false` lets an administrator push without the required checks. A non-admin
 cannot release. If the push fails (rejected, offline), the script deletes the local tag and resets
 `main` to `origin/main`, provided `HEAD` is still its release commit, then says so; fix the cause
-and run it again. The very first release (no `vX.Y.Z` tag yet) links `[X.Y.Z]` to
+and run it again. If the push reached the remote but the client saw an error (a failing
+server-side hook), the script checks with `git ls-remote`, reports the release as done and does
+not roll back; if it cannot read the remote it keeps the local commit and tag and prints the
+recovery steps. The very first release (no `vX.Y.Z` tag yet) links `[X.Y.Z]` to
 `releases/tag/vX.Y.Z` instead of a compare range.
 
 ## Dependabot

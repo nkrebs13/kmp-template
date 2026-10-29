@@ -117,6 +117,18 @@ git commit --quiet -m "chore(release): $TAG"
 RELEASE_COMMIT=$(git rev-parse HEAD)
 git tag -a "$TAG" -m "Release $TAG"
 if ! git push --atomic origin main "$TAG"; then
+    # The client may have seen an error after the remote accepted the push (a failing
+    # server-side hook), so look at the remote before undoing anything.
+    if ! REMOTE=$(git ls-remote origin refs/heads/main "refs/tags/$TAG" 2>/dev/null); then
+        die "the push failed and the remote could not be read, so nothing was rolled back. Check 'git ls-remote origin refs/heads/main refs/tags/$TAG'. If the remote has neither, run: git tag -d $TAG && git reset --hard origin/main, then rerun scripts/release.sh $VERSION"
+    fi
+    case $REMOTE in
+        "$RELEASE_COMMIT"*refs/heads/main*refs/tags/$TAG*)
+            echo "release.sh: the push reported an error, but the remote has the release commit and $TAG." >&2
+            echo "Released $TAG. The Release workflow publishes the GitHub Release from the CHANGELOG section."
+            exit 0
+            ;;
+    esac
     echo "release.sh: the push failed; undoing the local release commit and tag." >&2
     git tag -d "$TAG" >/dev/null
     if [ "$(git rev-parse HEAD)" = "$RELEASE_COMMIT" ]; then git reset --quiet --hard origin/main; fi
