@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Template names are now unique tokens: `rootProject.name` is `KmpTemplate` and the Android app label is `KMP Template`.
 - A root `AGENTS.md` for the uninitialized template: how to run `setup.sh` and read its JSON.
 
+### Added (maintenance)
+- Dependabot groups minor and patch updates (`kotlin-compose`, `android`, `build-tooling`, `optional-catalog`, `actions`) and ignores `io.nlopez.compose.rules:detekt` 0.5+, which needs detekt 2.x. The `reviewers` key is gone; CODEOWNERS covers it.
+- Template-only `dependabot-automerge.yml` queues auto-merge for non-major Dependabot PRs, which GitHub merges once the required checks pass.
+- Template-only `release.yml` creates the GitHub Release from the tag's CHANGELOG section, and `scripts/release.sh X.Y.Z` (with `--dry-run`) updates the CHANGELOG and compare links, commits, tags and pushes.
+- `docs/MAINTAINING.md`: repository settings, branch protection and the release procedure as exact commands.
+
 ### Fixed (generator)
 - The iOS framework's bundle ID replaces `_` from the package with `-`; Apple rejects underscores.
 - `--no-desktop` also removes the desktop build logic (`convention.jvm.application`, the `kotlin-jvm` plugin entries). detekt's test-source excludes use `**/*Test/**` instead of naming each source set.

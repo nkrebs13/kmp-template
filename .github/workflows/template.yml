@@ -32,7 +32,7 @@ jobs:
 
       - name: shellcheck
         if: runner.os == 'Linux'
-        run: shellcheck setup.sh .template/*.sh tests/setup/*.sh
+        run: shellcheck setup.sh .template/*.sh scripts/*.sh tests/setup/*.sh
 
       # Usage errors, invalid values, preconditions, dry run, generation variants and the
       # --derive-from-github derivation (including weird-Owner/123-my.app). On macOS both the

@@ -117,7 +117,8 @@ generated_ok() {
     [ "$(json status)" = ok ] || { fail "JSON status is not ok"; return 1; }
     for f in .template setup.sh docs tests scripts .claude CHANGELOG.md CONTRIBUTING.md \
         CODE_OF_CONDUCT.md SECURITY.md .github/CODEOWNERS .github/workflows/template.yml \
-        .github/workflows/template-cleanup.yml; do
+        .github/workflows/template-cleanup.yml .github/workflows/dependabot-automerge.yml \
+        .github/workflows/release.yml scripts/release.sh; do
         [ ! -e "$DIR/$f" ] || { fail "$f survived"; return 1; }
     done
     for f in AGENTS.md README.md LICENSE local.properties.template .github/workflows/ci.yml \
