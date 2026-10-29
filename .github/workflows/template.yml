@@ -1,5 +1,4 @@
 # Template-only: tests that setup.sh turns this template into a clean, building project.
-# setup.sh deletes this workflow from generated projects.
 name: Template
 
 on:

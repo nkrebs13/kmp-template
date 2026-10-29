@@ -105,7 +105,7 @@ Prefixes:
 
 Two workflows run on every PR and push to `main`.
 
-**`.github/workflows/ci.yml`** is the project CI. It ships unchanged to generated projects.
+**`.github/workflows/ci.yml`** is the project CI. It contains no project-specific names.
 
 | Job | Runner | Runs |
 |-----|--------|------|

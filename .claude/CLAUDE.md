@@ -31,7 +31,7 @@ kmp-template/
 ├── docs/                # Documentation
 ├── gradle/              # Version catalog (libs.versions.toml), gradle-daemon-jvm.properties
 ├── setup.sh             # Template generation script
-└── .github/workflows/     # ci.yml (ships to generated projects), template.yml (template-only)
+└── .github/workflows/     # ci.yml (project CI), template.yml (template-only)
 ```
 
 Convention plugins (`build-logic/convention/src/main/kotlin/convention/`):
