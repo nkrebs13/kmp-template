@@ -12,8 +12,16 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import java.util.UUID
 
-/** `major.minor.patch` with major > 0: Dmg rejects a 0 major, and Msi needs numeric parts. */
-private val PACKAGE_VERSION_PATTERN = Regex("""[1-9]\d*\.\d+\.\d+""")
+/**
+ * `major.minor.patch` that every installer format accepts: Dmg rejects a 0 major, and Msi needs
+ * numeric parts with major and minor at most 255 and patch at most 65535.
+ */
+private val PACKAGE_VERSION_PATTERN = Regex("""([1-9]\d{0,2})\.(\d{1,3})\.(\d{1,5})""")
+
+private fun isPackageVersion(version: String): Boolean {
+    val (major, minor, patch) = PACKAGE_VERSION_PATTERN.matchEntire(version)?.destructured ?: return false
+    return major.toInt() <= 255 && minor.toInt() <= 255 && patch.toInt() <= 65535
+}
 
 /**
  * A Compose Multiplatform desktop (JVM) application.
@@ -40,9 +48,9 @@ class JvmApplicationConventionPlugin : Plugin<Project> {
         }
 
         val versionName = requiredGradleProperty("app.versionName")
-        require(PACKAGE_VERSION_PATTERN.matches(versionName)) {
-            "app.versionName '$versionName' must look like 1.0.0 (numeric major.minor.patch, major > 0) " +
-                "so Dmg and Msi packaging accept it"
+        require(isPackageVersion(versionName)) {
+            "app.versionName '$versionName' must look like 1.0.0 (numeric major.minor.patch; major 1-255, " +
+                "minor 0-255, patch 0-65535) so Dmg and Msi packaging accept it"
         }
         val packageName = requiredGradleProperty("app.packageName")
         extensions.configure<ComposeExtension> {
