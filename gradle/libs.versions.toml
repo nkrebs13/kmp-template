@@ -36,7 +36,7 @@ kermit = "2.2.0"
 # detekt 2.x is still pre-release; stay on the 1.23 line until 2.0.0 ships stable.
 detekt = "1.23.8"
 # compose-rules 0.4.x is the last line built against detekt 1.23.x (0.5+ needs detekt 2.x).
-compose-rules = "0.4.28"
+compose-rules = "0.6.8"
 kover = "0.9.11"
 spotless = "8.10.4"
 ktlint = "1.8.0"
