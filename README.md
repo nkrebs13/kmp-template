@@ -60,13 +60,13 @@ template name is left before it starts the new git history.
 | Platforms | Android, iOS and desktop (JVM) apps hosting one shared Compose Multiplatform `App()` |
 | Build logic | `build-logic/` convention plugins; module build files hold only what is specific to them |
 | Gradle | Configuration cache and Isolated Projects on; JDK 21 toolchain provisioned automatically |
-| Quality gate | `./gradlew check`: Spotless/ktlint, detekt with Compose rules, Android lint with warnings as errors, Kover (60% line coverage), and `checkForbiddenCalls` (no `println` in production code) |
+| Quality gate | `./gradlew check`: Kotlin compiler warnings as errors, Spotless/ktlint, detekt with Compose rules, Android lint with warnings as errors, Kover (60% line coverage), and `checkForbiddenCalls` (no `println` in production code) |
 | Tests | Compose UI tests of `App()` on the JVM and the iOS simulator, sharing one body; a test per platform `actual` |
 | Android | A real baseline profile, generated on a Gradle Managed Device and packed into release builds; release signing from environment variables or `local.properties` |
 | iOS | Settings in xcconfig files (never the pbxproj), synchronized folders, a privacy manifest, iOS 16+ |
 | Desktop | Compose Hot Reload, and Dmg/Msi/Deb packaging on JetBrains Runtime |
 | CI | Linux for static analysis, Android and desktop; macOS for iOS tests and an `xcodebuild` of the app. Runs on PRs, on `main` and weekly; a separate job checks that every catalog coordinate still resolves |
-| Generator | `setup.sh` with `--dry-run` and `--json`, tested by a 71-case harness and a 6-way generation matrix (Linux and macOS × default, `--no-desktop`, edge-case names) |
+| Generator | `setup.sh` with `--dry-run` and `--json`, tested by a plain-bash harness and a 6-way generation matrix (Linux and macOS × default, `--no-desktop`, edge-case names) |
 | Maintenance | Grouped Dependabot updates in every generated project; in this repository, auto-merge for non-major updates and one-command releases |
 | Agent guide | A complete `AGENTS.md` in every generated project, imported by its `CLAUDE.md` |
 

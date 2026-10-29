@@ -12,6 +12,7 @@ server and `--with-mcp` are gone, the `iosX64` target is dropped, compileSdk is 
 uses a JDK 21 toolchain, and the minimums are iOS 16.0 and Xcode 16.
 
 ### Added
+- Kotlin compiler warnings fail the build in every module and target (`allWarningsAsErrors`, set in `convention.quality`).
 - Desktop (JVM) target: `shared` gains `jvm()` (`Platform.jvm.kt`, `PlatformJvmTest`), and a new `desktopApp` module built by the new `convention.jvm.application` plugin runs the shared `App()` in a Compose window and packages Dmg/Msi/Deb installers. The installer name comes from `app.packageName` in `gradle.properties` (lowercased for Deb); `app.versionName` is validated as `major.minor.patch` with major > 0, and the Windows upgrade UUID is derived from the application ID.
 - Compose Hot Reload: `./gradlew :desktopApp:hotRun --auto` (bundled with the Compose Multiplatform plugin; no extra plugin needed).
 - `build-logic/` included build with convention plugins: `convention.kmp.library`, `convention.compose`, `convention.android.application`, `convention.android.test`, `convention.jvm.application`, `convention.quality` and `convention.root`. Module build files now declare only what is specific to them.
