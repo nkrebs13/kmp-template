@@ -53,6 +53,8 @@ class QualityConventionPlugin : Plugin<Project> {
                         classes(
                             // Compose compiler-generated singletons (not reachable from unit tests)
                             "*ComposableSingletons*",
+                            // iOS entry point, only reachable from the Xcode app
+                            "*MainViewController*",
                             // Compose Multiplatform generated resource accessors
                             "*.generated.resources.*",
                         )

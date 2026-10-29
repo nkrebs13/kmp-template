@@ -6,6 +6,8 @@ plugins {
 kotlin {
     android {
         namespace = "com.template.shared"
+        // Without this the KMP Android library does not package composeResources into the APK.
+        androidResources { enable = true }
     }
 
     sourceSets {
@@ -23,6 +25,18 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.compose.ui.test)
+        }
+
+        // Desktop needs the Skiko runtime to host a headless Compose window in tests.
+        jvmTest.dependencies {
+            implementation(compose.desktop.currentOs)
         }
     }
+}
+
+compose.resources {
+    // Keep the generated Res class in a predictable package that setup.sh renames with the rest.
+    packageOfResClass = "com.template.shared.generated.resources"
+    publicResClass = false
 }
