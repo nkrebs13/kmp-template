@@ -3,7 +3,7 @@
     "allow": [
       "Bash(./gradlew *)",
       "Bash(bash setup.sh*)",
-      "Bash(bash scripts/*)",
+      "Bash(bash tests/setup/run.sh*)",
       "Bash(git status)",
       "Bash(git log *)",
       "Bash(git diff *)",

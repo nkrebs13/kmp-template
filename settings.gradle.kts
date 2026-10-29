@@ -35,7 +35,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Template"
+rootProject.name = "KmpTemplate"
 
 include(":androidApp")
 include(":shared")

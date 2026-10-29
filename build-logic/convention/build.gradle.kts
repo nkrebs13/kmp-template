@@ -38,10 +38,12 @@ gradlePlugin {
             id = "convention.android.application"
             implementationClass = "convention.AndroidApplicationConventionPlugin"
         }
+        // region desktop
         register("jvmApplication") {
             id = "convention.jvm.application"
             implementationClass = "convention.JvmApplicationConventionPlugin"
         }
+        // endregion desktop
         register("androidTest") {
             id = "convention.android.test"
             implementationClass = "convention.AndroidTestConventionPlugin"

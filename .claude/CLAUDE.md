@@ -10,8 +10,10 @@ no DI framework, no networking, no navigation — those are the user's choices t
 
 ## Critical Rule: Zero Claude Code Files in Generated Projects
 
-`setup.sh` deletes `.claude/` entirely during generation. CI enforces this with a hard assertion.
-Never modify setup.sh to preserve Claude Code files in generated output.
+`setup.sh` deletes `.claude/` entirely during generation (it is in `.template/template-only.txt`),
+and both `setup.sh` itself and `template.yml` assert it is gone. Never modify setup.sh to preserve
+Claude Code files in generated output. Generated projects get a tool-neutral `AGENTS.md` and a root
+`CLAUDE.md` containing only `@AGENTS.md`, both from `.template/project/`.
 
 Generated projects must have exactly **zero** `.claude/` files.
 
@@ -28,11 +30,13 @@ kmp-template/
 ├── config/
 │   ├── compose/stability.conf   # Compose compiler stability config (`//` comments)
 │   └── detekt/detekt.yml        # detekt + Compose rules config
-├── scripts/             # Utility scripts (validate.sh)
+├── .template/           # Generator data (template-only): manifest.env, template-only.txt,
+│                        #   forbidden*.txt, check-leftovers.sh, rewrite.pl, project/ (generated docs)
+├── tests/setup/run.sh   # setup.sh test harness (plain bash)
 ├── docs/                # Documentation
 ├── gradle/              # Version catalog (libs.versions.toml), gradle-daemon-jvm.properties
 ├── setup.sh             # Template generation script
-└── .github/workflows/     # ci.yml (project CI), template.yml (template-only)
+└── .github/workflows/   # ci.yml (project CI), template.yml + template-cleanup.yml (template-only)
 ```
 
 Convention plugins (`build-logic/convention/src/main/kotlin/convention/`):
@@ -74,10 +78,14 @@ from the constants in `ProjectExtensions.kt`. ktlint settings live in `.editorco
 
 ## Desktop Notes
 
-- The `// region desktop` markers cover exactly two Gradle lines: `include(":desktopApp")` in
-  `settings.gradle.kts` and the `jvm()` target in `KmpLibraryConventionPlugin`. Everything else
-  (`desktopApp/`, `shared/src/jvmMain`, `jvmTest`, the `kotlin-jvm` catalog and root plugin lines, CI,
-  setup.sh, docs) is removed by the generator by path, not by markers.
+- `region desktop` / `endregion desktop` comment lines (`//`, `#` or `<!-- -->`) mark desktop-only
+  blocks: `include(":desktopApp")`, the `jvm()` target in `KmpLibraryConventionPlugin`, the `jvmTest`
+  dependencies in `shared/build.gradle.kts`, `app.packageName` in `gradle.properties`, the CI desktop
+  step, the `jvmApplication` plugin registration, the `kotlin-jvm` catalog entry and its root
+  `apply false`, and the desktop parts of `.template/project/*.md`. `--no-desktop` deletes those
+  blocks and the `DESKTOP_PATHS` from `manifest.env` (`desktopApp/`, `shared/src/jvmMain`,
+  `shared/src/jvmTest`, `JvmApplicationConventionPlugin.kt`), and renames the CI job to "Android".
+  The default generation strips only the Markdown markers; code and Gradle markers stay.
 - `hotRun` comes from the Compose Multiplatform plugin's bundled Compose Hot Reload (it runs on JetBrains Runtime, which the toolchain resolver provisioned in testing); it attaches to
   `kotlin("jvm")` modules, so no `org.jetbrains.compose.hot-reload` plugin is applied explicitly.
 - CI builds `:desktopApp:createDistributable` (jpackage app image), not installers, which would need
@@ -118,25 +126,66 @@ from the constants in `ProjectExtensions.kt`. ktlint settings live in `.editorco
 ## Template Generation Test
 
 ```bash
-# Full e2e test — generates a project, verifies no artifacts, verifies it builds
-cp -r . /tmp/e2e-test && cd /tmp/e2e-test
-printf 'WeatherApp\ncom.example.weather\ncom.example.weather\ny\n' | bash setup.sh
-grep -ri "com.template\|TemplateApp\|KmpTemplate\|orgName" . --exclude-dir=.git | wc -l  # Must be 0
-xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -sdk iphonesimulator \
-  -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
-test ! -d ".claude" && echo "PASS" || echo "FAIL"
-./gradlew :shared:allTests :androidApp:assembleDebug
-cd - && rm -rf /tmp/e2e-test
+# Generator checks (seconds; no Gradle). On macOS run the harness with /bin/bash (3.2) too.
+shellcheck setup.sh .template/*.sh tests/setup/*.sh
+bash tests/setup/run.sh && /bin/bash tests/setup/run.sh
+
+# Full e2e: generate from the committed HEAD in a scratch dir, then build it
+git clone -q . /tmp/e2e-test && cp -R .template /tmp/e2e-template && cd /tmp/e2e-test
+/bin/bash setup.sh --name WeatherApp --package com.acme.weather --author "Test" --yes --json
+bash /tmp/e2e-template/check-leftovers.sh .        # setup.sh already ran it; must print nothing
+./gradlew check :desktopApp:createDistributable
+xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug -sdk iphonesimulator \
+  -destination 'generic/platform=iOS Simulator' -derivedDataPath build/xcode CODE_SIGNING_ALLOWED=NO build
+# --no-desktop: same, with --no-desktop, then ./gradlew check
 ```
 
 ## Key Design Decisions
 
-- **`replace_in_directory`** excludes `.git/`, `build/`, `.gradle/`, `node_modules/` and handles
-  `.kt`, `.kts`, `.xml`, `.gradle`, `.toml`, `.conf`, `.sh`, `.md`, `.swift`, `.plist`, `.pbxproj`
+- **`.template/` is the single source of truth** for generation, and is deleted by it:
+  `manifest.env` (tokens, sourced by bash), `template-only.txt` (deleted paths), `forbidden*.txt`
+  (leftover regexes), `check-leftovers.sh`, `rewrite.pl`, and `project/` (the generated README,
+  AGENTS.md, CLAUDE.md). A file that mentions a token needs no setup.sh change; a new template-only
+  file goes in `template-only.txt`.
+- **Tokens**: `KmpTemplate` (name: rootProject, logger tag, installer), `KMP Template` (display
+  name: Android label, iOS display name, window title), `com.template.android` (app package),
+  `com.template.<module>` (`<package>.<module>`), `com.template.ios` (bundle ID). The sentinel stayed
+  `com.template` rather than moving to a new one: the leftover check and validation (packages inside
+  `com.template` are rejected) give the safety uniqueness would, without moving every source file.
+  Replacement is one literal pass, longest token first (`rewrite.pl`), so replaced text is never
+  re-replaced; Kotlin sources move by a generic `find` over `*/kotlin/com/template/**`.
+- **setup.sh CLI** is flag-driven and agent-safe: it prompts only when stdin is a TTY and a required
+  value is missing, needs `--yes` without a TTY, and `--json` prints exactly one object on stdout
+  (the contract is in the root `AGENTS.md`: `plan` for dry runs, `next` steps as `{"run"|"read"}`
+  objects, `verified: false`, error `category`/`reason`/`recovery`). Exit codes: 2 usage, 3 invalid
+  value, 4 precondition (dirty tree, already initialized, no perl/git), 5 internal (prints recovery
+  commands). bash 3.2 compatible: CI runs the harness on macOS `/bin/bash`.
+- **Nothing fails after the first change** except I/O errors or a setup.sh bug: values (including
+  UTF-8 and length limits: name 50, package 150, segment 63, longest moved path 900 bytes), the plan,
+  region markers, the LICENSE line and the `.template/` copy are all checked first. Every path list
+  is NUL-separated, and every deleted path must resolve inside the repository.
+- **`SKIP_DIR_NAMES`** (`manifest.env`) is the one list of build-output and tool directories that
+  setup.sh and check-leftovers.sh skip and setup.sh deletes; a directory under `src/` is never one.
+- **Atomicity**: validate and plan first (`--dry-run` stops there); refuse a dirty tree; copy
+  `.template/` aside and test the copy; back up to `$TMPDIR` when there is no `.git`; run the leftover
+  check (forbidden patterns, plus every `template-only.txt` path as a forbidden path) before touching
+  git; only then a new history on `main` with one commit (`--keep-git`, `--no-commit` change that).
+- **Leftover check masking**: a user value that itself matches a forbidden pattern (author
+  `nkrebs13`, repo `kmp-template`) is masked before matching, so it does not count as a leftover.
+- **LICENSE**: MIT, holder from `--author`, else `git config user.name`, else the GitHub owner.
+- **`template-cleanup.yml`** initializes "Use this template" repositories on their first push via
+  `--derive-from-github owner/repo` (name: PascalCase repo; package `io.github.<owner>.<repo>`
+  sanitized; bundle ID sanitized separately since it allows `-` but not `_`). `GITHUB_TOKEN` has no
+  `workflows` permission, so when the push is refused over workflow files it keeps them, pushes the
+  rest and opens an issue with the one `git rm` command; a non-fast-forward against an
+  already-initialized `main` exits quietly. Every template-only workflow is guarded on the repository
+  name, so leftovers stay inert.
+- **iOS framework bundle ID** is the shared namespace with `_` replaced by `-`
+  (`KmpLibraryConventionPlugin`), since Apple rejects `_`.
 - **iOS renaming touches only `iosApp/Configuration/Config.xcconfig`** (bundle ID, display name); setup.sh
   never edits Swift files or the pbxproj
-- **Git reinit**: setup.sh always runs `rm -rf .git && git init` for a clean history
-- **`__PROJECT_NAME__`** placeholder in `docs/README_TEMPLATE.md` — avoids overbroad "Template" replacement
+- **The committed baseline profile** is renamed with the rest, but its Compose lambda hashes depend on
+  the package, so generated projects should regenerate it (their AGENTS.md says so)
 - **`config/compose/stability.conf`** lists only read-only collection interfaces and `kotlin.time.*`,
   not `kotlin.collections.*`; it is a tracked compile input (editing it recompiles)
 - **Detekt**: 1.23.8 until 2.x ships stable; `warningsAsErrors: true`, `checkExhaustiveness: true`
@@ -148,10 +197,10 @@ cd - && rm -rf /tmp/e2e-test
 ## CI Minutes Status
 
 CI_MINUTES: AVAILABLE (public repo). `ci.yml` runs Static analysis + Android on ubuntu and iOS on
-`macos-26`; `template.yml` runs Template Generation on `macos-26`. Both run on pull requests
-targeting `main` and pushes to `main` (`template.yml` only in `nkrebs13/kmp-template`); `ci.yml` also
-runs weekly, and its `verifyCatalog` job checks every catalog coordinate. Local verification is still
-preferred during iteration; the PR run is authoritative.
+`macos-26`; `template.yml` runs the generator lint/tests and a generation matrix on ubuntu and
+`macos-26`. Both run on pull requests targeting `main` and pushes to `main` (`template.yml` only in
+`nkrebs13/kmp-template`); `ci.yml` also runs weekly, and its `verifyCatalog` job checks every catalog
+coordinate. Local verification is still preferred during iteration; the PR run is authoritative.
 
 ## Version Tags
 

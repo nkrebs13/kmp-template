@@ -1,0 +1,7 @@
+# Desktop leftovers, checked in addition to forbidden.txt after setup.sh --no-desktop.
+desktopApp
+\bjvm\s*[({]
+\bjvm(?:Main|Test)\b
+JvmApplication
+\bkotlin-jvm\b
+libs\.plugins\.kotlin\.jvm

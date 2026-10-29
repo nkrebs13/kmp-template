@@ -1,4 +1,5 @@
-# Template-only: tests that setup.sh turns this template into a clean, building project.
+# Template-only: tests that setup.sh turns this template into clean, building projects.
+# setup.sh deletes this file; the guards keep it inert in any repository made from the template.
 name: Template
 
 on:
@@ -16,78 +17,134 @@ permissions:
   contents: read
 
 jobs:
-  template-test:
-    name: Template Generation
+  lint:
+    name: Generator lint and tests (${{ matrix.os }})
     if: github.repository == 'nkrebs13/kmp-template'
-    runs-on: macos-26
-    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-26]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: shellcheck
+        if: runner.os == 'Linux'
+        run: shellcheck setup.sh .template/*.sh tests/setup/*.sh
+
+      # Usage errors, invalid values, preconditions, dry run, generation variants and the
+      # --derive-from-github derivation (including weird-Owner/123-my.app). On macOS both the
+      # harness and setup.sh run on /bin/bash, the bash 3.2 that macOS users have.
+      - name: setup.sh tests
+        run: |
+          if [ "$RUNNER_OS" = macOS ]; then
+            SETUP_BASH=/bin/bash /bin/bash tests/setup/run.sh
+          else
+            bash tests/setup/run.sh
+          fi
+
+  generate:
+    name: Generate (${{ matrix.os }}, ${{ matrix.variant }})
+    if: github.repository == 'nkrebs13/kmp-template'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-26]
+        variant: [default, no-desktop, edge]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
     env:
-      TEST_PROJECT: MyApp
-      TEST_PACKAGE: com.example.myapp
+      VARIANT: ${{ matrix.variant }}
+      # Gradle runs on ubuntu for every variant, and on macOS for default (iOS) and edge (framework).
+      BUILDS: ${{ matrix.os == 'ubuntu-latest' || matrix.variant != 'no-desktop' }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up JDK 21
+        if: env.BUILDS == 'true'
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: "21"
+          distribution: temurin
 
-      - name: Setup Gradle
+      - name: Set up Gradle
+        if: env.BUILDS == 'true'
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           validate-wrappers: true
 
-      - name: Run setup.sh
+      # edge: underscore package, hyphenated bundle ID, display name with a space.
+      # On macOS setup.sh runs on /bin/bash, the bash 3.2 that macOS users have.
+      - name: Generate the project
         run: |
-          # Provide all 4 prompts: project name, package name, iOS bundle ID (same), confirm
-          printf '%s\n%s\n%s\ny\n' "$TEST_PROJECT" "$TEST_PACKAGE" "$TEST_PACKAGE" | ./setup.sh
+          git config --global user.name "CI"
+          git config --global user.email "ci@example.com"
+          cp -R .template "$RUNNER_TEMP/template"
+          case "$VARIANT" in
+            default) args=(--name WeatherApp --package com.acme.weather) ;;
+            no-desktop) args=(--name WeatherApp --package com.acme.weather --no-desktop) ;;
+            edge) args=(--name MyApp2 --package io.my_company.app_core --bundle-id io.my-company.app-core --display-name "My App") ;;
+          esac
+          if [ "$RUNNER_OS" = macOS ]; then setup_bash=/bin/bash; else setup_bash=bash; fi
+          "$setup_bash" ./setup.sh "${args[@]}" --author "CI" --yes --json > "$RUNNER_TEMP/setup.json"
+          cat "$RUNNER_TEMP/setup.json"
 
-      - name: Verify no template references
+      - name: Check the generated tree
         run: |
-          FOUND=$(grep -rI -E "com[./]template[./]|com[./]template[^a-z0-9]|TemplateApp|KmpTemplate|orgName" . \
-            --include="*.kt" --include="*.kts" --include="*.xml" \
-            --include="*.swift" --include="*.plist" --include="*.pro" \
-            --include="*.pbxproj" --include="*.xcscheme" --include="*.xcconfig" \
-            --include="*.toml" --include="*.conf" --include="*.sh" \
-            --exclude-dir=.git --exclude-dir=build --exclude-dir=.gradle \
-            2>/dev/null | wc -l | tr -d ' ')
-          if [ "$FOUND" -gt 0 ]; then
-            echo "ERROR: Found template references in generated project:"
-            grep -rI -E "com[./]template[./]|com[./]template[^a-z0-9]|TemplateApp|KmpTemplate|orgName" . \
-              --include="*.kt" --include="*.kts" --include="*.xml" \
-              --include="*.swift" --include="*.plist" --include="*.pro" \
-              --include="*.pbxproj" --include="*.xcscheme" --include="*.xcconfig" \
-              --include="*.toml" --include="*.conf" --include="*.sh" \
-              --exclude-dir=.git --exclude-dir=build --exclude-dir=.gradle
-            exit 1
-          fi
-          echo "No template references found"
+          flags=()
+          if [ "$VARIANT" = no-desktop ]; then flags=(--no-desktop); fi
+          bash "$RUNNER_TEMP/template/check-leftovers.sh" "${flags[@]}" .
+          test ! -e .claude
+          test ! -e .template
+          test ! -e setup.sh
+          test -f AGENTS.md
+          test "$(cat CLAUDE.md)" = "@AGENTS.md"
+          test -f .github/workflows/ci.yml
+          test -f .github/dependabot.yml
+          test "$(git rev-list --count HEAD)" = 1
+          echo "Generated tree is clean."
 
-      - name: Verify template artifacts removed
+      # Every variant, edge included: the full gate (detekt, lint) is what catches a generated
+      # name or package that the build configuration rejects.
+      - name: Gradle check
+        if: runner.os == 'Linux'
+        run: ./gradlew check
+
+      # The underscore package must not reach the framework's bundle ID (Apple rejects _).
+      - name: iOS framework bundle ID
+        if: runner.os == 'macOS' && matrix.variant == 'edge'
         run: |
-          ERRORS=0
-          for f in setup.sh CHANGELOG.md CONTRIBUTING.md SECURITY.md CODE_OF_CONDUCT.md docs/TEMPLATE_DEVELOPMENT.md docs/CONFIGURATION.md; do
-            if [ -f "$f" ]; then
-              echo "ERROR: Template file not removed: $f"
-              ERRORS=$((ERRORS + 1))
-            fi
-          done
-          if [ -d ".github" ]; then
-            echo "ERROR: .github directory not removed"
-            ERRORS=$((ERRORS + 1))
-          fi
-          # Enforce zero .claude/ files — generated projects must have NO Claude Code tooling
-          if [ -d ".claude" ]; then
-            echo "ERROR: .claude/ directory was not removed — generated projects must contain zero Claude Code files"
-            ERRORS=$((ERRORS + 1))
-          fi
-          if [ "$ERRORS" -gt 0 ]; then
-            echo "Found $ERRORS template artifacts that should have been removed"
-            exit 1
-          fi
-          echo "All template artifacts properly removed"
+          ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
+          id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' shared/build/bin/iosSimulatorArm64/debugFramework/shared.framework/Info.plist)
+          echo "shared.framework bundle ID: $id"
+          case $id in *_*) echo "::error::bundle ID contains _"; exit 1 ;; esac
 
-      - name: Build & test generated project
-        run: ./gradlew :shared:allTests :androidApp:assembleDebug :androidApp:lintDebug :shared:linkDebugFrameworkIosSimulatorArm64
+      - name: iOS tests
+        if: runner.os == 'macOS' && matrix.variant == 'default'
+        run: ./gradlew :shared:iosSimulatorArm64Test
+
+      - name: Build iOS app
+        if: runner.os == 'macOS' && matrix.variant == 'default'
+        run: |
+          mkdir -p build
+          xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/xcode CODE_SIGNING_ALLOWED=NO build 2>&1 | tee build/xcodebuild.log
+
+      - name: Upload reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: generate-${{ matrix.os }}-${{ matrix.variant }}
+          path: |
+            ${{ runner.temp }}/setup.json
+            build/xcodebuild.log
+            **/build/reports/
+          retention-days: 14
+          if-no-files-found: ignore

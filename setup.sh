@@ -1,569 +1,874 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Turns this template into your project. Run ./setup.sh --help for usage; AGENTS.md describes
+# the --json contract.
+#
+# Works with bash 3.2 (macOS /bin/bash): no associative arrays, mapfile, ${x,,} or |&.
+# Everything runs from main() at the bottom, so bash has parsed the whole file before the script
+# deletes itself. The tokens it renames and the files it removes are listed in .template/.
+#
+# Order of work: parse and validate every input, compute the full plan and check it (paths,
+# lengths, markers, LICENSE), copy .template/ aside and test the copy, and only then change
+# files. After the first change, only I/O errors or a setup.sh bug can stop it, and the error
+# says how to restore the template.
 
-# Template Setup Script
-# This script renames the template project to your desired project name
+set -Eeuo pipefail
 
-set -e
+readonly EX_USAGE=2 EX_VALIDATION=3 EX_PRECONDITION=4 EX_INTERNAL=5
 
-# Ensure we're running in bash (not sh)
-if [ -z "$BASH_VERSION" ]; then
-    echo "Error: This script requires bash. Please run with: bash setup.sh"
-    exit 1
-fi
+# Length limits, checked before anything changes. A package or bundle ID segment is at most 63
+# characters (a DNS label), well under the 255-byte file name limit; the longest moved source
+# path, as an absolute path, is at most 900 bytes, which leaves room for the deeper Gradle build
+# outputs under macOS's 1024-byte PATH_MAX.
+readonly MAX_NAME=50 MAX_SEGMENT=63 MAX_PACKAGE=150 MAX_DISPLAY=100 MAX_AUTHOR=200 MAX_PATH=900
 
-# Parse command line arguments
-DRY_RUN=false
-while [[ "$#" -gt 0 ]]; do
+# Java and Kotlin keywords, literals and reserved words that cannot be a package segment.
+KEYWORDS='abstract assert boolean break byte case catch char class const continue default
+do double else enum extends final finally float for goto if implements import instanceof int
+interface long native new package private protected public return short static strictfp super
+switch synchronized this throw throws transient try void volatile while true false null _ var
+yield record sealed permits fun val when in is as object companion data inner typealias typeof
+actual expect'
+KEYWORDS=" ${KEYWORDS//$'\n'/ } "
+readonly KEYWORDS
+
+readonly USAGE_LINE='usage: setup.sh --name <Name> --package <reverse.dns> [--bundle-id <id>] [--display-name "<text>"]
+                [--author "<holder>"] [--no-desktop] [--keep-git] [--no-commit]
+                [--derive-from-github <owner/repo>] [--yes] [--dry-run] [--json] [--help]'
+
+usage() {
+    cat <<EOF
+$USAGE_LINE
+
+Turns this template into your project: renames the packages, app name and iOS bundle ID,
+removes the template-only files, checks that nothing of the template is left, and starts a
+fresh git history with one commit.
+
+Required (prompted for only when stdin is a terminal):
+  --name <Name>            Project name in PascalCase: letters and digits, starting with a
+                           letter, at most $MAX_NAME characters (WeatherApp). Used for the Gradle
+                           root project, the logger tag and the desktop installer.
+  --package <reverse.dns>  Android application ID and root Kotlin package (com.acme.weather).
+                           Modules use <package>.shared, <package>.desktop and
+                           <package>.baselineprofile.
+
+Options:
+  --bundle-id <id>         iOS bundle identifier. Default: the package with _ replaced by -.
+  --display-name "<text>"  Name under the app icon and in the desktop window title.
+                           Default: the name.
+  --author "<holder>"      LICENSE copyright holder. Default: git config user.name, then the
+                           owner given to --derive-from-github.
+  --no-desktop             Leave out the desktop (JVM) app, the shared jvm() target and the
+                           desktop build logic.
+  --derive-from-github <owner/repo>
+                           Derive the name, package (io.github.<owner>.<repo>), bundle ID and
+                           author from a GitHub repository. Explicit options win.
+  --keep-git               Keep the existing .git: no new history and no commit.
+  --no-commit              Start a new git history, but do not commit.
+  --yes                    Do not ask for confirmation. Required when stdin is not a terminal.
+  --dry-run                Validate, then list every file that would be deleted, written,
+                           edited or moved. Changes nothing.
+  --json                   Print exactly one JSON object on stdout; everything else goes to
+                           stderr. AGENTS.md describes its fields.
+  -h, --help               Show this help.
+
+Exit codes:
+  0  success
+  2  usage: unknown option, missing value, or a required option without a terminal to ask on
+  3  invalid value (checked before anything changes, also with --dry-run)
+  4  precondition: uncommitted git changes, already initialized (no .template/), perl or git
+     missing
+  5  internal error; the message says how to restore the template
+
+Example:
+  ./setup.sh --name WeatherApp --package com.acme.weather --yes --json
+EOF
+}
+
+# --- state -----------------------------------------------------------------------------------
+
+# Unset means "not given": ${NAME+x} tells an empty --name "" apart from no --name at all.
+unset NAME PACKAGE BUNDLE_ID DISPLAY_NAME AUTHOR DERIVE
+NO_DESKTOP=0 KEEP_GIT=0 NO_COMMIT=0 YES=0 DRY_RUN=0 JSON=0 HELP=0
+DERIVED_NAME='' DERIVED_PACKAGE='' DERIVED_BUNDLE='' DERIVED_OWNER=''
+PACKAGE_PATH=''
+APPLY_COMMAND=''    # this invocation without --dry-run, for the dry run's next step
+OUT=1               # file descriptor for human output: stdout, or stderr with --json
+ROOT=''             # the template checkout: the directory that holds this script
+TPL=''              # the .template directory in use (a tested temporary copy once files change)
+WORK=''             # temporary directory for the .template copy, the backup and the old .git
+BACKUP=''           # copy of the tree when there is no .git to restore from
+HAD_GIT=0
+OLD_GIT=''          # where the old .git waits until the new history exists
+PHASE=prepare       # prepare -> change -> git -> finished; decides the recovery advice
+COMMITTED=0
+ERR_REASON=''       # machine-readable reason for some errors (JSON "reason")
+ERR_RECOVERY=''     # command that fixes a precondition (JSON "recovery")
+ERR_HINT=''         # extra stderr text printed after an error message
+
+# The plan: filled by compute_plan, used for both --dry-run and the real run.
+DELETE=() BUILD_OUTPUT=() WRITE=() EDIT=() MOVE_FROM=() MOVE_TO=()
+
+# Set by .template/manifest.env.
+TEMPLATE_SLUG='' TEMPLATE_NAME='' TEMPLATE_DISPLAY_NAME='' TEMPLATE_PACKAGE_ROOT=''
+TEMPLATE_APP_PACKAGE='' TEMPLATE_BUNDLE_ID='' DESKTOP_PATHS='' SKIP_DIR_NAMES=''
+TPL_ROOT_PATH='' TPL_APP_PATH=''    # the package tokens as paths (com/template, ...)
+PRUNE=()                            # find arguments that skip build output and VCS state
+
+# --- output ----------------------------------------------------------------------------------
+
+say() { printf '%s\n' "$*" >&"$OUT"; }
+
+dots_to_slashes() { printf '%s' "${1//.//}"; }
+
+# json_array <string>...: a JSON array of strings (one perl process for the whole array).
+json_array() {
+    if command -v perl >/dev/null 2>&1; then
+        perl -e 'print "[" . join(",", map { my $s = $_; $s =~ s/(["\\])/\\$1/g;
+            $s =~ s/([\x00-\x1f])/sprintf("\\u%04x", ord $1)/ge; qq("$s") } @ARGV) . "]"' -- "$@"
+    else
+        printf '["%s"]' "$1" # only reached for the fixed "perl is missing" message
+    fi
+}
+
+json_str() {
+    local a
+    a=$(json_array "$1")
+    a=${a#[}
+    printf '%s' "${a%]}"
+}
+
+category_of() {
     case $1 in
-        --dry-run) DRY_RUN=true ;;
-        --help|-h)
-            echo "Usage: ./setup.sh [OPTIONS]"
-            echo ""
-            echo "Options:"
-            echo "  --dry-run     Preview changes without modifying any files"
-            echo "  --help, -h    Show this help message"
-            exit 0
+        "$EX_USAGE") echo usage ;;
+        "$EX_VALIDATION") echo validation ;;
+        "$EX_PRECONDITION") echo precondition ;;
+        *) echo internal ;;
+    esac
+}
+
+# The one command that puts the template back, given how far the run got.
+recovery_command() {
+    if [ -n "$OLD_GIT" ] && [ -d "$OLD_GIT" ]; then
+        printf 'cd %q && rm -rf .git && mv %q .git && git reset -q --hard HEAD && git clean -qfd' "$ROOT" "$OLD_GIT"
+    elif [ "$HAD_GIT" = 1 ]; then
+        printf 'cd %q && git reset -q --hard HEAD && git clean -qfd' "$ROOT"
+    elif [ -n "$BACKUP" ]; then
+        printf 'cd %q && find . -mindepth 1 -maxdepth 1 -exec rm -rf {} + && cp -Rp %q/. .' "$ROOT" "$BACKUP"
+    fi
+}
+
+# die <exit code> <message>: the only way this script fails on purpose.
+die() {
+    local code=$1 message recovery='' reason=''
+    shift
+    message=$*
+    trap - ERR INT TERM
+    # In a subshell ($(...) or a pipeline) anything printed would be captured or printed twice:
+    # just exit with the code, and the parent shell's ERR trap reports the failure once.
+    if [ "${BASH_SUBSHELL:-0}" -gt 0 ]; then exit "$code"; fi
+    printf 'setup.sh: %s\n' "$message" >&2
+    if [ -n "$ERR_HINT" ]; then printf '%s\n' "$ERR_HINT" >&2; fi
+    case $PHASE in
+        change | git)
+            recovery=$(recovery_command)
+            if [ "$PHASE" = git ]; then
+                printf '\nThe project files are complete; only the git step failed. Finish it with:\n  cd %q && rm -rf .git && git init -q && git symbolic-ref HEAD refs/heads/main && git add -A && git commit -m %q\nor restore the template:\n' \
+                    "$ROOT" "Initial commit from $TEMPLATE_SLUG" >&2
+            else
+                printf '\nsetup.sh stopped part-way. Restore the template with:\n' >&2
+            fi
+            printf '  %s\n' "$recovery" >&2
             ;;
-        *)
-            echo "Unknown option: $1"
-            echo "Use --help for usage information"
-            exit 1
+        *) recovery=$ERR_RECOVERY ;;
+    esac
+    if [ "$JSON" = 1 ]; then
+        if [ -n "$ERR_REASON" ]; then reason=",\"reason\":$(json_str "$ERR_REASON")"; fi
+        if [ -n "$recovery" ]; then recovery=",\"recovery\":$(json_str "$recovery")"; fi
+        printf '{"status":"error","code":%s,"category":"%s"%s,"message":%s%s}\n' \
+            "$code" "$(category_of "$code")" "$reason" "$(json_str "$message")" "$recovery" >&3
+    fi
+    exit "$code"
+}
+
+usage_error() {
+    ERR_HINT="$USAGE_LINE
+Run ./setup.sh --help for details."
+    die "$EX_USAGE" "$*"
+}
+
+on_err() {
+    local rc=$1 line=$2 cmd=$3
+    if [ "${BASH_SUBSHELL:-0}" -gt 0 ]; then exit "$rc"; fi
+    die "$EX_INTERNAL" "internal error: '$cmd' exited with status $rc (setup.sh line $line)"
+}
+
+# --- arguments -------------------------------------------------------------------------------
+
+parse_args() {
+    local opt val inline
+    while [ $# -gt 0 ]; do
+        opt=$1 val='' inline=0
+        case $opt in
+            --*=*) val=${opt#*=} opt=${opt%%=*} inline=1 ;;
+        esac
+        case $opt in
+            --name | --package | --bundle-id | --display-name | --author | --derive-from-github)
+                if [ "$inline" = 0 ]; then
+                    if [ $# -lt 2 ]; then usage_error "$opt needs a value"; fi
+                    case $2 in --*) usage_error "$opt needs a value" ;; esac
+                    val=$2
+                    shift
+                fi
+                case $opt in
+                    --name) NAME=$val ;;
+                    --package) PACKAGE=$val ;;
+                    --bundle-id) BUNDLE_ID=$val ;;
+                    --display-name) DISPLAY_NAME=$val ;;
+                    --author) AUTHOR=$val ;;
+                    --derive-from-github) DERIVE=$val ;;
+                esac
+                ;;
+            --no-desktop | --keep-git | --no-commit | --yes | --dry-run | --json | --help | -h)
+                if [ "$inline" = 1 ]; then usage_error "$opt takes no value"; fi
+                case $opt in
+                    --no-desktop) NO_DESKTOP=1 ;;
+                    --keep-git) KEEP_GIT=1 ;;
+                    --no-commit) NO_COMMIT=1 ;;
+                    --yes) YES=1 ;;
+                    --dry-run) DRY_RUN=1 ;;
+                    --json) JSON=1 ;;
+                    --help | -h) HELP=1 ;;
+                esac
+                ;;
+            *) usage_error "unknown option: $opt" ;;
+        esac
+        shift
+    done
+}
+
+# --- derivation from a GitHub owner/repo -----------------------------------------------------
+
+is_keyword() {
+    case $KEYWORDS in *" $1 "*) return 0 ;; esac
+    return 1
+}
+
+# PascalCase: split on anything but letters and digits, capitalize each part.
+pascal_case() {
+    perl -e 'my $o = join "", map { ucfirst } grep { length } split /[^A-Za-z0-9]+/, shift;
+        $o = "App$o" if $o !~ /^[A-Za-z]/; print $o' -- "$1"
+}
+
+# One valid package segment: lowercase, [a-z0-9_], starting with a letter, not a keyword.
+package_segment() {
+    local s
+    s=$(perl -e 'my $s = lc shift; $s =~ s/[^a-z0-9]+/_/g; $s =~ s/^_+|_+$//g;
+        $s = "app" if $s eq ""; $s = "app_$s" if $s =~ /^[0-9]/; print $s' -- "$1")
+    if is_keyword "$s"; then s="${s}_"; fi
+    printf '%s' "$s"
+}
+
+# One valid bundle ID segment: lowercase, [a-z0-9-], starting with a letter (no underscores).
+bundle_segment() {
+    perl -e 'my $s = lc shift; $s =~ s/[^a-z0-9]+/-/g; $s =~ s/^-+|-+$//g;
+        $s = "app" if $s eq ""; $s = "app-$s" if $s =~ /^[0-9]/; print $s' -- "$1"
+}
+
+derive_from_github() {
+    local re='^[A-Za-z0-9-]+/[A-Za-z0-9._-]+$' owner repo
+    if ! [[ $DERIVE =~ $re ]]; then
+        die "$EX_VALIDATION" "--derive-from-github expects owner/repo (letters, digits, '-', and '.' or '_' in the repo), got '$DERIVE'"
+    fi
+    owner=${DERIVE%%/*}
+    repo=${DERIVE#*/}
+    DERIVED_OWNER=$owner
+    DERIVED_NAME=$(pascal_case "$repo")
+    DERIVED_PACKAGE="io.github.$(package_segment "$owner").$(package_segment "$repo")"
+    DERIVED_BUNDLE="io.github.$(bundle_segment "$owner").$(bundle_segment "$repo")"
+}
+
+# --- values ----------------------------------------------------------------------------------
+
+resolve_values() {
+    local missing=''
+    if [ -n "${DERIVE+x}" ]; then derive_from_github; fi
+    if [ -z "${NAME+x}" ]; then
+        if [ -n "$DERIVED_NAME" ]; then
+            NAME=$DERIVED_NAME
+        elif [ -t 0 ]; then
+            read -r -p "Project name, PascalCase (e.g. WeatherApp): " NAME || NAME=''
+        else
+            missing="$missing --name"
+        fi
+    fi
+    if [ -z "${PACKAGE+x}" ]; then
+        if [ -n "$DERIVED_PACKAGE" ]; then
+            PACKAGE=$DERIVED_PACKAGE
+        elif [ -t 0 ]; then
+            read -r -p "Package, reverse DNS (e.g. com.acme.weather): " PACKAGE || PACKAGE=''
+        else
+            missing="$missing --package"
+        fi
+    fi
+    if [ -n "$missing" ]; then
+        usage_error "missing required option(s):$missing (stdin is not a terminal, so setup.sh cannot ask)"
+    fi
+    if [ -z "${BUNDLE_ID+x}" ]; then
+        if [ -n "$DERIVED_BUNDLE" ]; then BUNDLE_ID=$DERIVED_BUNDLE; else BUNDLE_ID=${PACKAGE//_/-}; fi
+    fi
+    if [ -z "${DISPLAY_NAME+x}" ]; then DISPLAY_NAME=$NAME; fi
+    if [ -z "${AUTHOR+x}" ]; then
+        AUTHOR=$(git config --get user.name 2>/dev/null || true)
+        if [ -z "$AUTHOR" ]; then AUTHOR=$DERIVED_OWNER; fi
+        if [ -z "$AUTHOR" ] && [ -t 0 ]; then
+            read -r -p "Copyright holder for LICENSE: " AUTHOR || AUTHOR=''
+        fi
+        if [ -z "$AUTHOR" ]; then
+            die "$EX_VALIDATION" "no LICENSE copyright holder: pass --author \"<name>\" (git config user.name is not set)"
+        fi
+    fi
+    PACKAGE_PATH=$(dots_to_slashes "$PACKAGE")
+}
+
+check_segments() { # <option> <value>: every dot-separated segment is at most MAX_SEGMENT long
+    local seg
+    for seg in $(printf '%s' "$2" | tr '.' ' '); do
+        if [ "${#seg}" -gt "$MAX_SEGMENT" ]; then
+            die "$EX_VALIDATION" "$1 segment '$seg' is ${#seg} characters; the limit is $MAX_SEGMENT"
+        fi
+    done
+}
+
+# Every input rule lives here. Exits 3 on the first violation, before anything changes.
+validate_values() {
+    local re seg bad
+    # One perl process checks every value; it prints the 0-based index of the first bad one.
+    bad=$(perl -MEncode -e 'for my $i (0 .. $#ARGV) {
+        eval { decode("UTF-8", $ARGV[$i], Encode::FB_CROAK); 1 } or do { print $i; exit } }' \
+        -- "$NAME" "$PACKAGE" "$BUNDLE_ID" "$DISPLAY_NAME" "$AUTHOR")
+    if [ -n "$bad" ]; then
+        set -- --name --package --bundle-id --display-name --author
+        shift "$bad"
+        die "$EX_VALIDATION" "$1 is not valid UTF-8"
+    fi
+
+    if [ -z "$NAME" ]; then die "$EX_VALIDATION" "--name is empty"; fi
+    re='^[A-Za-z][A-Za-z0-9]*$'
+    if ! [[ $NAME =~ $re ]]; then
+        die "$EX_VALIDATION" "--name '$NAME' must start with a letter and contain only letters and digits (e.g. WeatherApp)"
+    fi
+    if [ "${#NAME}" -gt "$MAX_NAME" ]; then
+        die "$EX_VALIDATION" "--name is ${#NAME} characters; the limit is $MAX_NAME"
+    fi
+
+    if [ -z "$PACKAGE" ]; then die "$EX_VALIDATION" "--package is empty"; fi
+    re='^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$'
+    if ! [[ $PACKAGE =~ $re ]]; then
+        die "$EX_VALIDATION" "--package '$PACKAGE' must be lowercase, with at least two dot-separated segments that each start with a letter and contain only a-z, 0-9 and _ (e.g. com.acme.weather)"
+    fi
+    if [ "${#PACKAGE}" -gt "$MAX_PACKAGE" ]; then
+        die "$EX_VALIDATION" "--package is ${#PACKAGE} characters; the limit is $MAX_PACKAGE"
+    fi
+    check_segments --package "$PACKAGE"
+    case $PACKAGE in
+        java.* | javax.* | android.* | kotlin.* | kotlinx.*)
+            die "$EX_VALIDATION" "--package '$PACKAGE' uses a reserved namespace (java., javax., android., kotlin., kotlinx.)"
+            ;;
+        "$TEMPLATE_PACKAGE_ROOT" | "$TEMPLATE_PACKAGE_ROOT".*)
+            die "$EX_VALIDATION" "--package '$PACKAGE' is inside the template's own package $TEMPLATE_PACKAGE_ROOT; choose another"
             ;;
     esac
-    shift
-done
+    for seg in $(printf '%s' "$PACKAGE" | tr '.' ' '); do
+        if is_keyword "$seg"; then
+            die "$EX_VALIDATION" "--package segment '$seg' is a Java or Kotlin keyword; try '${seg}s' or 'my$seg'"
+        fi
+    done
 
-# Dry-run helper function
-dry_run_wrap() {
-    local operation="$1"
-    shift
-    if [ "$DRY_RUN" = true ]; then
-        echo "[DRY-RUN] Would: $operation"
-        return 0
-    else
-        "$@"
+    re='^[A-Za-z][A-Za-z0-9-]*(\.[A-Za-z][A-Za-z0-9-]*)+$'
+    if ! [[ $BUNDLE_ID =~ $re ]]; then
+        die "$EX_VALIDATION" "--bundle-id '$BUNDLE_ID' must have at least two dot-separated segments that each start with a letter and contain only letters, digits and - (no _), e.g. com.acme.weather-app. Without --bundle-id it is the package with _ replaced by -"
+    fi
+    check_segments --bundle-id "$BUNDLE_ID"
+
+    # The display name lands in strings.xml, Config.xcconfig and a Kotlin string literal.
+    if [ -z "$DISPLAY_NAME" ]; then die "$EX_VALIDATION" "--display-name is empty"; fi
+    if [ "${#DISPLAY_NAME}" -gt "$MAX_DISPLAY" ]; then
+        die "$EX_VALIDATION" "--display-name is ${#DISPLAY_NAME} characters; the limit is $MAX_DISPLAY"
+    fi
+    case $DISPLAY_NAME in
+        [[:space:]]* | *[[:space:]])
+            die "$EX_VALIDATION" "--display-name '$DISPLAY_NAME' has leading or trailing whitespace"
+            ;;
+        *[[:cntrl:]]*)
+            die "$EX_VALIDATION" "--display-name contains a control character"
+            ;;
+        *[\"\'\\\$\<\>\&%\`]* | *//* | @* | \?*)
+            die "$EX_VALIDATION" "--display-name '$DISPLAY_NAME' cannot contain \" ' \\ \$ < > & % \` or //, or start with @ or ?"
+            ;;
+    esac
+
+    case $AUTHOR in
+        *[![:space:]]*) ;;
+        *) die "$EX_VALIDATION" "--author is empty" ;;
+    esac
+    case $AUTHOR in
+        *[[:cntrl:]]*) die "$EX_VALIDATION" "--author contains a control character" ;;
+    esac
+    if [ "${#AUTHOR}" -gt "$MAX_AUTHOR" ]; then
+        die "$EX_VALIDATION" "--author is ${#AUTHOR} characters; the limit is $MAX_AUTHOR"
     fi
 }
 
-# Verify we're in the correct directory (should have settings.gradle.kts)
-if [ ! -f "settings.gradle.kts" ]; then
-    echo "Error: setup.sh must be run from the template project root directory"
-    echo "       (the directory containing settings.gradle.kts)"
-    exit 1
-fi
+# --- preconditions ---------------------------------------------------------------------------
 
-echo "================================================"
-echo "    Kotlin Multiplatform Template Setup"
-if [ "$DRY_RUN" = true ]; then
-    echo "              [DRY-RUN MODE]"
-fi
-echo "================================================"
-echo ""
+check_initialized() {
+    local name
+    if [ ! -f .template/manifest.env ]; then
+        ERR_REASON=already-initialized
+        die "$EX_PRECONDITION" "$ROOT has no .template/manifest.env: this project is already initialized, or it is not the template"
+    fi
+    # shellcheck disable=SC1091 # read at run time; the variables are declared at the top
+    . .template/manifest.env
+    TPL=$ROOT/.template
+    TPL_ROOT_PATH=$(dots_to_slashes "$TEMPLATE_PACKAGE_ROOT")
+    TPL_APP_PATH=$(dots_to_slashes "$TEMPLATE_APP_PACKAGE")
+    # find arguments: prune SKIP_DIR_NAMES directories (and a .git file) outside src/.
+    PRUNE=(\( \( -type d \()
+    for name in $SKIP_DIR_NAMES; do PRUNE+=(-name "$name" -o); done
+    PRUNE[${#PRUNE[@]} - 1]=\)
+    PRUNE+=(\) -o -name .git \) -not -path '*/src/*' -prune -o)
+    if ! command -v perl >/dev/null 2>&1; then
+        die "$EX_PRECONDITION" "perl is required and was not found on PATH"
+    fi
+}
 
-# Get current directory name as default
-CURRENT_DIR=$(basename "$PWD")
+check_git() {
+    local dirty
+    if [ -e .git ]; then HAD_GIT=1; fi
+    if [ "$HAD_GIT" = 1 ] || [ "$KEEP_GIT" = 0 ]; then
+        if ! command -v git >/dev/null 2>&1; then
+            die "$EX_PRECONDITION" "git is required and was not found on PATH"
+        fi
+    fi
+    if [ "$HAD_GIT" = 1 ]; then
+        if ! dirty=$(git status --porcelain --untracked-files=normal 2>&1); then
+            die "$EX_PRECONDITION" "git cannot read this repository: $dirty"
+        fi
+        if [ -n "$dirty" ]; then
+            ERR_RECOVERY='git stash push --include-untracked'
+            die "$EX_PRECONDITION" "uncommitted changes; commit or stash them first:
+$dirty"
+        fi
+    fi
+}
 
-# Prompt for project details
-read -p "Enter your new project name (e.g., MyAwesomeApp): " PROJECT_NAME
-if [ -z "$PROJECT_NAME" ]; then
-    echo "Error: Project name cannot be empty"
-    echo "  - Provide a name like 'MyAwesomeApp' or 'WeatherApp'"
-    exit 1
-fi
+has_git_identity() {
+    git -c user.useConfigOnly=true var GIT_AUTHOR_IDENT >/dev/null 2>&1 &&
+        git -c user.useConfigOnly=true var GIT_COMMITTER_IDENT >/dev/null 2>&1
+}
 
-# Validate project name: alphanumeric, starts with letter
-if ! [[ "$PROJECT_NAME" =~ ^[A-Za-z] ]]; then
-    echo "Error: Project name must start with a letter"
-    echo "  - Got: '$PROJECT_NAME'"
-    echo "  - First character '${PROJECT_NAME:0:1}' is not a letter"
-    exit 1
-fi
-if ! [[ "$PROJECT_NAME" =~ ^[A-Za-z][A-Za-z0-9]*$ ]]; then
-    echo "Error: Project name contains invalid characters"
-    echo "  - Got: '$PROJECT_NAME'"
-    echo "  - Only letters (A-Z, a-z) and numbers (0-9) are allowed"
-    echo "  - No spaces, hyphens, underscores, or special characters"
-    exit 1
-fi
+# --- plan ------------------------------------------------------------------------------------
 
-read -p "Enter your package name (e.g., com.company.app): " PACKAGE_NAME
-if [ -z "$PACKAGE_NAME" ]; then
-    echo "Error: Package name cannot be empty"
-    exit 1
-fi
+is_deleted() {
+    local p
+    for p in ${DELETE[@]+"${DELETE[@]}"}; do
+        case $1 in "$p" | "$p"/*) return 0 ;; esac
+    done
+    return 1
+}
 
-# Validate package name: lowercase, 2+ parts, Java conventions
-if ! [[ "$PACKAGE_NAME" =~ ^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$ ]]; then
-    echo "Error: Invalid package name format"
-    echo "  - Must be lowercase"
-    echo "  - Must have at least 2 parts separated by dots"
-    echo "  - Each part must start with a letter followed by lowercase letters, numbers, or underscores"
-    echo "  - Example: com.company.app or com.my_company.app"
-    exit 1
-fi
+# NUL-separated files for text rewrites: everything but build output, VCS state and .template/.
+text_files() {
+    find . "${PRUNE[@]}" -name .template -prune -o -type f -print0
+}
 
-# Warn about very long package names (can cause path issues)
-PACKAGE_LENGTH=${#PACKAGE_NAME}
-if [ "$PACKAGE_LENGTH" -gt 100 ]; then
-    echo "WARNING: Package name is very long ($PACKAGE_LENGTH characters)"
-    echo "  Long package names can cause build issues with file path limits"
-    echo "  Consider using a shorter package name"
-    read -p "Continue anyway? (y/n): " LENGTH_CONFIRM
-    if [ "$LENGTH_CONFIRM" != "y" ]; then
-        echo "Setup cancelled"
+rewrite() { # tokens|regions report|apply; prints the changed files, NUL-separated
+    local desktop=keep skip
+    if [ "$NO_DESKTOP" = 1 ]; then desktop=drop; fi
+    skip=$(printf '%s\n' ${DELETE[@]+"${DELETE[@]}"})
+    text_files | SKIP=$skip DESKTOP=$desktop \
+        R_FROM_1=$TEMPLATE_BUNDLE_ID R_TO_1=$BUNDLE_ID \
+        R_FROM_2=$TEMPLATE_APP_PACKAGE R_TO_2=$PACKAGE \
+        R_FROM_3=$TPL_APP_PATH R_TO_3=$PACKAGE_PATH \
+        R_FROM_4=$TEMPLATE_PACKAGE_ROOT R_TO_4=$PACKAGE \
+        R_FROM_5=$TPL_ROOT_PATH R_TO_5=$PACKAGE_PATH \
+        R_FROM_6=$TEMPLATE_DISPLAY_NAME R_TO_6=$DISPLAY_NAME \
+        R_FROM_7=$TEMPLATE_NAME R_TO_7=$NAME \
+        perl "$TPL/rewrite.pl" "$1" "$2"
+}
+
+# Fills DELETE, BUILD_OUTPUT, WRITE, EDIT, MOVE_FROM and MOVE_TO. Every path is read
+# NUL-separated, so no file name can split into two paths.
+# check_listed_path <source> <path>: a path listed in .template/ is relative, non-empty and has
+# no empty, "." or ".." segment. Anything else is a template bug, caught before any change.
+check_listed_path() {
+    case /$2/ in
+        *//* | */./* | */../*)
+            die "$EX_INTERNAL" "$1 lists '$2': listed paths must be relative, non-empty and without . or .. segments"
+            ;;
+    esac
+}
+
+compute_plan() {
+    local p dir f rel names=() reports longest
+    DELETE=() BUILD_OUTPUT=() WRITE=() EDIT=() MOVE_FROM=() MOVE_TO=()
+    while IFS= read -r p; do
+        case $p in '#'*) continue ;; esac
+        check_listed_path .template/template-only.txt "$p"
+        if [ -e "$p" ] || [ -L "$p" ]; then DELETE+=("$p"); fi
+    done <"$TPL/template-only.txt"
+    if [ "$NO_DESKTOP" = 1 ]; then
+        for p in $DESKTOP_PATHS; do
+            check_listed_path "DESKTOP_PATHS in .template/manifest.env" "$p"
+            if [ -e "$p" ]; then DELETE+=("$p"); fi
+        done
+    fi
+
+    # Build output and IDE state: SKIP_DIR_NAMES directories outside src/, except .git.
+    for p in $SKIP_DIR_NAMES; do
+        if [ "$p" != .git ]; then names+=(-name "$p" -o); fi
+    done
+    while IFS= read -r -d '' p; do
+        BUILD_OUTPUT+=("${p#./}")
+    done < <(find . -name .git -prune -o -type d -not -path '*/src/*' \( "${names[@]}" -false \) \
+        -prune -print0)
+
+    while IFS= read -r -d '' p; do
+        WRITE+=("${p#./}")
+    done < <(cd "$TPL/project" && find . -type f -print0 | sort -z)
+
+    # Moves: every file under a */kotlin/<template package path> source directory.
+    while IFS= read -r -d '' dir; do
+        dir=${dir#./}
+        if is_deleted "$dir"; then continue; fi
+        while IFS= read -r -d '' f; do
+            rel=${f#"${dir%"$TPL_ROOT_PATH"}"}
+            case $rel in
+                "$TPL_APP_PATH"/*) rel="$PACKAGE_PATH/${rel#"$TPL_APP_PATH"/}" ;;
+                *) rel="$PACKAGE_PATH/${rel#"$TPL_ROOT_PATH"/}" ;;
+            esac
+            MOVE_FROM+=("$f")
+            MOVE_TO+=("${dir%"$TPL_ROOT_PATH"}$rel")
+        done < <(find "$dir" -type f -print0 | sort -z)
+    done < <(find . "${PRUNE[@]}" -type d -path "*/kotlin/$TPL_ROOT_PATH" -print0 -prune | sort -z)
+
+    # Edits: what the rewrites would change, plus LICENSE (and ci.yml with --no-desktop).
+    # Collected through a file, not a process substitution, so a rewrite.pl failure (such as
+    # unbalanced region markers) stops the run here, before anything changes.
+    reports=$(mktemp "${TMPDIR:-/tmp}/kmp-template-plan.XXXXXX")
+    rewrite regions report >"$reports"
+    rewrite tokens report >>"$reports"
+    printf '%s\0' LICENSE >>"$reports"
+    if [ "$NO_DESKTOP" = 1 ]; then printf '%s\0' .github/workflows/ci.yml >>"$reports"; fi
+    # Compared element by element: a file name may contain any character, newlines included.
+    while IFS= read -r -d '' p; do
+        if in_list "$p" "${WRITE[@]}" || in_list "$p" ${EDIT[@]+"${EDIT[@]}"}; then continue; fi
+        EDIT+=("$p")
+    done <"$reports"
+    rm -f "$reports"
+
+    # Checks that would otherwise fail half-way through.
+    for p in ${DELETE[@]+"${DELETE[@]}"} ${BUILD_OUTPUT[@]+"${BUILD_OUTPUT[@]}"}; do
+        if ! inside_root "$p"; then
+            die "$EX_INTERNAL" "refusing to delete '$p': it is not inside $ROOT"
+        fi
+    done
+    for p in ${MOVE_TO[@]+"${MOVE_TO[@]}"}; do
+        if [ -e "$p" ]; then die "$EX_VALIDATION" "$p already exists; setup.sh would overwrite it"; fi
+    done
+    longest=$(longest_path_bytes ${MOVE_TO[@]+"${MOVE_TO[@]}"})
+    if [ "$longest" -gt "$MAX_PATH" ]; then
+        die "$EX_VALIDATION" "the longest source path would be $longest bytes (limit $MAX_PATH, so Gradle build outputs stay under PATH_MAX); use a shorter --package or a shallower directory than $ROOT"
+    fi
+    if ! grep -q '^Copyright (c) [0-9]\{4\} ' LICENSE; then
+        die "$EX_INTERNAL" "LICENSE has no 'Copyright (c) <year> <holder>' line to update"
+    fi
+}
+
+# inside_root <relative path>: true only if the path is strictly below ROOT once resolved. It must
+# be relative with no empty, "." or ".." segment; its nearest existing ancestor is resolved
+# through symlinks and the rest appended, so the last component (which rm -rf removes, without
+# following it) is never resolved. Takes the path through the environment, so any character is safe.
+inside_root() {
+    P=$1 R=$ROOT perl -MCwd=realpath -e '
+        my ($p, $root) = ($ENV{P}, $ENV{R});
+        my @parts = split m{/}, $p, -1;
+        exit 1 if $p eq "" || grep { $_ eq "" || $_ eq "." || $_ eq ".." } @parts;
+        my $leaf = pop @parts;
+        my @rest;
+        unshift @rest, pop @parts while @parts && !-e join("/", @parts);
+        my $base = realpath(@parts ? join("/", @parts) : ".");
+        exit 1 unless defined $base;
+        exit(index(join("/", $base, @rest, $leaf), "$root/") == 0 ? 0 : 1)'
+}
+
+# in_list <value> <item>...: true if value equals one of the items.
+in_list() {
+    local value=$1 item
+    shift
+    for item in "$@"; do
+        if [ "$item" = "$value" ]; then return 0; fi
+    done
+    return 1
+}
+
+# longest_path_bytes <relative path>...: the byte length of the longest ROOT/<path>. Bytes, not
+# characters: PATH_MAX counts bytes, and a UTF-8 directory name has more bytes than characters.
+longest_path_bytes() {
+    perl -e 'use bytes; my $root = shift; my $max = 0;
+        for (@ARGV) { my $n = length("$root/$_"); $max = $n if $n > $max } print $max' -- "$ROOT" "$@"
+}
+
+list_block() { # <title> <item>...
+    local title=$1 item
+    shift
+    if [ $# = 0 ]; then return 0; fi
+    say ""
+    say "$title ($#):"
+    for item in "$@"; do say "  $item"; done
+}
+
+print_plan() {
+    local git_plan desktop=yes i moves=()
+    if [ "$NO_DESKTOP" = 1 ]; then desktop='no (--no-desktop)'; fi
+    if [ "$KEEP_GIT" = 1 ]; then
+        git_plan='keep the existing .git (--keep-git); nothing is committed'
+    elif [ "$NO_COMMIT" = 1 ]; then
+        git_plan='new history on main, files staged but not committed (--no-commit)'
+    else
+        git_plan="new history on main with one commit: Initial commit from $TEMPLATE_SLUG"
+    fi
+    if [ "$DRY_RUN" = 1 ]; then
+        say "$TEMPLATE_SLUG setup (dry run: nothing changes)"
+    else
+        say "$TEMPLATE_SLUG setup"
+    fi
+    say "  Name:          $NAME"
+    if [ "$NO_DESKTOP" = 1 ]; then
+        say "  Package:       $PACKAGE (modules: $PACKAGE.shared, $PACKAGE.baselineprofile)"
+    else
+        say "  Package:       $PACKAGE (modules: $PACKAGE.shared, $PACKAGE.desktop, $PACKAGE.baselineprofile)"
+    fi
+    say "  Bundle ID:     $BUNDLE_ID"
+    say "  Display name:  $DISPLAY_NAME"
+    say "  LICENSE:       Copyright (c) $(date +%Y) $AUTHOR (MIT)"
+    say "  Desktop:       $desktop"
+    say "  Git:           $git_plan"
+    if [ "$DRY_RUN" = 0 ]; then return 0; fi
+    for i in ${MOVE_FROM[@]+"${!MOVE_FROM[@]}"}; do moves+=("${MOVE_FROM[$i]} -> ${MOVE_TO[$i]}"); done
+    list_block "Delete" ${DELETE[@]+"${DELETE[@]}"}
+    list_block "Delete build output" ${BUILD_OUTPUT[@]+"${BUILD_OUTPUT[@]}"}
+    list_block "Write (from .template/project/)" "${WRITE[@]}"
+    list_block "Edit" ${EDIT[@]+"${EDIT[@]}"}
+    list_block "Move" ${moves[@]+"${moves[@]}"}
+}
+
+confirm() {
+    local answer
+    if [ "$DRY_RUN" = 1 ] || [ "$YES" = 1 ]; then return 0; fi
+    if [ ! -t 0 ]; then
+        die "$EX_USAGE" "stdin is not a terminal: add --yes to apply the plan, or --dry-run to preview it"
+    fi
+    read -r -p "Proceed? [y/N] " answer || answer=''
+    case $answer in
+        y | Y | yes | YES) ;;
+        *) die "$EX_USAGE" "cancelled; nothing changed" ;;
+    esac
+}
+
+# --- the run ---------------------------------------------------------------------------------
+
+# Copies .template/ (which the run deletes) to a temporary directory and checks that the copy
+# works before anything changes.
+prepare_work() {
+    local tmp
+    tmp=${TMPDIR:-/tmp}
+    WORK=$(mktemp -d "${tmp%/}/kmp-template-setup.XXXXXX")
+    cp -R "$ROOT/.template" "$WORK/template"
+    TPL=$WORK/template
+    mkdir "$WORK/empty"
+    if ! perl -c "$TPL/rewrite.pl" >/dev/null 2>&1 ||
+        ! "$BASH" "$TPL/check-leftovers.sh" "$WORK/empty" >/dev/null; then
+        die "$EX_INTERNAL" "the copy of .template/ in $WORK does not work; nothing changed"
+    fi
+    if [ "$HAD_GIT" = 0 ]; then
+        BACKUP=$WORK/backup
+        mkdir "$BACKUP"
+        cp -Rp "$ROOT/." "$BACKUP/"
+    fi
+}
+
+apply_changes() {
+    local p i dirs year
+    PHASE=change
+    say "Writing AGENTS.md, CLAUDE.md and README.md for the project..."
+    cp -R "$TPL/project/." .
+
+    say "Deleting template-only files and build output..."
+    for p in ${DELETE[@]+"${DELETE[@]}"} ${BUILD_OUTPUT[@]+"${BUILD_OUTPUT[@]}"}; do
+        rm -rf -- "$p"
+    done
+
+    if [ "$NO_DESKTOP" = 1 ]; then say "Removing desktop-only code..."; fi
+    rewrite regions apply >/dev/null
+    if [ "$NO_DESKTOP" = 1 ]; then
+        # A region can only delete lines, so the job name is renamed here.
+        FROM='name: Android & Desktop' TO='name: Android' \
+            perl -pi -e 's/^(\s*)\Q$ENV{FROM}\E$/$1$ENV{TO}/' .github/workflows/ci.yml
+    fi
+
+    say "Renaming packages, names and the bundle ID..."
+    rewrite tokens apply >/dev/null
+
+    say "Moving Kotlin sources to $PACKAGE_PATH..."
+    for i in ${MOVE_FROM[@]+"${!MOVE_FROM[@]}"}; do
+        mkdir -p "$(dirname -- "${MOVE_TO[$i]}")"
+        mv -- "${MOVE_FROM[$i]}" "${MOVE_TO[$i]}"
+    done
+    # Remove the emptied template package directories (and kotlin/com if nothing else uses it).
+    dirs=()
+    while IFS= read -r -d '' p; do dirs+=("$p"); done < <(
+        find . "${PRUNE[@]}" -type d -path "*/kotlin/$TPL_ROOT_PATH" -print0 -prune)
+    for p in ${dirs[@]+"${dirs[@]}"}; do
+        # One rmdir per directory: with -depth a parent is tested only after its children are gone.
+        find "$p" -depth -type d -empty -exec rmdir {} \;
+        rmdir "$(dirname -- "$p")" 2>/dev/null || true
+    done
+
+    say "Updating LICENSE..."
+    year=$(date +%Y)
+    YEAR=$year AUTHOR=$AUTHOR perl -pi -e 's/^Copyright \(c\) \d{4} .*$/Copyright (c) $ENV{YEAR} $ENV{AUTHOR}/' LICENSE
+}
+
+verify_result() {
+    local leftovers args=() dir=$PACKAGE_PATH
+    say "Checking for template leftovers..."
+    if [ "$NO_DESKTOP" = 1 ]; then args+=(--no-desktop); fi
+    # The parent directories of the package path (io/github/<owner>) are the user's too.
+    while :; do
+        args+=(--allow "$dir")
+        case $dir in */*) dir=${dir%/*} ;; *) break ;; esac
+    done
+    if ! leftovers=$("$BASH" "$TPL/check-leftovers.sh" "${args[@]}" --allow "$NAME" \
+        --allow "$DISPLAY_NAME" --allow "$PACKAGE" --allow "$BUNDLE_ID" --allow "$AUTHOR" . 2>&1); then
+        printf '%s\n' "$leftovers" >&2
+        die "$EX_INTERNAL" "template leftovers remain (listed above); this is a setup.sh bug"
+    fi
+    if [ ! -f AGENTS.md ] || [ "$(cat CLAUDE.md 2>/dev/null)" != "@AGENTS.md" ]; then
+        die "$EX_INTERNAL" "AGENTS.md or the CLAUDE.md that imports it is missing"
+    fi
+}
+
+start_history() {
+    PHASE=git
+    if [ "$KEEP_GIT" = 1 ]; then return 0; fi
+    say "Starting a new git history..."
+    if [ -e .git ]; then
+        OLD_GIT=$WORK/old-git
+        mv .git "$OLD_GIT"
+    fi
+    git init -q
+    git symbolic-ref HEAD refs/heads/main
+    git add -A
+    if [ "$NO_COMMIT" = 0 ] && has_git_identity; then
+        git commit -q -m "Initial commit from $TEMPLATE_SLUG"
+        COMMITTED=1
+    elif [ "$NO_COMMIT" = 0 ]; then
+        printf 'setup.sh: no git identity, so nothing was committed. Set one, then commit:\n  git config user.name "Your Name" && git config user.email you@example.com\n' >&2
+    fi
+}
+
+# next_step <key> <value> [why]: one JSON object for the "next" list.
+next_step() {
+    local why=''
+    if [ $# -ge 3 ]; then why=",\"why\":$(json_str "$3")"; fi
+    printf '{"%s":%s%s}' "$1" "$(json_str "$2")" "$why"
+}
+
+finish() {
+    local next desktop=true values i move_json='' removed
+    if [ "$NO_DESKTOP" = 1 ]; then desktop=false; fi
+    values=$(printf '"name":%s,"package":%s,"bundleId":%s,"displayName":%s,"author":%s,"desktop":%s' \
+        "$(json_str "$NAME")" "$(json_str "$PACKAGE")" "$(json_str "$BUNDLE_ID")" \
+        "$(json_str "$DISPLAY_NAME")" "$(json_str "$AUTHOR")" "$desktop")
+
+    if [ "$DRY_RUN" = 1 ]; then
+        say ""
+        say "Next: $APPLY_COMMAND"
+        if [ "$JSON" = 1 ]; then
+            for i in ${MOVE_FROM[@]+"${!MOVE_FROM[@]}"}; do
+                move_json="$move_json${move_json:+,}{\"from\":$(json_str "${MOVE_FROM[$i]}"),\"to\":$(json_str "${MOVE_TO[$i]}")}"
+            done
+            printf '{"status":"ok","dryRun":true,%s,"plan":{"delete":%s,"write":%s,"edit":%s,"move":[%s]},"next":[%s]}\n' \
+                "$values" \
+                "$(json_array ${DELETE[@]+"${DELETE[@]}"} ${BUILD_OUTPUT[@]+"${BUILD_OUTPUT[@]}"})" \
+                "$(json_array "${WRITE[@]}")" "$(json_array ${EDIT[@]+"${EDIT[@]}"})" "$move_json" \
+                "$(next_step run "$APPLY_COMMAND" "apply this plan")" >&3
+        fi
+        return 0
+    fi
+
+    PHASE=finished
+    rm -rf "$WORK"
+    next=$(next_step run "./gradlew check" "the proof that the project works: setup.sh renamed and checked files but built nothing")
+    next="$next,$(next_step read AGENTS.md "commands, where settings live, and the definition of done")"
+    if [ "$KEEP_GIT" = 1 ]; then
+        next="$next,$(next_step run "git add -A && git commit -m 'Initialize project from $TEMPLATE_SLUG'" "--keep-git left the changes uncommitted")"
+    elif [ "$COMMITTED" = 0 ]; then
+        next="$next,$(next_step run "git commit -m 'Initial commit from $TEMPLATE_SLUG'" "the files are staged but not committed")"
+    fi
+    say ""
+    say "Done: $NAME is ready. Next: ./gradlew check, then read AGENTS.md."
+    if [ "$JSON" = 1 ]; then
+        removed=$(json_array ${DELETE[@]+"${DELETE[@]}"})
+        printf '{"status":"ok","dryRun":false,%s,"removed":%s,"committed":%s,"verified":false,"next":[%s]}\n' \
+            "$values" "$removed" "$([ "$COMMITTED" = 1 ] && echo true || echo false)" "$next" >&3
+    fi
+}
+
+main() {
+    local arg
+    # Results go to fd 3, the real stdout, so a failure inside a function whose output is
+    # redirected to a file still reports to the caller.
+    exec 3>&1
+    for arg in "$@"; do
+        if [ "$arg" = --json ]; then JSON=1 OUT=2; fi
+        if [ "$arg" != --dry-run ]; then APPLY_COMMAND="$APPLY_COMMAND $(printf '%q' "$arg")"; fi
+    done
+    APPLY_COMMAND="./setup.sh$APPLY_COMMAND"
+    trap 'on_err $? "$LINENO" "$BASH_COMMAND"' ERR
+    trap 'die "$EX_INTERNAL" "interrupted"' INT TERM
+
+    ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+    cd "$ROOT"
+    parse_args "$@"
+    # Without a terminal the apply command could not ask for confirmation, so it says --yes.
+    if [ "$YES" = 0 ] && [ ! -t 0 ]; then APPLY_COMMAND="$APPLY_COMMAND --yes"; fi
+    if [ "$HELP" = 1 ]; then
+        if [ "$JSON" = 1 ]; then
+            usage >&2
+            printf '{"status":"ok","help":true}\n' >&3
+        else
+            usage
+        fi
         exit 0
     fi
-fi
-
-# Check for reserved package prefixes (platform/language namespaces)
-case "$PACKAGE_NAME" in
-    java.*|javax.*|android.*|kotlin.*|kotlinx.*)
-        echo "Error: Package name cannot start with reserved prefix"
-        echo "  - 'java.', 'javax.', 'android.', 'kotlin.', 'kotlinx.' are reserved"
-        echo "  - These namespaces are reserved for platform/language libraries"
-        exit 1
-        ;;
-esac
-
-# Check for Java/Kotlin keywords and reserved words in package name parts
-# This list includes:
-# - All Java keywords (JLS 3.9)
-# - Reserved keywords (const, goto)
-# - Literals that cannot be identifiers (true, false, null)
-# - Underscore (reserved since Java 9)
-# - Contextual keywords that should be avoided (var, yield, record, sealed, permits)
-# - Kotlin-specific keywords that are invalid as package name parts
-JAVA_KEYWORDS=(
-    # Keywords
-    "abstract" "assert" "boolean" "break" "byte" "case" "catch" "char" "class"
-    "const" "continue" "default" "do" "double" "else" "enum" "extends" "final"
-    "finally" "float" "for" "goto" "if" "implements" "import" "instanceof" "int"
-    "interface" "long" "native" "new" "package" "private" "protected" "public"
-    "return" "short" "static" "strictfp" "super" "switch" "synchronized" "this"
-    "throw" "throws" "transient" "try" "void" "volatile" "while"
-    # Literals (not technically keywords but cannot be used as identifiers)
-    "true" "false" "null"
-    # Reserved identifier (Java 9+)
-    "_"
-    # Contextual keywords (Java 10+) - technically allowed in some contexts but problematic
-    "var" "yield" "record" "sealed" "permits"
-    # Kotlin-specific keywords invalid as package name components
-    "fun" "val" "when" "in" "is" "as" "object" "companion" "data" "inner"
-    "typealias" "actual" "expect"
-)
-
-# Build regex pattern from array
-JAVA_KEYWORDS_PATTERN=$(IFS='|'; echo "${JAVA_KEYWORDS[*]}")
-
-IFS='.' read -ra PARTS <<< "$PACKAGE_NAME"
-for part in "${PARTS[@]}"; do
-    if [[ "$part" =~ ^($JAVA_KEYWORDS_PATTERN)$ ]]; then
-        echo "Error: Package name contains Java keyword or reserved word: '$part'"
-        echo "  - Java keywords and reserved words cannot be used as package name components"
-        echo "  - Consider adding a prefix or suffix, e.g., '${part}s' or 'my${part}'"
-        exit 1
+    check_initialized
+    resolve_values
+    validate_values
+    check_git
+    compute_plan
+    print_plan
+    if [ "$DRY_RUN" = 1 ]; then
+        finish
+        exit 0
     fi
-done
-
-read -p "Enter iOS bundle identifier (default: $PACKAGE_NAME): " IOS_BUNDLE_ID
-if [ -z "$IOS_BUNDLE_ID" ]; then
-    IOS_BUNDLE_ID="$PACKAGE_NAME"
-fi
-
-# Validate iOS bundle identifier (similar rules to package name but allows hyphens)
-if ! [[ "$IOS_BUNDLE_ID" =~ ^[a-zA-Z][a-zA-Z0-9-]*(\.[a-zA-Z][a-zA-Z0-9-]*)+$ ]]; then
-    echo "Error: Invalid iOS bundle identifier format"
-    echo "  - Must have at least 2 parts separated by dots"
-    echo "  - Each part must start with a letter"
-    echo "  - Can contain letters, numbers, and hyphens"
-    echo "  - Example: com.company.my-app"
-    exit 1
-fi
-
-# Convert package name to directory structure
-PACKAGE_PATH=$(echo "$PACKAGE_NAME" | tr '.' '/')
-
-# Confirmation with deletion warnings
-echo ""
-echo "Configuration:"
-echo "  Project Name: $PROJECT_NAME"
-echo "  Package Name: $PACKAGE_NAME"
-echo "  iOS Bundle ID: $IOS_BUNDLE_ID"
-echo ""
-echo "The following will be removed during setup:"
-echo "  - CHANGELOG.md, CONTRIBUTING.md, SECURITY.md, CODE_OF_CONDUCT.md"
-echo "  - .github/ directory (workflows, issue templates)"
-echo "  - docs/ directory (template documentation)"
-echo "  - scripts/ directory (template utilities)"
-echo "  - setup.sh (this script)"
-echo ""
-read -p "Continue with these settings? (y/n): " CONFIRM
-if [ "$CONFIRM" != "y" ]; then
-    echo "Setup cancelled"
-    exit 0
-fi
-
-echo ""
-
-# Check for uncommitted git changes (warning only, not blocking)
-if [ -d ".git" ]; then
-    if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
-        echo ""
-        echo "WARNING: You have uncommitted changes in this directory."
-        echo "  The setup process will modify files extensively."
-        echo "  Consider committing or stashing your changes first."
-        echo ""
-        read -p "Continue anyway? (y/n): " GIT_CONFIRM
-        if [ "$GIT_CONFIRM" != "y" ]; then
-            echo "Setup cancelled. Commit your changes and try again."
-            exit 0
-        fi
-    fi
-fi
-
-echo "Starting project setup..."
-
-# Function to replace text in files with proper escaping
-replace_in_file() {
-    local search="$1"
-    local replace="$2"
-    local file="$3"
-
-    # Check file exists
-    if [ ! -f "$file" ]; then
-        echo "  Warning: File not found: $file"
-        return 1
-    fi
-
-    # Dry-run mode: just report what would happen
-    if [ "$DRY_RUN" = true ]; then
-        return 0
-    fi
-
-    # Escape special sed characters in search pattern
-    # Order matters: escape backslash first, then other special chars
-    local escaped_search=$(printf '%s\n' "$search" | sed -e 's/[]\/$*.^[]/\\&/g')
-    # Escape special sed characters in replacement (& and \ and /)
-    local escaped_replace=$(printf '%s\n' "$replace" | sed -e 's/[\/&]/\\&/g')
-
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS
-        sed -i '' "s/${escaped_search}/${escaped_replace}/g" "$file"
-    else
-        # Linux
-        sed -i "s/${escaped_search}/${escaped_replace}/g" "$file"
-    fi
+    confirm
+    prepare_work
+    apply_changes
+    verify_result
+    start_history
+    finish
 }
 
-# Function to replace text in all files in directory
-# Arguments: search_pattern replacement_text directory
-replace_in_directory() {
-    local search="$1"
-    local replace="$2"
-    local dir="$3"
-
-    # Dry-run mode: show which files would be modified
-    if [ "$DRY_RUN" = true ]; then
-        local dry_matches
-        dry_matches=$(grep -rl "$search" "$dir" \
-            --exclude-dir=.git --exclude-dir=build --exclude-dir=.gradle --exclude-dir=node_modules \
-            --include="*.kt" --include="*.kts" --include="*.xml" --include="*.gradle" \
-            --include="*.properties" --include="*.swift" --include="*.plist" \
-            --include="*.yml" --include="*.yaml" --include="*.json" --include="*.md" \
-            --include="*.pbxproj" --include="*.pro" --include="*.xcscheme" \
-            --include="*.toml" --include="*.conf" --include="*.sh" --include="*.txt" \
-            2>/dev/null || true)
-        if [ -n "$dry_matches" ]; then
-            echo "[DRY-RUN] Would replace '$search' → '$replace' in:"
-            echo "$dry_matches" | while read -r f; do echo "  $f"; done
-        fi
-        return 0
-    fi
-
-    # Escape special sed characters in search pattern
-    local escaped_search=$(printf '%s\n' "$search" | sed -e 's/[]\/$*.^[]/\\&/g')
-    # Escape special sed characters in replacement
-    local escaped_replace=$(printf '%s\n' "$replace" | sed -e 's/[\/&]/\\&/g')
-
-    # Detect OS once and store sed command variant
-    local sed_inplace
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed_inplace=(-i '')
-    else
-        sed_inplace=(-i)
-    fi
-
-    # Find and process files, excluding directories that should never be modified
-    while IFS= read -r -d '' file; do
-        sed "${sed_inplace[@]}" "s/${escaped_search}/${escaped_replace}/g" "$file"
-    done < <(find "$dir" -type f \
-        -not -path '*/.git/*' \
-        -not -path '*/build/*' \
-        -not -path '*/.gradle/*' \
-        -not -path '*/node_modules/*' \
-        \( \
-        -name "*.kt" -o -name "*.kts" -o -name "*.xml" -o -name "*.gradle" \
-        -o -name "*.properties" -o -name "*.swift" -o -name "*.plist" \
-        -o -name "*.yml" -o -name "*.yaml" -o -name "*.json" -o -name "*.md" \
-        -o -name "*.pbxproj" -o -name "*.pro" -o -name "*.xcscheme" \
-        -o -name "*.toml" -o -name "*.conf" -o -name "*.sh" -o -name "*.txt" \
-        \) -print0 2>/dev/null)
-}
-
-# 1. Update settings.gradle.kts
-echo "• Updating project settings..."
-replace_in_file "rootProject.name = \"Template\"" "rootProject.name = \"$PROJECT_NAME\"" "settings.gradle.kts"
-# Update project name references (AppLogger tag, test files, etc.)
-replace_in_directory "KmpTemplate" "$PROJECT_NAME" "."
-
-# 2. Update package names in all Kotlin files
-echo "• Updating package names..."
-# Replace the full package paths to avoid partial matches
-# Note: replace_in_directory handles escaping internally, use literal strings
-replace_in_directory "com.template.shared" "${PACKAGE_NAME}.shared" "."
-replace_in_directory "com/template/shared" "${PACKAGE_PATH}/shared" "."
-replace_in_directory "com.template.android" "$PACKAGE_NAME" "."
-replace_in_directory "com/template/android" "$PACKAGE_PATH" "."
-replace_in_directory "com.template.baselineprofile" "${PACKAGE_NAME}.baselineprofile" "."
-replace_in_directory "com/template/baselineprofile" "${PACKAGE_PATH}/baselineprofile" "."
-replace_in_directory "com.template.desktop" "${PACKAGE_NAME}.desktop" "."
-replace_in_directory "com/template/desktop" "${PACKAGE_PATH}/desktop" "."
-
-# 3. Update Android application ID
-echo "• Updating Android configuration..."
-replace_in_file "applicationId = \"com.template.android\"" "applicationId = \"$PACKAGE_NAME\"" "androidApp/build.gradle.kts"
-replace_in_file "namespace = \"com.template.android\"" "namespace = \"$PACKAGE_NAME\"" "androidApp/build.gradle.kts"
-replace_in_file "namespace = \"com.template.shared\"" "namespace = \"${PACKAGE_NAME}.shared\"" "shared/build.gradle.kts"
-replace_in_file "namespace = \"com.template.baselineprofile\"" "namespace = \"${PACKAGE_NAME}.baselineprofile\"" "baselineprofile/build.gradle.kts"
-if [ -f "baselineprofile/src/main/kotlin/com/template/baselineprofile/BaselineProfileGenerator.kt" ]; then
-    replace_in_file "packageName = \"com.template.android\"" "packageName = \"$PACKAGE_NAME\"" "baselineprofile/src/main/kotlin/com/template/baselineprofile/BaselineProfileGenerator.kt"
-fi
-
-# Desktop window title (human-readable name)
-replace_in_directory "KMP Template" "$PROJECT_NAME" "desktopApp/src"
-
-# 4. Update iOS bundle identifier and display name. Config.xcconfig is the only file that holds
-# them; the Xcode project and Swift sources carry no project-specific names.
-echo "• Updating iOS configuration..."
-replace_in_file "PRODUCT_BUNDLE_IDENTIFIER = com.template.ios" "PRODUCT_BUNDLE_IDENTIFIER = $IOS_BUNDLE_ID" "iosApp/Configuration/Config.xcconfig"
-replace_in_file "APP_DISPLAY_NAME = KMP Template" "APP_DISPLAY_NAME = $PROJECT_NAME" "iosApp/Configuration/Config.xcconfig"
-
-# 5. Update app names
-echo "• Updating app names..."
-if [ -f "androidApp/src/main/res/values/strings.xml" ]; then
-    replace_in_file ">Template<" ">$PROJECT_NAME<" "androidApp/src/main/res/values/strings.xml"
-fi
-# Theme uses generic name "Theme.App" which doesn't need project-specific renaming
-
-# 6. Rename directories to match new package structure
-echo "• Restructuring directories..."
-
-if [ "$DRY_RUN" = true ]; then
-    echo "[DRY-RUN] Would: Create package directories for $PACKAGE_PATH"
-    echo "[DRY-RUN] Would: Move source files to new package structure"
-    echo "[DRY-RUN] Would: Remove old com/template directories"
-else
-    # Create new package directories
-    mkdir -p "shared/src/commonMain/kotlin/$PACKAGE_PATH/shared"
-    mkdir -p "shared/src/commonTest/kotlin/$PACKAGE_PATH/shared"
-    mkdir -p "shared/src/androidMain/kotlin/$PACKAGE_PATH/shared"
-    mkdir -p "shared/src/androidHostTest/kotlin/$PACKAGE_PATH/shared"
-    mkdir -p "shared/src/iosMain/kotlin/$PACKAGE_PATH/shared"
-    mkdir -p "shared/src/iosTest/kotlin/$PACKAGE_PATH/shared"
-    mkdir -p "shared/src/jvmMain/kotlin/$PACKAGE_PATH/shared"
-    mkdir -p "shared/src/jvmTest/kotlin/$PACKAGE_PATH/shared"
-    mkdir -p "desktopApp/src/main/kotlin/$PACKAGE_PATH/desktop"
-    mkdir -p "androidApp/src/main/kotlin/$PACKAGE_PATH"
-    mkdir -p "androidApp/src/androidTest/kotlin/$PACKAGE_PATH"
-    mkdir -p "baselineprofile/src/main/kotlin/$PACKAGE_PATH/baselineprofile"
-
-    # Move files to new package structure
-    if [ -d "shared/src/commonMain/kotlin/com/template/shared" ]; then
-        mv shared/src/commonMain/kotlin/com/template/shared/* "shared/src/commonMain/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
-    fi
-    if [ -d "shared/src/androidMain/kotlin/com/template/shared" ]; then
-        mv shared/src/androidMain/kotlin/com/template/shared/* "shared/src/androidMain/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
-    fi
-    if [ -d "shared/src/iosMain/kotlin/com/template/shared" ]; then
-        mv shared/src/iosMain/kotlin/com/template/shared/* "shared/src/iosMain/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
-    fi
-    if [ -d "shared/src/commonTest/kotlin/com/template/shared" ]; then
-        mv shared/src/commonTest/kotlin/com/template/shared/* "shared/src/commonTest/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
-    fi
-    if [ -d "shared/src/iosTest/kotlin/com/template/shared" ]; then
-        mv shared/src/iosTest/kotlin/com/template/shared/* "shared/src/iosTest/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
-    fi
-    if [ -d "shared/src/androidHostTest/kotlin/com/template/shared" ]; then
-        mv shared/src/androidHostTest/kotlin/com/template/shared/* "shared/src/androidHostTest/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
-    fi
-    if [ -d "shared/src/jvmMain/kotlin/com/template/shared" ]; then
-        mv shared/src/jvmMain/kotlin/com/template/shared/* "shared/src/jvmMain/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
-    fi
-    if [ -d "shared/src/jvmTest/kotlin/com/template/shared" ]; then
-        mv shared/src/jvmTest/kotlin/com/template/shared/* "shared/src/jvmTest/kotlin/$PACKAGE_PATH/shared/" 2>/dev/null || true
-    fi
-    if [ -d "desktopApp/src/main/kotlin/com/template/desktop" ]; then
-        mv desktopApp/src/main/kotlin/com/template/desktop/* "desktopApp/src/main/kotlin/$PACKAGE_PATH/desktop/" 2>/dev/null || true
-    fi
-    if [ -d "androidApp/src/main/kotlin/com/template/android" ]; then
-        mv androidApp/src/main/kotlin/com/template/android/* "androidApp/src/main/kotlin/$PACKAGE_PATH/" 2>/dev/null || true
-    fi
-    if [ -d "baselineprofile/src/main/kotlin/com/template/baselineprofile" ]; then
-        mv baselineprofile/src/main/kotlin/com/template/baselineprofile/* "baselineprofile/src/main/kotlin/$PACKAGE_PATH/baselineprofile/" 2>/dev/null || true
-    fi
-
-    # Clean up old directories
-    rm -rf shared/src/*/kotlin/com/template 2>/dev/null || true
-    rm -rf androidApp/src/*/kotlin/com/template 2>/dev/null || true
-    rm -rf desktopApp/src/*/kotlin/com/template 2>/dev/null || true
-    rm -rf baselineprofile/src/*/kotlin/com/template 2>/dev/null || true
-fi
-
-# 7. Process README files
-echo "• Setting up documentation..."
-if [ -f "docs/README_TEMPLATE.md" ]; then
-    if [ "$DRY_RUN" = true ]; then
-        echo "[DRY-RUN] Would: Copy docs/README_TEMPLATE.md to README.md and replace __PROJECT_NAME__ placeholder"
-    else
-        cp docs/README_TEMPLATE.md README.md
-        replace_in_file "__PROJECT_NAME__" "$PROJECT_NAME" "README.md" || true
-        replace_in_file "__BUNDLE_ID__" "$IOS_BUNDLE_ID" "README.md" || true
-        replace_in_file "com.template" "$PACKAGE_NAME" "README.md" || true
-    fi
-else
-    echo "  Note: docs/README_TEMPLATE.md not found, keeping existing README.md"
-fi
-
-# 8. Remove template-specific files and directories
-echo "• Cleaning up template files..."
-if [ "$DRY_RUN" = true ]; then
-    echo "[DRY-RUN] Would: Remove template files (README_TEMPLATE.md, docs/, scripts/, setup.sh)"
-    echo "[DRY-RUN] Would: Remove community files (CONTRIBUTING.md, SECURITY.md, CODE_OF_CONDUCT.md, CHANGELOG.md, .github/)"
-else
-    rm -f README_TEMPLATE.md 2>/dev/null || true
-    rm -f local.properties.template 2>/dev/null || true
-    rm -rf docs 2>/dev/null || true
-    rm -rf scripts 2>/dev/null || true
-    rm -f setup.sh 2>/dev/null || true
-    # Update LICENSE with current year and project name
-    CURRENT_YEAR=$(date +%Y)
-    replace_in_file "2025 Nathan Krebs" "${CURRENT_YEAR} ${PROJECT_NAME}" "LICENSE" || true
-    # Remove template-specific community files
-    rm -f CONTRIBUTING.md 2>/dev/null || true
-    rm -f SECURITY.md 2>/dev/null || true
-    rm -f CODE_OF_CONDUCT.md 2>/dev/null || true
-    rm -f CHANGELOG.md 2>/dev/null || true
-    rm -rf .github 2>/dev/null || true
-fi
-
-# 9. Clean up development-specific directories and files
-echo "• Cleaning up development artifacts..."
-if [ "$DRY_RUN" = true ]; then
-    echo "[DRY-RUN] Would: Remove development directories (.gradle, .idea, .kotlin, build, .claude, .vscode, .fleet, .cursor)"
-else
-    rm -rf .gradle 2>/dev/null || true
-    rm -rf .idea 2>/dev/null || true
-    rm -rf .kotlin 2>/dev/null || true
-    rm -rf build 2>/dev/null || true
-    rm -rf .claude 2>/dev/null || true
-    rm -rf .vscode 2>/dev/null || true
-    rm -rf .fleet 2>/dev/null || true
-    rm -rf .cursor 2>/dev/null || true
-fi
-
-# 10. Verify template replacement
-if [ "$DRY_RUN" = true ]; then
-    echo "• Skipping verification in dry-run mode"
-else
-    echo "• Verifying template replacement..."
-    # Comprehensive check for template references across all relevant file types
-    # Use com\.template\. (with trailing dot) to avoid matching packages like "com.mytemplate.app"
-    # Also match com\.template[^a-z] to catch com.template at end of line or before non-letter
-    REMAINING=$(grep -ri -E "com[./]template[./]|com[./]template[^a-z0-9]|com[./]template$|TemplateApp|KmpTemplate|orgName" . \
-        --include="*.kt" --include="*.kts" --include="*.xml" --include="*.swift" \
-        --include="*.plist" --include="*.pro" --include="*.pbxproj" \
-        --include="*.xcscheme" --include="*.xcconfig" --include="*.toml" --include="*.conf" --include="*.sh" \
-        --exclude-dir=.git --exclude-dir=build --exclude-dir=.gradle 2>/dev/null | wc -l | tr -d ' ')
-    if [ "$REMAINING" -gt 0 ]; then
-        echo ""
-        echo "WARNING: Found $REMAINING occurrences of template references that may need manual review:"
-        grep -ri -E "com[./]template[./]|com[./]template[^a-z0-9]|com[./]template$|TemplateApp|KmpTemplate|orgName" . \
-            --include="*.kt" --include="*.kts" --include="*.xml" --include="*.swift" \
-            --include="*.plist" --include="*.pro" --include="*.pbxproj" \
-            --include="*.xcscheme" --include="*.xcconfig" --include="*.toml" --include="*.conf" --include="*.sh" \
-            --exclude-dir=.git --exclude-dir=build --exclude-dir=.gradle -l 2>/dev/null
-        echo ""
-    else
-        echo "  All template references successfully replaced"
-    fi
-
-    # Enforce zero .claude/ files — generated projects must have NO Claude Code tooling
-    if [ -d ".claude" ]; then
-        echo ""
-        echo "ERROR: .claude/ directory was not removed during cleanup!"
-        echo "  Generated projects must contain zero Claude Code files."
-        echo "  This is a setup.sh bug — please report it."
-        exit 1
-    fi
-fi
-
-# 11. Reinitialize git repository (clean start — removes template commit history)
-echo "• Reinitializing Git repository..."
-if [ "$DRY_RUN" = true ]; then
-    echo "[DRY-RUN] Would: Reinitialize git repository with a fresh initial commit"
-else
-    rm -rf .git 2>/dev/null || true
-    git init
-    git add .
-    # Check if git user is configured
-    if git config user.name >/dev/null 2>&1 && git config user.email >/dev/null 2>&1; then
-        git commit -m "Initial commit from kmp-template: $PROJECT_NAME"
-        echo "  Git repository reinitialized with initial commit"
-    else
-        echo "  Git repository reinitialized (commit skipped - please configure git user)"
-        echo "  Run: git config user.name \"Your Name\""
-        echo "       git config user.email \"your@email.com\""
-        echo "  Then: git commit -m \"Initial commit from kmp-template: $PROJECT_NAME\""
-    fi
-fi
-
-echo ""
-echo "================================================"
-if [ "$DRY_RUN" = true ]; then
-    echo "    Dry-Run Complete!"
-    echo "================================================"
-    echo ""
-    echo "No files were modified. Run without --dry-run to apply changes."
-else
-    echo "    Setup Complete!"
-    echo "================================================"
-    echo ""
-    echo "Your project '$PROJECT_NAME' is ready!"
-    echo ""
-    echo "Next steps:"
-    echo ""
-    echo "  Android:"
-    echo "  1. Create local.properties:  echo 'sdk.dir=/path/to/android/sdk' > local.properties"
-    echo "  2. Open in Android Studio → File → Sync Project with Gradle Files"
-    echo "  3. Run:  ./gradlew :androidApp:assembleDebug"
-    echo ""
-    echo "  iOS:"
-    echo "  4. Set your team: cp iosApp/Configuration/Local.xcconfig.example iosApp/Configuration/Local.xcconfig"
-    echo "     and put your team ID in it (gitignored). App settings live in iosApp/Configuration/Config.xcconfig."
-    echo "  5. Open iosApp/iosApp.xcodeproj in Xcode"
-    echo "  6. Build (⌘B) — the Kotlin framework builds automatically via the pre-build script"
-    echo ""
-    echo "  Desktop:"
-    echo "  Run:  ./gradlew :desktopApp:run     (hot reload: ./gradlew :desktopApp:hotRun --auto)"
-    echo ""
-    echo "  Code quality:"
-    echo "  7. ./gradlew spotlessApply                               # auto-format"
-    echo "  8. ./gradlew detekt                                      # static analysis"
-    echo "  9. ./gradlew :shared:allTests :shared:koverVerify        # tests + coverage"
-    echo ""
-    echo "  Release signing (Android):"
-    echo " 10. Add signing.* keys to local.properties, or SIGNING_* environment variables in CI"
-    echo "     (format documented in README.md → Release Signing); the build picks them up."
-    echo ""
-    echo "Happy coding!"
-fi
+main "$@"

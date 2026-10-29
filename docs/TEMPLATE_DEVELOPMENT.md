@@ -21,6 +21,8 @@ template/
 ├── build.gradle.kts            # Root build script (plugin classpath + root-only Spotless)
 ├── settings.gradle.kts         # Project settings
 ├── setup.sh                    # Template generation script (CRITICAL)
+├── .template/                  # Generator data (template-only, deleted by setup.sh)
+├── tests/setup/run.sh          # setup.sh tests (template-only)
 ├── .gitignore                  # Comprehensive gitignore
 └── local.properties.template   # SDK configuration template
 ```
@@ -29,9 +31,10 @@ template/
 ```
 docs/
 ├── TEMPLATE_DEVELOPMENT.md     # This file - template maintenance
-├── CONFIGURATION.md            # Detailed configuration reference
-└── README_TEMPLATE.md          # User-facing README (replaces root README.md)
+└── CONFIGURATION.md            # Detailed configuration reference
 ```
+
+The generated project's `README.md`, `AGENTS.md` and `CLAUDE.md` live in `.template/project/`.
 
 ## 🔧 Critical Components
 
@@ -60,17 +63,19 @@ docs/
 **Location**: `setup.sh`
 **Purpose**: Converts template into a new project with custom naming/packaging
 
-**Key Functions**:
-- `replace_in_file()`: File-specific text replacement
-- `replace_in_directory()`: Bulk text replacement across multiple files
-- Package name transformation and directory restructuring
-- File cleanup and git initialization
+**Data it reads** (`.template/`, the single source of truth):
+- `manifest.env`: the tokens it renames (name, display name, packages, bundle ID) and the
+  `--no-desktop` paths
+- `template-only.txt`: the paths it deletes
+- `forbidden.txt`, `forbidden-desktop.txt`: leftover patterns that `check-leftovers.sh` reports
+- `rewrite.pl`: the single-pass literal token replacement and `region desktop` block removal
+- `project/`: the generated project's `README.md`, `AGENTS.md` and `CLAUDE.md`
 
 **Update Considerations**:
-- Test with various package name formats
-- Ensure all placeholders are replaced (com.template.*)
-- Verify file cleanup removes template-specific files
-- Test directory restructuring with new source sets
+- A new file that mentions a template token is renamed automatically; a new template-only file
+  must be added to `template-only.txt`
+- Desktop-only lines go between `region desktop` / `endregion desktop` comments
+- Add a case to `tests/setup/run.sh` for any new flag or rule
 
 **Testing**: See Testing Strategy section below for comprehensive validation
 
@@ -117,7 +122,7 @@ docs/
 ./gradlew clean check
 
 # 3. Test template generation
-./setup.sh  # Test with sample project
+bash tests/setup/run.sh
 
 # 4. Run comprehensive testing (see Testing Strategy section)
 ```
@@ -141,15 +146,14 @@ docs/
 ### CI/CD Testing
 Two GitHub Actions workflows run on pull requests targeting `main` and on pushes to `main`; `template.yml` runs only in `nkrebs13/kmp-template` (details in `CONTRIBUTING.md`):
 - `ci.yml`: static analysis, Android `check` and release build on ubuntu, iOS tests and framework on `macos-26`, plus `verifyCatalog`; it also runs weekly
-- `template.yml`: runs `setup.sh` with test inputs, then builds and tests the generated project
+- `template.yml`: shellcheck and `tests/setup/run.sh`, then generates default, `--no-desktop` and edge-case projects on ubuntu and macOS and builds them
+- `template-cleanup.yml`: initializes repositories created with "Use this template"
 
 ### Manual Testing Process
 1. **Template Generation**:
    ```bash
-   cp -r template test-project
-   cd test-project
-   ./setup.sh
-   # Test with various inputs
+   git clone . ../test-project && cd ../test-project
+   ./setup.sh --name WeatherApp --package com.acme.weather --author "Test" --yes --json
    ```
 
 2. **Build Verification**:
@@ -178,7 +182,7 @@ Two GitHub Actions workflows run on pull requests targeting `main` and on pushes
 ## 📚 Related Documentation
 
 - **[CONFIGURATION.md](./CONFIGURATION.md)**: Detailed configuration reference
-- **[README_TEMPLATE.md](./README_TEMPLATE.md)**: Template overview and features
+- **[.template/project/README.md](../.template/project/README.md)**: the generated project's README
 - **setup.sh**: Contains inline documentation for template generation process
 - **gradle/libs.versions.toml**: Comments explain dependency choices and versions
 

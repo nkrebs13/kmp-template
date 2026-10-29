@@ -28,15 +28,17 @@ kotlin {
             implementation(libs.compose.ui.test)
         }
 
+        // region desktop
         // Desktop needs the Skiko runtime to host a headless Compose window in tests.
         jvmTest.dependencies {
             implementation(compose.desktop.currentOs)
         }
+        // endregion desktop
     }
 }
 
 compose.resources {
-    // Keep the generated Res class in a predictable package that setup.sh renames with the rest.
+    // Keep the generated Res class in the module's own package, next to the code that uses it.
     packageOfResClass = "com.template.shared.generated.resources"
     publicResClass = false
 }

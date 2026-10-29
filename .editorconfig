@@ -20,7 +20,7 @@ ij_kotlin_imports_layout = *,java.**,javax.**,kotlin.**,^
 ij_kotlin_packages_to_use_import_on_demand = unset
 # Composables are PascalCase.
 ktlint_function_naming_ignore_when_annotated_with = Composable
-# setup.sh accepts package names with underscores (ktlint's package-name rule rejects them),
+# Package names may contain underscores (ktlint's package-name rule rejects them),
 # and expect/actual files are named after the platform (Platform.android.kt), not a class.
 ktlint_standard_package-name = disabled
 ktlint_standard_filename = disabled
