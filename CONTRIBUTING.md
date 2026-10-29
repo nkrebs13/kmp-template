@@ -7,9 +7,9 @@ First off, thanks for taking the time to contribute! This template helps develop
 Before contributing, ensure you have:
 
 - **macOS** (required for iOS development and testing)
-- **JDK 21** (the build toolchain; Gradle downloads it automatically if it is missing)
+- **A JDK** to start Gradle (the JDK 21 toolchain is downloaded automatically if it is missing)
 - **Android Studio** (latest stable with KMP plugin)
-- **Xcode 15.0+** (for iOS framework compilation)
+- **Xcode 16+** (the iOS project uses synchronized folders)
 
 > **Note:** Windows and Linux are not supported for full template development due to iOS build requirements.
 
@@ -23,8 +23,7 @@ Before contributing, ensure you have:
    ```
 3. **Verify the build**:
    ```bash
-   ./gradlew :androidApp:assembleDebug
-   ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
+   ./gradlew check
    ```
 
 ## Development Workflow
@@ -38,20 +37,21 @@ Before contributing, ensure you have:
 
 2. Make your changes
 
-3. Format and lint:
+3. Format, then run the full gate:
    ```bash
    ./gradlew spotlessApply
-   ./gradlew detekt
+   ./gradlew check
    ```
 
 4. If you touched `setup.sh` or `.template/`, run the generator checks:
    ```bash
-   shellcheck setup.sh .template/*.sh tests/setup/*.sh
+   shellcheck setup.sh .template/*.sh scripts/*.sh tests/setup/*.sh
    bash tests/setup/run.sh                     # on macOS, also: /bin/bash tests/setup/run.sh
    ```
 
-5. Generate a project in a copy and build it. `setup.sh` checks for template leftovers itself
-   and exits 5 if it finds any:
+5. Generate a project in a copy and build it (never run `setup.sh` in your checkout).
+   `setup.sh` checks for template leftovers itself and exits 5 if it finds any. The full
+   end-to-end procedure is in [docs/MAINTAINING.md](docs/MAINTAINING.md#verifying-generator-changes):
    ```bash
    git clone . ../template-test && cd ../template-test
    ./setup.sh --name WeatherApp --package com.acme.weather --author "Test" --yes
@@ -83,7 +83,7 @@ Write clear, descriptive commit messages:
 feat: add Room database support to shared module
 fix: correct sed escaping in setup.sh for special characters
 docs: update README with new quick start guide
-chore: update Kotlin to 2.3.0
+chore: update the Kotlin Gradle plugin
 ```
 
 Prefixes:
@@ -112,9 +112,9 @@ Two workflows run on pull requests targeting `main` and on pushes to `main`. `te
 | Static analysis | ubuntu | `spotlessCheck detekt` |
 | Android & Desktop | ubuntu | `check` (tests, lint, Kover), Kover HTML report, `:androidApp:assembleRelease`, `:baselineprofile:assemble`, `:desktopApp:createDistributable` |
 | iOS | macos-26 | `:shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64`, privacy manifest lint, `xcodebuild` of the app |
-| Verify catalog | ubuntu | `verifyCatalog`: every catalog coordinate, including unreferenced optional entries, resolves |
+| Verify catalog | ubuntu | `verifyCatalog` (needs the network): every catalog coordinate, including unreferenced optional entries, resolves |
 
-The workflow also runs weekly on a schedule, so toolchain drift shows up without a PR.
+Every job runs on every event. The workflow also runs weekly on a schedule, so toolchain drift shows up without a PR.
 
 **`.github/workflows/template.yml`** is template-only:
 
@@ -126,13 +126,13 @@ The workflow also runs weekly on a schedule, so toolchain drift shows up without
   combination runs the leftover check and asserts there is no `.claude/`, that `AGENTS.md` and
   the `@AGENTS.md` `CLAUDE.md` exist, and that `ci.yml` and `dependabot.yml` survive. On ubuntu,
   default and `--no-desktop` run `./gradlew check` and edge builds Android; on macOS, default runs
-  the iOS tests and `xcodebuild`.
+  the iOS tests and `xcodebuild`, and edge links the iOS framework and checks its bundle ID.
 
 **`.github/workflows/template-cleanup.yml`** is template-only too. In a repository created with
 "Use this template", it runs `setup.sh --derive-from-github` on the first push to `main` and
 commits the result.
 
-All jobs must pass before a PR can be merged. Concurrency groups cancel in-progress runs when new commits are pushed.
+Every job, Verify catalog included, must pass before a PR can be merged (the list is in `docs/MAINTAINING.md`). Concurrency groups cancel in-progress runs when new commits are pushed.
 
 ## What to Contribute
 
@@ -146,8 +146,7 @@ We welcome contributions in these areas:
 
 ## Questions?
 
-- Open a [GitHub Discussion](../../discussions) for questions
-- Check existing [Issues](../../issues) before creating new ones
-- Read the [Template Development Guide](./docs/TEMPLATE_DEVELOPMENT.md) for maintainer info
+- Ask in an [issue](https://github.com/nkrebs13/kmp-template/issues); check the existing ones first
+- Read the [maintainer guide](docs/MAINTAINING.md) for how the generator works and how releases are cut
 
 Thanks for contributing!

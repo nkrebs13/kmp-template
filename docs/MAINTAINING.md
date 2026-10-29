@@ -1,6 +1,163 @@
 # Maintaining the template
 
-Maintainer-only. `setup.sh` deletes this file, so generated projects never see it.
+Maintainer-only: `setup.sh` deletes `docs/`, so generated projects never see this file. Agents
+maintaining the template also read [.claude/CLAUDE.md](../.claude/CLAUDE.md). The root
+[AGENTS.md](../AGENTS.md) is for agents *using* the template; the generated project's guide is
+[.template/project/AGENTS.md](../.template/project/AGENTS.md).
+
+## What the template promises
+
+A skeleton, not a sample app: Android, iOS and desktop (JVM) hosting one Compose Multiplatform
+`App()`, with production build tooling and nothing a user has to delete. No DI, navigation,
+networking or architecture; Kermit and `AppLogger` are the one deliberate exception. Optional
+libraries live in the catalog, unreferenced, so adding one is a one-line change. The primary
+reader of every generated doc is a coding agent: a generated project's `AGENTS.md` must be enough
+to build, verify and extend it with no other context.
+
+## How the generator works
+
+`setup.sh` is the only program; everything it knows about the template is data in `.template/`,
+which it deletes along with the other template-only files.
+
+| File | Role |
+|---|---|
+| `.template/manifest.env` | The tokens it renames, `DESKTOP_PATHS` (deleted by `--no-desktop`) and `SKIP_DIR_NAMES` (build and tool directories it skips and deletes). Plain `KEY=value`, sourced by bash 3.2. |
+| `.template/template-only.txt` | Paths it deletes. Each is also a forbidden path for the leftover check. |
+| `.template/forbidden.txt`, `forbidden-desktop.txt` | Perl regexes a generated project must not match, in paths or contents (the second only with `--no-desktop`). |
+| `.template/check-leftovers.sh` | Reports leftovers; `setup.sh` runs it before touching git. Usable on its own: `bash .template/check-leftovers.sh [--no-desktop] <dir>`. |
+| `.template/rewrite.pl` | Token replacement and `region desktop` handling. |
+| `.template/project/` | The generated `README.md`, `AGENTS.md` and `CLAUDE.md`, copied over the template's own. |
+
+**Tokens.** One literal pass, longest token first, so replaced text is never re-replaced:
+
+| Token | Becomes | Where it appears |
+|---|---|---|
+| `com.template.ios` | `--bundle-id` | `Config.xcconfig`, docs |
+| `com.template.android`, `com/template/android` | `--package` | `androidApp` namespace, `app.applicationId` in `gradle.properties`, source path |
+| `com.template`, `com/template` | `--package` | `<package>.shared`, `.desktop`, `.baselineprofile` and their source paths |
+| `KMP Template` | `--display-name` | Android label, iOS display name, desktop window title |
+| `KmpTemplate` | `--name` | `rootProject.name`, logger tag, desktop installer name |
+
+Kotlin sources move by a generic `find` over `*/kotlin/com/template/**`. iOS renaming touches only
+`Config.xcconfig`; `setup.sh` never edits Swift files or `project.pbxproj`.
+
+**Desktop regions.** A line `// region desktop`, `# region desktop` or `<!-- region desktop -->`
+opens a block and the matching `endregion desktop` line closes it. A marker must start its line
+(after indentation); anything after `region desktop` on that line is ignored and removed with it,
+and a `region desktop` elsewhere in a line is not a marker. `--no-desktop` deletes every block, markers
+included, plus `DESKTOP_PATHS`, and renames the CI job to "Android". The default generation deletes
+only the Markdown markers and keeps code and Gradle markers.
+
+**Order of operations.** Validate every value (UTF-8; length limits: name 50, package 150, segment
+63, longest moved path 900 bytes), compute and check the plan, region markers, the LICENSE line and
+a copy of `.template/` (`--dry-run` stops here). Refuse a dirty tree. Back up to `$TMPDIR` when
+there is no `.git`. Then change files, run the leftover check, and only then start the new history
+on `main` with one commit. Nothing fails after the first change except I/O errors or a bug, and
+those print a recovery command. Every path list is NUL-separated, and every deleted path must
+resolve inside the repository. A user value that itself matches a forbidden pattern (author
+`nkrebs13`) is masked before matching.
+
+**The CLI contract** (flags, `--json` shapes, exit codes 2/3/4/5) is documented once, in the root
+`AGENTS.md`. `tests/setup/run.sh` pins it; change both together. `setup.sh` must stay bash 3.2
+compatible: macOS CI runs it on `/bin/bash`.
+
+**"Use this template".** `template-cleanup.yml` runs on the new repository's first push to `main`:
+`setup.sh --derive-from-github owner/repo` (name: PascalCase repo; package
+`io.github.<owner>.<repo>`, sanitized; bundle ID sanitized separately, since it allows `-` but not
+`_`), then commits and pushes. Every template-only workflow is guarded on the repository name, so
+leftovers stay inert.
+
+### Changing the generator
+
+- **A file that mentions a token** needs no generator change: it is renamed automatically.
+- **A new template-only file:** add its path to `.template/template-only.txt` and to the deleted
+  paths `tests/setup/run.sh` asserts.
+- **A desktop-only line or file:** wrap the lines in `region desktop` markers, or add the path to
+  `DESKTOP_PATHS`.
+- **A new token:** add it to `manifest.env`, map it to a value in `setup.sh`'s `rewrite()` (the
+  `R_FROM_n`/`R_TO_n` list), add its pattern to `forbidden.txt`, and add a case to
+  `tests/setup/run.sh`.
+- **A new flag or rule:** add a case to `tests/setup/run.sh`, update `--help` and the root
+  `AGENTS.md`.
+- **Generated docs** live in `.template/project/`. Write them with the template's tokens
+  (`com.template.shared`, `KmpTemplate`) so they come out with the user's values, never mention
+  `setup.sh` or `.template/` (both are forbidden leftovers), and verify every command they name in
+  a generated project.
+
+### Verifying generator changes
+
+```bash
+shellcheck setup.sh .template/*.sh scripts/*.sh tests/setup/*.sh
+bash tests/setup/run.sh && /bin/bash tests/setup/run.sh    # the second on macOS: bash 3.2
+```
+
+End to end, from the committed `HEAD`, as `template.yml` does (never run `setup.sh` in your
+checkout; it rewrites it):
+
+```bash
+git clone -q . /tmp/e2e && cp -R .template /tmp/e2e-template
+cp local.properties /tmp/e2e/          # gitignored, so the clone lacks it; or export ANDROID_HOME
+cd /tmp/e2e
+/bin/bash setup.sh --name WeatherApp --package com.acme.weather --author Test --yes --json
+bash /tmp/e2e-template/check-leftovers.sh .                # must print nothing
+./gradlew check :desktopApp:createDistributable
+xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug -sdk iphonesimulator \
+  -destination 'generic/platform=iOS Simulator' -derivedDataPath build/xcode CODE_SIGNING_ALLOWED=NO build
+```
+
+`template.yml` runs the matrix {ubuntu-latest, macos-26} × {`default`, `no-desktop`,
+`edge`}; `edge` is `--name MyApp2 --package io.my_company.app_core --bundle-id
+io.my-company.app-core --display-name "My App"`. For `--no-desktop`, pass `--no-desktop` to both
+`setup.sh` and `check-leftovers.sh`, and replace the Gradle line with `./gradlew check` (the desktop
+module no longer exists).
+
+## Updating dependencies by hand
+
+Dependabot covers most updates (below). For a manual one: edit `gradle/libs.versions.toml`, then
+`./gradlew verifyCatalog check`, the harness, and the end-to-end generation above. An update that
+changes a plugin's API usually means a convention-plugin change in `build-logic/`.
+
+## Decisions not to undo
+
+Each looks like something to clean up; each is deliberate.
+
+- **detekt stays on 1.23.8 until 2.x is stable, and compose-rules on 0.4.x** (0.5+ needs detekt 2).
+  Dependabot ignores `io.nlopez.compose.rules:detekt` 0.5+ and cannot see detekt 2's plugin-id
+  change, so check by hand monthly: `gh api repos/detekt/detekt/releases --jq '.[0:5][] |
+  {tag_name, prerelease}'`. Moving to 2.x also retires the accepted `ReportingExtension.file`
+  deprecation.
+- **`checkForbiddenCalls`, not detekt, catches `println`.** detekt's `ForbiddenMethodCall` needs
+  type resolution, and `check` runs the plain `detekt` tasks, so it never fires. A line-based task in
+  `convention.quality` (`CheckForbiddenCallsTask.kt`) fails `check` on `print`/`println` in
+  production sources instead.
+- **Spotless's `clean` hook is removed** (`applySpotlessWithoutCleanHook` in `Spotless.kt`). The
+  hook closes every formatter classloader in the daemon, which fails parallel `spotless*` tasks and
+  leaked Metaspace until the daemon died (diffplug/spotless#3067). Its `check()` fails the build if
+  Spotless's hook changes shape, which is the signal to delete the workaround.
+- **Isolated Projects is `org.gradle.unsafe.isolated-projects=true`.** Gradle silently ignores the
+  name without `unsafe.`, so a "cleanup" turns it off with no error. Every build script and
+  convention plugin must stay isolated: no `subprojects`/`allprojects`, no cross-project reads.
+- **`desktopApp` compiles, runs and packages on JetBrains Runtime 21** (toolchain vendor pinned;
+  the `run`/`runRelease` launcher and the Compose packaging tasks' `javaHome` come from it). The
+  packaging JDK is set lazily, so Android- and iOS-only builds never resolve or download it.
+  Compose packaging rejects some JDK builds, Homebrew's among them
+  (JetBrains/compose-multiplatform#3107), and Hot Reload works best on JBR.
+- **iOS deployment target 16.0.** Don't raise it to silence the `ld: warning` about Skiko's
+  `libicu.icudtl_dat.o` being built for iOS 18.5: that is Skiko's prebuilt, harmless, and raising
+  the minimum would drop every device on iOS 16 and 17.
+- **No screenshot tests (Roborazzi) in `check`.** Font rendering differs between macOS and Linux,
+  and `check` must be green on both.
+- **`com.template` stays the sentinel package.** The leftover check and validation (packages inside
+  `com.template` are rejected) give the safety a unique sentinel would, without moving every source
+  file.
+- **The MCP server was removed.** `setup.sh --yes --json` already gives agents a non-interactive,
+  machine-readable interface; the npm server duplicated it and was one more thing to keep working.
+- **The first-push cleanup cannot delete workflows.** `GITHUB_TOKEN` has no `workflows`
+  permission, so GitHub refuses a push that changes `.github/workflows`. `template-cleanup.yml`
+  restores the template-only workflows, pushes everything else and opens an issue with the one
+  `git rm` command. They stay inert because each is guarded on the repository name.
+- **No `docs/adr/`.** Reasoning lives where its reader looks: agent rules in the generated
+  `AGENTS.md`, maintainer facts here, history in git and the pull requests.
 
 ## One-time repository setup
 

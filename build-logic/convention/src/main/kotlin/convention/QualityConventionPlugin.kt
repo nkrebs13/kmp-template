@@ -7,10 +7,11 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.dependencies
+import org.gradle.kotlin.dsl.register
 
 /**
  * Formatting (Spotless: ktlint for Kotlin, Eclipse WTP for XML), static analysis (detekt + Compose
- * rules) and coverage (Kover) for one module. Applied by every other convention plugin, so each
+ * rules), a print/println check (`checkForbiddenCalls`) and coverage (Kover) for one module. Applied by every other convention plugin, so each
  * module checks its own sources and `./gradlew check` covers them all.
  *
  * ktlint settings live in the root `.editorconfig`; detekt settings in `config/detekt/detekt.yml`.
@@ -29,6 +30,23 @@ class QualityConventionPlugin : Plugin<Project> {
         }
         configureDetekt()
         configureKover()
+        configureForbiddenCalls()
+    }
+
+    private fun Project.configureForbiddenCalls() {
+        val checkForbiddenCalls = tasks.register<CheckForbiddenCallsTask>("checkForbiddenCalls") {
+            group = "verification"
+            description = "Fails on print/println in production Kotlin sources (use AppLogger)."
+            // Every non-test source set: main, commonMain, androidMain, debug, release, flavors, ...
+            sources.from(
+                fileTree("src") {
+                    include("*/kotlin/**/*.kt", "*/java/**/*.kt")
+                    exclude("test*/**", "*Test*/**")
+                },
+            )
+            marker.set(layout.buildDirectory.file("checkForbiddenCalls/ok"))
+        }
+        pluginManager.withPlugin("base") { tasks.named("check") { dependsOn(checkForbiddenCalls) } }
     }
 
     private fun Project.configureDetekt() {
@@ -53,7 +71,6 @@ class QualityConventionPlugin : Plugin<Project> {
                         classes(
                             // Compose compiler-generated singletons (not reachable from unit tests)
                             "*ComposableSingletons*",
-                            // iOS entry point, only reachable from the Xcode app
                             // Compose Multiplatform generated resource accessors
                             "*.generated.resources.*",
                         )

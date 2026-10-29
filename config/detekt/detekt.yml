@@ -409,6 +409,7 @@ style:
   ForbiddenImport:
     active: false
   ForbiddenMethodCall:
+    # Needs type resolution, which `check` does not run; checkForbiddenCalls enforces print/println.
     active: true
     methods:
       - reason: 'Use AppLogger instead of println'

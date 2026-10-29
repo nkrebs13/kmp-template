@@ -2,7 +2,6 @@
   "permissions": {
     "allow": [
       "Bash(./gradlew *)",
-      "Bash(bash setup.sh*)",
       "Bash(bash tests/setup/run.sh*)",
       "Bash(git status)",
       "Bash(git log *)",
