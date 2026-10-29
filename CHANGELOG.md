@@ -7,102 +7,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed (breaking)
-- `setup.sh` is driven by flags and no longer interactive-only: `setup.sh --name <Name> --package <reverse.dns> [--bundle-id] [--display-name] [--author] [--no-desktop] [--keep-git] [--no-commit] [--derive-from-github owner/repo] [--yes] [--dry-run] [--json]`. It prompts only when stdin is a terminal and a required value is missing; otherwise it never waits for input. Exit codes: 2 usage, 3 invalid value, 4 precondition (uncommitted changes, already initialized, perl or git missing), 5 internal error with recovery commands. `--json` prints exactly one result object on stdout. Piping answers into it no longer works.
-- `setup.sh` validates everything and prints its plan before changing anything (`--dry-run` lists every file it would delete, write, edit or move), refuses a dirty git tree, backs up to `$TMPDIR` when there is no `.git`, and checks for template leftovers before it starts the new git history on `main`.
-- The LICENSE copyright holder is `--author` (default: `git config user.name`) with the current year, instead of the project name.
-- Generated projects keep `.github/workflows/ci.yml`, `.github/dependabot.yml` and the issue and PR templates (now written for any app), and `local.properties.template`.
-- `scripts/validate.sh` is replaced by `.template/check-leftovers.sh`, which setup.sh runs itself.
-- `--json` results follow a documented contract (root `AGENTS.md`): dry runs report the full `plan`, `next` is a list of `{"run"}`/`{"read"}` steps led by `./gradlew check`, `verified` is `false`, and errors carry `category`, and where relevant `reason` (`already-initialized`) and `recovery`.
-
-### Added (generator)
-- `.template/`: the generator's single source of truth (`manifest.env` tokens, `template-only.txt`, leftover patterns, `check-leftovers.sh`, `rewrite.pl`) and the generated project's `README.md`, `AGENTS.md` and `CLAUDE.md` (`@AGENTS.md`).
-- `--no-desktop`: drops `desktopApp/`, `shared/src/jvmMain`, `shared/src/jvmTest` and every `region desktop` block (Gradle, `gradle.properties`, CI, docs).
-- `--derive-from-github owner/repo` and the template-only `template-cleanup.yml` workflow, which initializes a repository created with "Use this template" on its first push.
-- `tests/setup/run.sh`: a plain-bash harness for exit codes, validation, dry run, generation variants and derivation. `template.yml` runs it with shellcheck, then generates default, `--no-desktop` and edge-case projects on ubuntu and macOS (`/bin/bash` 3.2) and builds them.
-- Template names are now unique tokens: `rootProject.name` is `KmpTemplate` and the Android app label is `KMP Template`.
-- A root `AGENTS.md` for the uninitialized template: how to run `setup.sh` and read its JSON.
-
-### Added (maintenance)
-- Dependabot groups minor and patch updates (`kotlin-compose`, `android`, `build-tooling`, `optional-catalog`, `actions`) and ignores `io.nlopez.compose.rules:detekt` 0.5+, which needs detekt 2.x. The `reviewers` key is gone; CODEOWNERS covers it.
-- Template-only `dependabot-automerge.yml` queues auto-merge for non-major Dependabot PRs, which GitHub merges once the required checks pass.
-- Template-only `release.yml` creates the GitHub Release from the tag's CHANGELOG section, and `scripts/release.sh X.Y.Z` (with `--dry-run`) updates the CHANGELOG and compare links, commits, tags and pushes.
-- `docs/MAINTAINING.md`: repository settings, branch protection and the release procedure as exact commands.
-
-### Documentation
-- The generated project's `AGENTS.md` is a complete agent guide: prerequisites, module map, `./gradlew check` as the one verification command (and what it leaves out), run commands for every platform, where each setting lives, recipes (dependencies, modules, `expect`/`actual`, strings, tests, baseline profile, release signing), conventions, the accepted third-party warnings and a definition of done. The generated `README.md` is a short human quick start that links to it.
-- The template repository has a root `CLAUDE.md` (`@AGENTS.md`), like generated projects, and its root `AGENTS.md` explains how to choose `setup.sh` values from a request and how to read every `--json` result.
-- `docs/MAINTAINING.md` absorbs `docs/CONFIGURATION.md` and `docs/TEMPLATE_DEVELOPMENT.md` (both removed): how the generator works and how to change it, end-to-end verification, and the technical decisions not to undo. Project-facing configuration moved to the generated `AGENTS.md`.
-- `.claude/CLAUDE.md` is a concise maintainer guide; it and `.claude/rules/` no longer claim that detekt rejects `println` (the rule needs type resolution, which `check` does not run).
-
-### Fixed (generator)
-- The iOS framework's bundle ID replaces `_` from the package with `-`; Apple rejects underscores.
-- `--no-desktop` also removes the desktop build logic (`convention.jvm.application`, the `kotlin-jvm` plugin entries). detekt's test-source excludes use `**/*Test/**` instead of naming each source set.
+**Breaking.** `setup.sh` is driven by flags, and piping answers into it no longer works. The MCP
+server and `--with-mcp` are gone, the `iosX64` target is dropped, compileSdk is 37, the build
+uses a JDK 21 toolchain, and the minimums are iOS 16.0 and Xcode 16.
 
 ### Added
-- `checkForbiddenCalls` (part of `check` in every module) fails on `print`/`println` in production Kotlin sources. detekt's `ForbiddenMethodCall` never fired, because it needs type resolution that `check` does not run.
-- Desktop (JVM) target: `shared` gains `jvm()` (`Platform.jvm.kt`, `PlatformJvmTest`), and a new `desktopApp` module built by the new `convention.jvm.application` plugin runs the shared `App()` in a Compose window and packages Dmg/Msi/Deb installers. The installer name comes from `app.packageName` in `gradle.properties` (lowercased for Deb); `app.versionName` is validated as `major.minor.patch` with major > 0, and the Windows upgrade UUID is derived from the package name.
+- Desktop (JVM) target: `shared` gains `jvm()` (`Platform.jvm.kt`, `PlatformJvmTest`), and a new `desktopApp` module built by the new `convention.jvm.application` plugin runs the shared `App()` in a Compose window and packages Dmg/Msi/Deb installers. The installer name comes from `app.packageName` in `gradle.properties` (lowercased for Deb); `app.versionName` is validated as `major.minor.patch` with major > 0, and the Windows upgrade UUID is derived from the application ID.
 - Compose Hot Reload: `./gradlew :desktopApp:hotRun --auto` (bundled with the Compose Multiplatform plugin; no extra plugin needed).
-- `// region desktop` markers around exactly two Gradle lines: `include(":desktopApp")` and the `jvm()` target. The generator removes everything else desktop-related by path.
-- `build-logic/` included build with convention plugins: `convention.kmp.library`, `convention.compose`, `convention.android.application`, `convention.quality` and `convention.root`. Module build files now declare only what is specific to them.
-- `./gradlew verifyCatalog`: asks Maven Central, Google Maven and the Gradle Plugin Portal for the POM of every catalog library and plugin marker (including iOS-only artifacts) on every run, and names any alias that is not published. An unreachable repository is reported as a network problem, not a broken entry. Not part of `check`.
-- Compose rules for detekt (`io.nlopez.compose.rules:detekt` 0.4.28).
-- Release signing from `SIGNING_STORE_FILE`/`SIGNING_STORE_PASSWORD`/`SIGNING_KEY_ALIAS`/`SIGNING_KEY_PASSWORD` or `signing.*` in `local.properties`, with no build-file edits. The whole set comes from one source (the environment if any `SIGNING_*` variable is set, otherwise `local.properties`); a partial set fails only release packaging (`verifyReleaseSigning`), so debug builds, lint and tests keep working.
+- `build-logic/` included build with convention plugins: `convention.kmp.library`, `convention.compose`, `convention.android.application`, `convention.android.test`, `convention.jvm.application`, `convention.quality` and `convention.root`. Module build files now declare only what is specific to them.
+- Isolated Projects (`org.gradle.unsafe.isolated-projects=true`) alongside the configuration cache.
 - JDK 21 toolchain, provisioned through the foojay resolver and `gradle/gradle-daemon-jvm.properties`; bytecode stays at Java 17.
-- Isolated Projects (`org.gradle.unsafe.isolated-projects=true`).
-- `kotlin.native.ignoreDisabledTargets=true`, which silences Kotlin's disabled-iOS-targets warning on non-macOS hosts.
-- iOS settings in xcconfig files: `iosApp/Configuration/Config.xcconfig` holds the display name, bundle ID, marketing and build version, deployment target, `TEAM_ID` and script sandboxing; `Debug.xcconfig`/`Release.xcconfig` include it plus a gitignored `Local.xcconfig` for a developer's team ID (`Local.xcconfig.example` shows the format). `Info.plist` reads the display name and versions from them.
-- Shared `iosApp` Xcode scheme, so `xcodebuild -scheme iosApp` works on a fresh clone.
-- `iosApp/iosApp/PrivacyInfo.xcprivacy` privacy manifest (no tracking, no collected data, no required-reason APIs).
-- CI: the iOS job lints the privacy manifest and builds the app with `xcodebuild` for the simulator, uploading the log on failure.
+- `./gradlew check` is the single quality gate in every module: Spotless, detekt, all tests, Kover verification and debug lint. Nothing auto-corrects during `check`; run `spotlessApply`.
+- `checkForbiddenCalls` (part of `check` in every module) fails on `print`/`println` in production Kotlin sources. detekt's `ForbiddenMethodCall` never fired, because it needs type resolution that `check` does not run.
+- Compose rules for detekt (`io.nlopez.compose.rules:detekt` 0.4.28).
+- `./gradlew verifyCatalog`: asks Maven Central, Google Maven and the Gradle Plugin Portal for the POM of every catalog library and plugin marker (including iOS-only artifacts) and names any alias that is not published. An unreachable repository is reported as a network problem, not a broken entry. Not part of `check`.
 - Compose resources: `strings.xml` holds the greeting, and `App()` reads it with `stringResource`. The generated `Res` class is internal, in `<package>.shared.generated.resources`.
-- A Compose UI test for `App()` (`runComposeUiTest`) in `jvmTest` and `iosTest`, sharing one body from `commonTest`; `compose-ui-test` joins the version catalog.
+- A Compose UI test for `App()` (`runComposeUiTest`) in `jvmTest` and `iosTest`, sharing one body from `commonTest`; `compose-ui-test` joins the version catalog. `kotlinx-coroutines-test` is in `commonTest`.
+- Compose compiler reports and metrics with `-Pkmp.composeCompilerReports=true`.
+- Android: predictive back (`enableOnBackInvokedCallback`) and per-app language preferences (`locales_config.xml`), with the App Bundle language split turned off so the locale APIs work.
+- Release signing from `SIGNING_STORE_FILE`/`SIGNING_STORE_PASSWORD`/`SIGNING_KEY_ALIAS`/`SIGNING_KEY_PASSWORD` or `signing.*` in `local.properties`, with no build-file edits. The whole set comes from one source (the environment if any `SIGNING_*` variable is set, otherwise `local.properties`); a partial set fails only release packaging (`verifyReleaseSigning`), so debug builds, lint and tests keep working.
+- iOS settings in xcconfig files: `iosApp/Configuration/Config.xcconfig` holds the display name, bundle ID, marketing and build version, deployment target, `TEAM_ID` and script sandboxing; `Debug.xcconfig`/`Release.xcconfig` include it plus a gitignored `Local.xcconfig` for a developer's team ID (`Local.xcconfig.example` shows the format). `Info.plist` reads the display name and versions from them.
+- A shared `iosApp` Xcode scheme, so `xcodebuild -scheme iosApp` works on a fresh clone.
+- `iosApp/iosApp/PrivacyInfo.xcprivacy` privacy manifest (no tracking, no collected data, no required-reason APIs).
+- `kotlin.native.ignoreDisabledTargets=true`, which silences Kotlin's disabled-iOS-targets warning on non-macOS hosts.
+- Generator: `.template/` is its single source of truth (`manifest.env` tokens, `template-only.txt`, leftover patterns, `check-leftovers.sh`, `rewrite.pl`) and holds the generated project's `README.md`, `AGENTS.md` and `CLAUDE.md` (`@AGENTS.md`).
+- Generator: `--no-desktop` drops `desktopApp/`, `shared/src/jvmMain`, `shared/src/jvmTest`, the desktop build logic and every `region desktop` block (Gradle, `gradle.properties`, CI, docs).
+- Generator: `--derive-from-github owner/repo`, and the template-only `template-cleanup.yml` workflow, which initializes a repository created with "Use this template" on its first push. GitHub's workflow token cannot delete workflow files, so the cleanup leaves the template-only workflows in place (inert) and opens an issue with the command that removes them.
+- Generator: `tests/setup/run.sh`, a plain-bash harness for exit codes, validation, dry run, generation variants and derivation. The template-only `template.yml` runs it with shellcheck on ubuntu and on macOS `/bin/bash` 3.2, then generates default, `--no-desktop` and edge-case projects on both and builds them.
+- Generator: template names are unique tokens: `rootProject.name` is `KmpTemplate` and the Android app label is `KMP Template`.
+- Dependabot groups minor and patch updates (`kotlin-compose`, `android`, `build-tooling`, `optional-catalog`, `actions`) and ignores `io.nlopez.compose.rules:detekt` 0.5+, which needs detekt 2.x.
+- Template-only `dependabot-automerge.yml` queues auto-merge for non-major Dependabot PRs, which GitHub merges once the required checks pass.
+- Template-only `release.yml` creates the GitHub Release from the tag's CHANGELOG section, and `scripts/release.sh X.Y.Z` (with `--dry-run`) updates the CHANGELOG and compare links, commits, tags and pushes.
+- Agent guides: the generated project's `AGENTS.md` is a complete guide (prerequisites, module map, `./gradlew check` and what it leaves out, run commands for every platform, where each setting lives, recipes, conventions, accepted third-party warnings, definition of done), and its `CLAUDE.md` imports it. The template's own root `AGENTS.md` explains how to choose `setup.sh` values from a request and how to read every `--json` result, and its root `CLAUDE.md` imports it too.
+- `docs/MAINTAINING.md`: how the generator works and how to change it, end-to-end verification, repository settings and branch protection, releases, Dependabot, and the technical decisions not to undo.
 
 ### Changed
+- `setup.sh` takes flags: `setup.sh --name <Name> --package <reverse.dns> [--bundle-id] [--display-name] [--author] [--no-desktop] [--keep-git] [--no-commit] [--derive-from-github owner/repo] [--yes] [--dry-run] [--json]`. It prompts only when stdin is a terminal and a required value is missing; otherwise it never waits for input. Exit codes: 2 usage, 3 invalid value, 4 precondition (uncommitted changes, already initialized, perl or git missing), 5 internal error with recovery commands.
+- `setup.sh` validates everything and checks its whole plan before changing anything (`--dry-run` lists every file it would delete, write, edit or move), refuses a dirty git tree, backs up to `$TMPDIR` when there is no `.git`, and checks for template leftovers before it starts the new git history on `main`.
+- `--json` prints exactly one result object on stdout, following the contract in the root `AGENTS.md`: dry runs report the full `plan`, `next` is a list of `{"run"}`/`{"read"}` steps led by `./gradlew check`, `verified` is `false`, and errors carry `category` and, where relevant, `reason` (`already-initialized`) and `recovery`.
+- The LICENSE copyright holder is `--author` (default: `git config user.name`) with the current year, instead of the project name.
+- Generated projects keep `.github/workflows/ci.yml`, `.github/dependabot.yml`, the issue and PR templates (now written for any app) and `local.properties.template`. The generated `README.md` is a short human quick start that links to `AGENTS.md`.
+- CI: `ci.yml` is split into Static analysis and "Android & Desktop" jobs on ubuntu (the latter also builds the desktop distributable) plus an iOS job on `macos-26` that runs the iOS tests, lints the privacy manifest and builds the app with `xcodebuild`, uploading the log on failure. It runs on PRs, pushes to `main` and weekly, and a `verifyCatalog` job checks every catalog coordinate. CI uses JDK 21. Template generation testing moved to the template-only `template.yml`.
+- `baselineprofile` is a real `com.android.test` producer that generates the profile on a Gradle Managed Device; the profile is committed and packed into release APKs.
 - `desktopApp` builds and packages on JetBrains Runtime 21 (toolchain vendor pinned), so packaging no longer fails on machines whose JDK 21 is Homebrew's.
-- Tests keep only what checks template code: `AppLogger`'s tag, minimum severity and filtering, one `PlatformTest` contract test and one test per platform `actual`. Tests of Kermit's own behavior and `AppIntegrationTest` are gone.
-- `baselineprofile` is a real `com.android.test` producer (new `convention.android.test` plugin) that generates the profile on a Gradle Managed Device; the profile is committed and packed into release APKs.
-- `Theme.App` extends the platform `Theme.Material.*.NoActionBar` instead of AppCompat, with a night variant.
-- `proguard-rules.pro` keeps only the source-file attributes; libraries ship their own consumer rules.
-- CI: the Android job is now "Android & Desktop" and also builds the desktop distributable. `ci.yml` is split into Static analysis and Android jobs on ubuntu plus an iOS job on `macos-26`. It runs on PRs, pushes to `main` and weekly, and a scheduled `verifyCatalog` job checks every catalog coordinate. Template generation testing moved to the template-only `template.yml`.
-- CI: `ci.yml` is split into Static analysis and Android jobs on ubuntu plus an iOS job on `macos-26`. It runs on PRs, pushes to `main` and weekly, and a `verifyCatalog` job checks every catalog coordinate. Template generation testing moved to the template-only `template.yml`.
-- Gradle 9.6.1; `actions/checkout` 7.0.1, `actions/setup-java` 6.1.0, `actions/upload-artifact` 7.0.2.
-- Kotlin 2.4.21, Compose Multiplatform 1.12.2 (Material 3 1.9.0), AGP 9.5.0, Spotless 8.10.4, Kover 0.9.11, Kermit 2.2.0, androidx benchmark/baselineprofile 1.5.0. detekt stays on 1.23.8 because 2.x has no stable release yet.
+- Kotlin 2.4.21, Compose Multiplatform 1.12.2 (Material 3 1.9.0), AGP 9.5.0, Gradle 9.6.1, Spotless 8.10.4, Kover 0.9.11, Kermit 2.2.0, androidx benchmark/baselineprofile 1.5.0; `actions/checkout` 7.0.1, `actions/setup-java` 6.1.0, `actions/upload-artifact` 7.0.2. detekt stays on 1.23.8 because 2.x has no stable release yet.
 - compileSdk 37 (required by Compose 1.12); targetSdk stays 36. SDK levels live in `libs.versions.toml`, the app version in `gradle.properties` (`app.versionCode`, `app.versionName`).
-- Compose dependencies use explicit catalog entries instead of the deprecated `compose.*` accessors; `@Preview` comes from `androidx.compose.ui.tooling.preview`.
-- `App()` takes a `modifier` parameter, and its preview is a private `AppPreview()`.
-- `./gradlew check` runs Spotless, detekt, all tests, Kover verification and debug lint in every module. Nothing auto-corrects during `check`; run `spotlessApply`.
-- ktlint settings moved from `build.gradle.kts` into `.editorconfig` (IntelliJ Kotlin style, import ordering enforced, no wildcard imports).
-- Config files moved: `detekt-config.yml` to `config/detekt/detekt.yml`, `compose-stability.conf` to `config/compose/stability.conf`.
-- Catalog aliases are kebab-case throughout (`libs.plugins.android.application`, `libs.plugins.compose.multiplatform`, ...).
-- Optional catalog entries are real, unreferenced entries in marked blocks, with KMP coordinates (JetBrains lifecycle/navigation, KMP Room, DataStore core, Ktor OkHttp/Darwin engines, Koin Compose, Coil 3, KSP).
-- CI uses JDK 21. Dependabot no longer sets the deprecated `reviewers` key (CODEOWNERS covers review).
 - iOS minimum is 16.0 (was 15.0), and the Xcode minimum is 16.0. The Xcode project uses synchronized folders (objectVersion 77), so new files under `iosApp/iosApp/` join the app target without editing `project.pbxproj`.
 - `TemplateApp.swift` is now `iOSApp.swift` (`struct iOSApp`); setup.sh renames the iOS app only through `Config.xcconfig` and no longer edits Swift files or the pbxproj.
 - The Xcode build phase is "Compile Kotlin Framework": it runs under `set -euo pipefail`, skips when `OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED=YES`, and always runs (`alwaysOutOfDate`), leaving up-to-date checks to Gradle.
 - The static `shared` framework is linked through its search path only; the broken `shared.framework` file reference and the Embed Frameworks phase (static frameworks are never embedded) are gone.
+- Compose dependencies use explicit catalog entries instead of the deprecated `compose.*` accessors; `@Preview` comes from `androidx.compose.ui.tooling.preview`.
+- `App()` takes a `modifier` parameter, and its preview is a private `AppPreview()`.
+- `Theme.App` extends the platform `Theme.Material.*.NoActionBar` instead of AppCompat, with a night variant.
+- `proguard-rules.pro` keeps only the source-file attributes; libraries ship their own consumer rules.
+- Tests keep only what checks template code: `AppLogger`'s tag, minimum severity and filtering, one `PlatformTest` contract test and one test per platform `actual`. Tests of Kermit's own behavior and `AppIntegrationTest` are gone.
+- ktlint settings moved from `build.gradle.kts` into `.editorconfig` (IntelliJ Kotlin style, import ordering enforced, no wildcard imports).
+- Config files moved: `detekt-config.yml` to `config/detekt/detekt.yml`, `compose-stability.conf` to `config/compose/stability.conf`.
+- Catalog aliases are kebab-case throughout (`libs.plugins.android.application`, `libs.plugins.compose.multiplatform`, ...).
+- Optional catalog entries are real, unreferenced entries in marked blocks, with KMP coordinates (JetBrains lifecycle/navigation, KMP Room, DataStore core, Ktor OkHttp/Darwin engines, Koin Compose, Coil 3, KSP).
+- `scripts/validate.sh` is replaced by `.template/check-leftovers.sh`, which setup.sh runs itself.
+- Dependabot no longer sets the deprecated `reviewers` key; CODEOWNERS covers review.
+- `docs/MAINTAINING.md` absorbs `docs/CONFIGURATION.md` and `docs/TEMPLATE_DEVELOPMENT.md`; project-facing configuration moved to the generated `AGENTS.md`. `.claude/CLAUDE.md` is a concise maintainer guide, and it and `.claude/rules/` no longer claim that detekt rejects `println`.
+- The README is rewritten: a platform screenshot, quick starts for coding agents and for people, what the template includes, a comparison with the JetBrains wizard, the reasons behind the main decisions and a module graph. Version badges read the catalog, so the README states no version itself.
 
 ### Fixed
-- The iOS app had no icon (an empty multi-size icon set), which App Store upload rejects. It now ships a single 1024×1024 placeholder matching the Android launcher icon.
-- Repeated `clean` builds in one Gradle daemon no longer exhaust metaspace or fail ktlint with `NoClassDefFoundError`. Spotless's `clean` hook closed every formatter classloader mid-build ([spotless#3067](https://github.com/diffplug/spotless/issues/3067)) and leaked the Eclipse XML formatter; build-logic removes that hook.
-- The launcher activity started on `Theme.App` instead of `Theme.App.Starting`, so `installSplashScreen()` never saw the splash theme.
-- Release dates for 2.0.0 through 3.0.0 now match the tagged commits.
-- The Compose stability configuration is applied. The old `compose.multiplatform.stabilityConfigPath` property did nothing, and the file used `#` comments the compiler rejects. Editing the file now recompiles.
-- Framework bundle ID is explicit (`-Xbinary=bundleId`, from the Android namespace), removing the "Cannot infer a bundle ID" warning.
-- Lint's `ObsoleteLintCustomCheck`: androidx.lifecycle is aligned to 2.11.0, whose lint checks run on lint 9.5.
-- Spotless picks up `.editorconfig` edits (they are part of its ktlint settings), and no longer reads `PATH` at configuration time (which invalidated the configuration cache).
 - The iOS app no longer aborts at launch: `Info.plist` sets `CADisableMinimumFrameDurationOnPhone`, which Compose Multiplatform's plist check requires.
+- The iOS app had no icon (an empty multi-size icon set), which App Store upload rejects. It now ships a single 1024×1024 placeholder matching the Android launcher icon.
 - Generic iOS Simulator builds no longer fail in Gradle's architecture check: `Config.xcconfig` excludes x86_64 for the simulator, since `shared` has no `iosX64` target.
-- The `.gitignore` no longer ignores `iosApp/Configuration/` and every `iosApp/*.xcconfig`; only `iosApp/Configuration/Local.xcconfig` is ignored.
+- The iOS framework's bundle ID is explicit (`-Xbinary=bundleId`, from the Android namespace), removing the "Cannot infer a bundle ID" warning, and the generator replaces `_` from the package with `-` in it, since Apple rejects underscores.
+- The launcher activity started on `Theme.App` instead of `Theme.App.Starting`, so `installSplashScreen()` never saw the splash theme.
+- The Compose stability configuration is applied. The old `compose.multiplatform.stabilityConfigPath` property did nothing, and the file used `#` comments the compiler rejects. Editing the file now recompiles.
+- Repeated `clean` builds in one Gradle daemon no longer exhaust metaspace or fail ktlint with `NoClassDefFoundError`. Spotless's `clean` hook closed every formatter classloader mid-build ([spotless#3067](https://github.com/diffplug/spotless/issues/3067)) and leaked the Eclipse XML formatter; build-logic removes that hook.
+- Spotless picks up `.editorconfig` edits (they are part of its ktlint settings), and no longer reads `PATH` at configuration time (which invalidated the configuration cache).
+- Lint's `ObsoleteLintCustomCheck`: androidx.lifecycle is aligned to 2.11.0, whose lint checks run on lint 9.5.
+- The `.gitignore` no longer ignores `iosApp/Configuration/` and every `iosApp/*.xcconfig` (only `iosApp/Configuration/Local.xcconfig`), any directory whose name ends in `sync`, or new files under `.claude/rules/`.
+- Release dates for 2.0.0 through 3.0.0 now match the tagged commits.
 
 ### Removed
+- MCP server (`mcp/`) and the `setup.sh --with-mcp` flag. Agents run `setup.sh --yes --json` directly.
 - `iosX64` target (Compose Multiplatform 1.11+ no longer supports it).
 - `subprojects {}` in the root build, the commented-out signing scaffold, and the legacy `kotlin.mpp.enableCInteropCommonization`, `kotlin.incremental.multiplatform` and `android.*` properties that AGP 9 makes default.
-- The Compose BOM optional entry: Compose Multiplatform pins the Compose versions.
-- MCP server (`mcp/`) and the `setup.sh --with-mcp` flag. Agents run `setup.sh` directly.
-- Unused `scripts/build-ios-framework.sh`; the Xcode project builds the framework through `embedAndSignAppleFrameworkForXcode`.
-- `docs/DEPENDENCY_RISK_REPORT.md` and `docs/DOCUMENTATION_INDEX.md`.
 - Unused `androidx.compose.material3`, `appcompat` and `kotlinx-coroutines-android` dependencies and catalog entries, and the unused `android-library` plugin alias.
+- The Compose BOM optional entry: Compose Multiplatform pins the Compose versions.
+- Unused `scripts/build-ios-framework.sh`; the Xcode project builds the framework through `embedAndSignAppleFrameworkForXcode`.
+- `docs/CONFIGURATION.md`, `docs/TEMPLATE_DEVELOPMENT.md`, `docs/DEPENDENCY_RISK_REPORT.md` and `docs/DOCUMENTATION_INDEX.md`.
 
 ## [3.1.0] - 2026-03-21
 
