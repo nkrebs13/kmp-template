@@ -6,7 +6,7 @@
 - Per-platform `actual` tests: `androidHostTest/`, `jvmTest/`, `iosTest/` (`Platform<Name>Test`)
 - Use `kotlin.test` assertions, not JUnit directly
 - Test class naming: `{ClassName}Test` in the same package as the source
-- Run tests: `./gradlew :shared:allTests` (iOS: `:shared:iosSimulatorArm64Test`, macOS only)
+- Run tests: `./gradlew :shared:allTests` (on macOS this includes `:shared:iosSimulatorArm64Test`)
 
 ## Compose UI tests
 
@@ -20,13 +20,13 @@
 - **Mutation-check habit:** after writing or changing a UI test, change the string it asserts in
   `shared/src/commonMain/composeResources/values/strings.xml`, confirm the test fails, then revert.
   A UI test that never failed has not been shown to test anything.
-- Screenshot tests (Roborazzi) are not in the default gate: font rendering differs between macOS and Linux.
+- No screenshot tests (Roborazzi) in `check`: font rendering differs between macOS and Linux, and
+  `check` must be green on both.
 
 ## Coverage
 
-- Kover enforces 60% line coverage on `shared` (`./gradlew :shared:koverVerify`, part of `check`).
+- Kover enforces 60% line coverage on every KMP library module (`koverVerify`, part of `check`).
   Read the number with `./gradlew :shared:koverLog`.
 - It measures the jvm and android host tests. Kover does not measure Kotlin/Native.
-- Excludes live in `QualityConventionPlugin`: `ComposableSingletons*`
-  (iOS entry point), the generated `*.generated.resources.*` package, `@Preview` functions and
-  Android generated classes.
+- Excludes live in `QualityConventionPlugin`: `ComposableSingletons*`, the generated
+  `*.generated.resources.*` package, `@Preview` functions and Android generated classes.

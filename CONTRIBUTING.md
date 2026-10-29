@@ -7,9 +7,9 @@ First off, thanks for taking the time to contribute! This template helps develop
 Before contributing, ensure you have:
 
 - **macOS** (required for iOS development and testing)
-- **JDK 21** (the build toolchain; Gradle downloads it automatically if it is missing)
+- **A JDK** to start Gradle (the JDK 21 toolchain is downloaded automatically if it is missing)
 - **Android Studio** (latest stable with KMP plugin)
-- **Xcode 15.0+** (for iOS framework compilation)
+- **Xcode 16+** (the iOS project uses synchronized folders)
 
 > **Note:** Windows and Linux are not supported for full template development due to iOS build requirements.
 
@@ -23,8 +23,7 @@ Before contributing, ensure you have:
    ```
 3. **Verify the build**:
    ```bash
-   ./gradlew :androidApp:assembleDebug
-   ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
+   ./gradlew check
    ```
 
 ## Development Workflow
@@ -38,20 +37,21 @@ Before contributing, ensure you have:
 
 2. Make your changes
 
-3. Format and lint:
+3. Format, then run the full gate:
    ```bash
    ./gradlew spotlessApply
-   ./gradlew detekt
+   ./gradlew check
    ```
 
 4. If you touched `setup.sh` or `.template/`, run the generator checks:
    ```bash
-   shellcheck setup.sh .template/*.sh tests/setup/*.sh
+   shellcheck setup.sh .template/*.sh scripts/*.sh tests/setup/*.sh
    bash tests/setup/run.sh                     # on macOS, also: /bin/bash tests/setup/run.sh
    ```
 
-5. Generate a project in a copy and build it. `setup.sh` checks for template leftovers itself
-   and exits 5 if it finds any:
+5. Generate a project in a copy and build it (never run `setup.sh` in your checkout).
+   `setup.sh` checks for template leftovers itself and exits 5 if it finds any. The full
+   end-to-end procedure is in [docs/MAINTAINING.md](docs/MAINTAINING.md#verifying-generator-changes):
    ```bash
    git clone . ../template-test && cd ../template-test
    ./setup.sh --name WeatherApp --package com.acme.weather --author "Test" --yes
@@ -148,6 +148,6 @@ We welcome contributions in these areas:
 
 - Open a [GitHub Discussion](../../discussions) for questions
 - Check existing [Issues](../../issues) before creating new ones
-- Read the [Template Development Guide](./docs/TEMPLATE_DEVELOPMENT.md) for maintainer info
+- Read the [maintainer guide](docs/MAINTAINING.md) for how the generator works and how releases are cut
 
 Thanks for contributing!

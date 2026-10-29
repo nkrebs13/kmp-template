@@ -29,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Template-only `release.yml` creates the GitHub Release from the tag's CHANGELOG section, and `scripts/release.sh X.Y.Z` (with `--dry-run`) updates the CHANGELOG and compare links, commits, tags and pushes.
 - `docs/MAINTAINING.md`: repository settings, branch protection and the release procedure as exact commands.
 
+### Documentation
+- The generated project's `AGENTS.md` is a complete agent guide: prerequisites, module map, `./gradlew check` as the one verification command (and what it leaves out), run commands for every platform, where each setting lives, recipes (dependencies, modules, `expect`/`actual`, strings, tests, baseline profile, release signing), conventions, the accepted third-party warnings and a definition of done. The generated `README.md` is a short human quick start that links to it.
+- The template repository has a root `CLAUDE.md` (`@AGENTS.md`), like generated projects, and its root `AGENTS.md` explains how to choose `setup.sh` values from a request and how to read every `--json` result.
+- `docs/MAINTAINING.md` absorbs `docs/CONFIGURATION.md` and `docs/TEMPLATE_DEVELOPMENT.md` (both removed): how the generator works and how to change it, end-to-end verification, and the technical decisions not to undo. Project-facing configuration moved to the generated `AGENTS.md`.
+- `.claude/CLAUDE.md` is a concise maintainer guide; it and `.claude/rules/` no longer claim that detekt rejects `println` (the rule needs type resolution, which `check` does not run).
+
 ### Fixed (generator)
 - The iOS framework's bundle ID replaces `_` from the package with `-`; Apple rejects underscores.
 - `--no-desktop` also removes the desktop build logic (`convention.jvm.application`, the `kotlin-jvm` plugin entries). detekt's test-source excludes use `**/*Test/**` instead of naming each source set.
