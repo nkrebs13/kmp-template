@@ -26,12 +26,12 @@ private enum class SigningKey(val env: String, val property: String) {
 /**
  * Signs the release build type when one source holds the whole credential set:
  *
- * 1. all four `SIGNING_*` environment variables, else
- * 2. all four `signing.*` keys in `local.properties`, else
+ * 1. the `SIGNING_*` environment variables, if any of them is set, else
+ * 2. the `signing.*` keys in `local.properties`, else
  * 3. nothing: the release build is unsigned.
  *
- * Sources are never mixed, and blank values count as absent. A partial set (some values in a
- * source, but not all) does not break configuration, so debug builds, lint, tests and `clean`
+ * Sources are never mixed, and blank values count as absent. A partial set in the chosen source
+ * (some values, but not all) does not break configuration, so debug builds, lint, tests and `clean`
  * keep working. Instead `verifyReleaseSigning` fails release packaging, naming the missing keys
  * (never their values). `storeFile` is absolute, or relative to the repository root.
  */
@@ -41,7 +41,11 @@ internal fun Project.configureReleaseSigning(android: ApplicationExtension) {
         SigningKey.entries.associateWith { props.getProperty(it.property).nonBlank() }
     }
 
-    val credentials = env.complete() ?: local.complete()
+    // Any SIGNING_* variable makes the environment the source; local.properties is consulted only
+    // when none is set. A partial environment never falls back to a local keystore.
+    val fromEnv = env.values.any { it != null }
+    val source = if (fromEnv) env else local
+    val credentials = source.complete()
     if (credentials != null) {
         val release = android.signingConfigs.create("release") {
             storeFile = isolated.rootProject.projectDirectory.file(credentials.getValue(SigningKey.STORE_FILE)).asFile
@@ -53,15 +57,13 @@ internal fun Project.configureReleaseSigning(android: ApplicationExtension) {
         return
     }
 
-    val problems = listOfNotNull(
-        env.missingKeys(SigningKey::env)?.let { "environment variables: missing $it" },
-        local.missingKeys(SigningKey::property)?.let { "local.properties: missing $it" },
-    )
-    if (problems.isEmpty()) return // Nothing configured: an unsigned release build is intended.
+    val missing = source.missingKeys(if (fromEnv) SigningKey::env else SigningKey::property)
+        ?: return // Nothing configured: an unsigned release build is intended.
+    val sourceName = if (fromEnv) "environment variables" else "local.properties"
 
     val verify = tasks.register<VerifyReleaseSigningTask>("verifyReleaseSigning") {
         message.set(
-            "Release signing is partially configured (" + problems.joinToString("; ") + "). " +
+            "Release signing is partially configured ($sourceName: missing $missing). " +
                 "Set all four in one place, or none for an unsigned build.",
         )
     }

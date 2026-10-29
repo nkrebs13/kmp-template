@@ -53,7 +53,8 @@ read it, and module build files reference `libs.*` aliases.
 The catalog also carries entries that no module references, inside blocks marked
 `Optional: not referenced by the build`. They are real entries, kept current by Dependabot and
 checked by `./gradlew verifyCatalog`, so using one is a one-line change in a module:
-`implementation(libs.<alias>)`. They cover JetBrains lifecycle and navigation for Compose
+`implementation(libs.<alias>)` for a library, or `alias(libs.plugins.<alias>)` in the `plugins {}`
+block for a Gradle plugin (KSP, Room, serialization). They cover JetBrains lifecycle and navigation for Compose
 Multiplatform, Room (KMP) with `sqlite-bundled`, DataStore, kotlinx serialization and datetime,
 Koin, Ktor (with the OkHttp and Darwin engines), Coil 3, Tink, WorkManager, and the KSP, Room and
 serialization Gradle plugins.

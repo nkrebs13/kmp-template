@@ -50,14 +50,20 @@ class RootConventionPlugin : Plugin<Project> {
         }
     }
 
-    /** `libs.<alias> -> group:name:version`. A plugin is checked through its marker artifact. */
-    private fun VersionCatalog.coordinates(): List<String> = libraryAliases.map { alias ->
+    /**
+     * `libs.<alias> -> group:name:version`. A plugin is checked through its marker artifact.
+     * Entries without a required version (BOM-managed, or prefer-only) name no single artifact,
+     * so there is nothing to look up and they are skipped.
+     */
+    private fun VersionCatalog.coordinates(): List<String> = libraryAliases.mapNotNull { alias ->
         val library = findLibrary(alias).get().get()
-        "libs.$alias -> ${library.module}:${library.versionConstraint.requiredVersion}"
+        library.versionConstraint.requiredVersion.ifBlank { null }
+            ?.let { version -> "libs.$alias -> ${library.module}:$version" }
     } +
-        pluginAliases.map { alias ->
+        pluginAliases.mapNotNull { alias ->
             val plugin = findPlugin(alias).get().get()
             val id = plugin.pluginId
-            "libs.plugins.$alias -> $id:$id.gradle.plugin:${plugin.version.requiredVersion}"
+            plugin.version.requiredVersion.ifBlank { null }
+                ?.let { version -> "libs.plugins.$alias -> $id:$id.gradle.plugin:$version" }
         }
 }

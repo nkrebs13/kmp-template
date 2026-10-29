@@ -6,7 +6,8 @@ A Kotlin Multiplatform application for iOS and Android.
 
 ### Prerequisites
 
-- **JDK 21** - the build toolchain; Gradle downloads it automatically if it is missing
+- **JDK 21** - the build toolchain. The Gradle wrapper needs some Java runtime on `PATH` or
+  `JAVA_HOME` to start; installing JDK 21 directly is simplest, otherwise Gradle downloads it
 - **Android Studio Meerkat (2024.3.2) or newer** - Latest stable IDE with KMP support
 - **Xcode 15.0 or newer** - For iOS development and latest iOS SDK support
 - **macOS** - Required for iOS development and Xcode
@@ -62,7 +63,7 @@ Generate a new keystore if you don't have one:
 keytool -genkey -v -keystore release.jks -alias key0 -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-For CI/CD, set the environment variables `SIGNING_STORE_FILE`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS` and `SIGNING_KEY_PASSWORD` instead. They take precedence over `local.properties`.
+For CI/CD, set the environment variables `SIGNING_STORE_FILE`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS` and `SIGNING_KEY_PASSWORD` instead. If any of them is set, all four must be, and `local.properties` is ignored.
 
 ## ⚡ Baseline Profiles
 

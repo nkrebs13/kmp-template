@@ -35,7 +35,7 @@ Follow the prompts to customize your project name and package.
 iOS builds require macOS with Xcode. The template targets:
 - iOS 15.0+ deployment target
 - Xcode 15.0+ (required for Swift 5.9+)
-- Apple Silicon (arm64) or Intel (x64) simulators
+- Apple Silicon Mac for simulator builds (the Intel `iosX64` target is not declared)
 
 ## Architecture
 
