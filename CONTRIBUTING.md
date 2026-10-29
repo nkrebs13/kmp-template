@@ -110,9 +110,9 @@ Two workflows run on every PR and push to `main`.
 | Job | Runner | Runs |
 |-----|--------|------|
 | Static analysis | ubuntu | `spotlessCheck detekt` |
-| Android | ubuntu | `check` (tests, lint, Kover), `:androidApp:assembleRelease`, `:baselineprofile:assemble` |
+| Android | ubuntu | `check` (tests, lint, Kover), Kover HTML report, `:androidApp:assembleRelease`, `:baselineprofile:assemble` |
 | iOS | macos-26 | `:shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64` |
-| Verify catalog | ubuntu | `verifyCatalog`, weekly and on manual dispatch only |
+| Verify catalog | ubuntu | `verifyCatalog`: every catalog coordinate, including unreferenced optional entries, resolves |
 
 The workflow also runs weekly on a schedule, so toolchain drift shows up without a PR.
 

@@ -61,7 +61,7 @@ jobs:
 
       # `check` skips the iOS targets on Linux; the ios job covers them.
       - name: Check, release build, baseline profile module
-        run: ./gradlew check :androidApp:assembleRelease :baselineprofile:assemble
+        run: ./gradlew check :shared:koverHtmlReport :androidApp:assembleRelease :baselineprofile:assemble
 
       - name: Upload reports
         if: always()
@@ -99,7 +99,6 @@ jobs:
 
   verify-catalog:
     name: Verify catalog
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -118,6 +117,7 @@ jobs:
           validate-wrappers: true
 
       # Every library and plugin in libs.versions.toml, including the optional entries no build
-      # file references, must still resolve.
+      # file references, must still resolve. Runs on every event, so a PR (such as a Dependabot
+      # bump) can't merge a coordinate that doesn't exist.
       - name: Resolve every catalog coordinate
         run: ./gradlew verifyCatalog

@@ -140,7 +140,7 @@ docs/
 
 ### CI/CD Testing
 Two GitHub Actions workflows run on every PR and push to `main` (details in `CONTRIBUTING.md`):
-- `ci.yml`: static analysis, Android `check` and release build on ubuntu, iOS tests and framework on `macos-26`, plus a weekly `verifyCatalog`
+- `ci.yml`: static analysis, Android `check` and release build on ubuntu, iOS tests and framework on `macos-26`, plus `verifyCatalog`; it also runs weekly
 - `template.yml`: runs `setup.sh` with test inputs, then builds and tests the generated project
 
 ### Manual Testing Process
