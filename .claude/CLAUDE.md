@@ -22,7 +22,7 @@ kmp-template/
 ├── shared/              # KMP shared module (commonMain/androidMain/iosMain)
 ├── androidApp/          # Android application
 ├── iosApp/              # iOS Xcode project (Swift + Compose bridge)
-├── baselineprofile/     # Android Baseline Profile generator
+├── baselineprofile/     # Baseline Profile producer (com.android.test, Gradle Managed Device)
 ├── build-logic/         # Included build: convention plugins (convention.*) + verifyCatalog
 ├── config/
 │   ├── compose/stability.conf   # Compose compiler stability config (`//` comments)
