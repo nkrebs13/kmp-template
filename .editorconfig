@@ -50,3 +50,7 @@ indent_size = 4
 
 [*.properties]
 insert_final_newline = false
+
+# Windows scripts need CRLF (cmd resolves goto/call labels by line); .gitattributes stores them as written.
+[*.bat]
+end_of_line = crlf
