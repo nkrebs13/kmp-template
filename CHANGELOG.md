@@ -51,7 +51,7 @@ and the minimums are iOS 16.0 and Xcode 16. Files moved: `detekt-config.yml` to
 - CI is split into Static analysis and "Android & Desktop" jobs on ubuntu, an iOS job on `macos-26` that also builds the app with `xcodebuild`, and a `verifyCatalog` job; it runs on PRs, pushes to `main` and weekly, with JDK 21.
 - `baselineprofile` is a real producer that generates the profile on a Gradle Managed Device; the profile ships in release APKs.
 - `desktopApp` builds and packages on JetBrains Runtime 21.
-- Kotlin 2.4.21, Compose Multiplatform 1.12.2, AGP 9.5.0, Gradle 9.6.1, Spotless 8.10.4, Kover 0.9.11, Kermit 2.2.0; detekt stays on 1.23.8 until 2.x is stable.
+- Kotlin 2.4.21, Compose Multiplatform 1.12.2, AGP 9.5.0, Gradle 9.8.2, Spotless 8.10.4, Kover 0.9.11, Kermit 2.2.0; detekt stays on 1.23.8 until 2.x is stable.
 - compileSdk 37 (required by Compose 1.12); targetSdk stays 36. SDK levels live in the catalog, the app version in `gradle.properties`.
 - iOS minimum 16.0 (was 15.0) and Xcode 16.0, with synchronized folders, so new files under `iosApp/iosApp/` need no pbxproj edit.
 - `setup.sh` renames the iOS app only through `Config.xcconfig`, never Swift files or the pbxproj.
