@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-10-29
+
 **Breaking.** `setup.sh` takes flags, so piped answers no longer work. The MCP server and
 `--with-mcp` are gone, `iosX64` is dropped, compileSdk is 37, the build uses a JDK 21 toolchain,
 and the minimums are iOS 16.0 and Xcode 16. Files moved: `detekt-config.yml` to
@@ -265,7 +267,8 @@ and the minimums are iOS 16.0 and Xcode 16. Files moved: `detekt-config.yml` to
 ### Changed
 - Complete rewrite from single-platform template
 
-[Unreleased]: https://github.com/nkrebs13/kmp-template/compare/v3.1.0...HEAD
+[Unreleased]: https://github.com/nkrebs13/kmp-template/compare/v4.0.0...HEAD
+[4.0.0]: https://github.com/nkrebs13/kmp-template/compare/v3.1.0...v4.0.0
 [3.1.0]: https://github.com/nkrebs13/kmp-template/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/nkrebs13/kmp-template/compare/v2.2.0...v3.0.0
 [2.2.0]: https://github.com/nkrebs13/kmp-template/compare/v2.1.0...v2.2.0
