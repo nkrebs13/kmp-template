@@ -1,7 +1,7 @@
 * text=auto eol=lf
 # Windows scripts are stored exactly as written, with CRLF. Gradle's wrapper task and Dependabot's
 # wrapper updates commit gradlew.bat with CRLF; normalizing it would show a phantom change after
-# every wrapper update (and fail setup.sh's clean-tree check).
+# every wrapper update.
 *.bat -text
 *.jar binary
 *.png binary
