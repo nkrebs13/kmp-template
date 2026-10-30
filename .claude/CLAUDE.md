@@ -25,7 +25,7 @@ not to undo. Read it before changing `setup.sh`, `.template/`, the build logic o
   a generated project.
 - **The CLI contract** (flags, `--json` shapes, exit codes) is documented in the root `AGENTS.md`
   and pinned by `tests/setup/run.sh`. Change all three together.
-- **Never move, delete or re-create the version tags** (`v2.0.0` … `v3.1.0` on the remote). The
+- **Never move, delete or re-create the version tags** (every `v*` tag on the remote). The
   CHANGELOG compare links depend on them. Releases are cut only with `scripts/release.sh`.
 - **Repository docs hold long-lived knowledge only**: no session logs, dated status notes or plan
   phases. History lives in git and the pull requests.
