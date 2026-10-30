@@ -68,6 +68,7 @@ and the minimums are iOS 16.0 and Xcode 16. Files moved: `detekt-config.yml` to
 - Maintainer docs are consolidated in `docs/MAINTAINING.md` and `.claude/CLAUDE.md`; project-facing configuration moved to the generated `AGENTS.md`.
 
 ### Fixed
+- Gradle wrapper updates no longer leave `gradlew.bat` showing as modified: `.bat` files are stored as written, with CRLF.
 - The iOS app no longer aborts at launch: `Info.plist` sets `CADisableMinimumFrameDurationOnPhone`.
 - The iOS app has an icon; the empty icon set failed App Store upload.
 - Generic iOS Simulator builds no longer fail Gradle's architecture check.
