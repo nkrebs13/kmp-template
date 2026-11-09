@@ -54,7 +54,7 @@ kotlinx-datetime = "0.8.0"
 koin = "4.2.2"
 ktor = "3.6.1"
 coil = "3.6.3"
-ksp = "2.3.12"
+ksp = "2.3.13"
 tink = "1.24.0"
 # ── End optional ──
 
