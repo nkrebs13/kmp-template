@@ -35,7 +35,7 @@ detekt = "1.23.8"
 # compose-rules 0.4.x is the last line built against detekt 1.23.x (0.5+ needs detekt 2.x).
 compose-rules = "0.4.28"
 kover = "0.9.11"
-spotless = "8.10.4"
+spotless = "8.11.0"
 ktlint = "1.8.0"
 
 # ── Optional: not referenced by the build; kept current by Dependabot. Reference as libs.<alias> to use. ──
