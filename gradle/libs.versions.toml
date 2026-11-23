@@ -1,6 +1,6 @@
 [versions]
 # Core
-agp = "9.5.1"
+agp = "9.5.2"
 kotlin = "2.4.21"
 compose-multiplatform = "1.12.2"
 # The Material 3 artifacts are versioned separately from the rest of Compose Multiplatform.
